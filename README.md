@@ -2,28 +2,45 @@
 
 Prototype cozy farming/life-sim tropis Indonesia, dibangun dengan Godot 4.
 
-## Version 0.0.6
+## Version 0.0.7 — Visual Overhaul
 
-Milestone ini mulai membentuk loop harian yang utuh:
+Milestone 0.0.7 membekukan penambahan fitur baru sementara dan fokus membentuk identitas visual **Lembah Sari**.
 
-- world 3D stylized + kamera 3/4
-- movement + collision
-- farming: Cangkul → Benih → Siram → Panen
-- waktu Pagi → Siang → Sore → Malam
-- cuaca Cerah / Hujan
-- NPC Pak Wiryo, Bu Ratih, dan Laras + jadwal/dialog
-- irigasi interaktif
-- memancing di sungai
-- inventory hasil panen dan ikan
-- jual hasil di Warung Bu Ratih
-- uang Rupiah
-- stamina maksimum 100
-- farming, irigasi, mancing, dan lari menguras stamina
-- rumah menjadi titik tidur
-- tidur normal setelah pukul 18:00
-- jika stamina kritis (15 atau kurang), pemain boleh tidur lebih awal
-- tidur memulai hari berikutnya dan memulihkan stamina penuh
-- transisi layar **Hari Baru** saat tidur
+### Visual world baru
+
+- lingkungan desa tropis dibuat lebih berlapis, tidak lagi sekadar bidang hijau datar
+- jalan desa memiliki tepi dan pemisahan area yang lebih jelas
+- sungai dibuat sebagai channel dengan dasar, tepian tanah, rumput pinggir air, batu, dan jembatan kayu berplank
+- rumah pemain dibuat menjadi rumah desa tropis dengan teras, atap miring, jendela, kusen, tiang teras, halaman, dan bunga
+- Warung Bu Ratih mendapat kanopi, bukaan warung, counter, bangku, tiang, tanaman, dan signage
+- sawah Pak Wiryo sekarang terdiri dari petak sawah berair, lumpur, pematang, rumpun padi, dan saluran irigasi
+- vegetasi lebih beragam: pohon rindang, kelapa, pisang, semak, bunga liar, batu, pagar, dan lampu jalan desa
+- bukit stylized ditambahkan di sisi utara untuk memberikan rasa lembah dan depth pada background
+- signage desa **Lembah Sari** ditambahkan pada area jalan utama
+
+### Character visual
+
+- player tidak lagi berupa capsule sederhana
+- player sekarang memiliki torso, celana, kaki, sepatu, tangan, kepala stylized, rambut, dan tas kecil
+- kamera 3/4 dipoles lebih dekat agar terasa lebih intimate/cozy
+- Pak Wiryo, Bu Ratih, dan Laras mendapat siluet karakter yang berbeda
+- Pak Wiryo memakai topi petani
+- Bu Ratih memiliki apron dan sanggul
+- Laras memiliki rambut panjang dan sling bag
+
+### Lighting dan UI
+
+- pagi lebih hangat
+- siang lebih bersih/natural
+- sore memakai golden tone
+- malam memakai ambient biru lembut
+- hujan membuat langit dan cahaya lebih dingin/desaturated
+- HUD dibungkus card transparan agar lebih ringan di layar
+- quickbar dipadatkan
+- joystick dan tombol AKSI otomatis disembunyikan saat bermain di desktop/PC
+- kontrol touch tetap tersedia di Android/iOS
+
+Semua gameplay 0.0.6 tetap dipertahankan: farming, waktu/cuaca, NPC/dialog, irigasi, memancing, inventory, penjualan, stamina, rumah/tidur, dan transisi hari.
 
 ## Menjalankan di PC
 
@@ -31,12 +48,12 @@ Milestone ini mulai membentuk loop harian yang utuh:
 2. Pada repository `eneft/Lembah-sari`, pilih **Fetch origin → Pull origin**.
 3. Buka `project.godot` di Godot.
 4. Tekan **F5 / Run Project**.
-5. Pastikan HUD menampilkan **Lembah Sari 0.0.6**.
+5. Pastikan HUD menampilkan **Lembah Sari 0.0.7**.
 
 ### Kontrol desktop
 
 - WASD / Arrow Keys: bergerak
-- Shift: lari (menguras stamina)
+- Shift: lari
 - E / Space: interaksi / gunakan alat
 - 1: Cangkul
 - 2: Benih
@@ -44,56 +61,19 @@ Milestone ini mulai membentuk loop harian yang utuh:
 - 4: Panen
 - 5: Pancing
 - 6: Jual
-- **+ HARI** pada HUD tetap tersedia sebagai tombol testing cepat
 
-## Biaya stamina prototype
+## Yang perlu dicek pada visual pass 0.0.7
 
-- Cangkul: 5
-- Tanam benih: 2
-- Siram: 3
-- Panen: 2
-- Irigasi: 8
-- Mancing: 6
-- Lari: berkurang terus selama Shift ditekan saat bergerak
-
-Jika stamina habis, pemain tetap dapat berjalan tetapi tidak dapat melakukan aktivitas yang membutuhkan tenaga sampai stamina pulih.
-
-## Tes loop 0.0.6
-
-1. Mulai pagi pukul 06:30 dengan stamina 100/100.
-2. Jalan ke kebun dan Cangkul → Benih → Siram beberapa petak.
-3. Perhatikan bar stamina berkurang.
-4. Tahan Shift sambil berjalan untuk memastikan lari menguras stamina.
-5. Coba irigasi atau memancing untuk mengurangi stamina lagi.
-6. Setelah pukul 18:00, pulang ke rumah pemain di sisi kanan bawah map.
-7. Dekati marker **Rumah • Tidur setelah 18:00** di depan rumah.
-8. Tekan **E / Space / AKSI**.
-9. Layar **Hari Baru** muncul.
-10. Pemain bangun kembali di depan rumah, waktu menjadi 06:30, tanaman diproses ke hari berikutnya, cuaca baru dipilih, dan stamina kembali 100/100.
-
-Jika stamina sudah 15 atau kurang sebelum pukul 18:00, rumah mengizinkan tidur lebih awal.
-
-## Aktivitas lain
-
-### NPC
-
-- Pak Wiryo: pagi di sawah
-- Bu Ratih: pagi–sore di warung
-- Laras: pagi di area sungai
-
-Dekati NPC, hadapkan karakter, lalu tekan **E / Space / AKSI**.
-
-### Irigasi
-
-Pergi ke pintu irigasi dekat sawah Pak Wiryo. Tekan **E / AKSI**. Semua tanaman aktif akan tersiram sekaligus. Irigasi normal hanya perlu digunakan sekali per hari.
-
-### Mancing
-
-Pilih **Pancing (5)**, cari label **Spot Mancing** di tepi sungai, lalu tekan **E / AKSI**. Ikan Wader, Lele, atau Nila akan masuk ke tas.
-
-### Jual hasil
-
-Pilih **Jual (6)**, datang ke marker di depan Warung Bu Ratih, lalu tekan **E / AKSI**. Semua cabai dan ikan di tas dijual menjadi Rupiah.
+1. Dunia harus langsung terlihat lebih padat saat game mulai.
+2. Rumah pemain di kanan bawah harus memiliki bentuk rumah yang jelas, bukan balok sederhana.
+3. Warung Bu Ratih harus terlihat berbeda dari rumah pemain.
+4. Sungai harus punya tepian dan jembatan kayu yang lebih terbaca.
+5. Sawah Pak Wiryo harus terlihat sebagai petak sawah berair dengan pematang dan rumpun padi.
+6. Background utara harus memiliki bentuk bukit/lembah.
+7. Player dan tiga NPC utama harus memiliki bentuk karakter stylized yang lebih jelas.
+8. Di PC, joystick kiri dan tombol AKSI mobile tidak boleh tampil.
+9. HUD tetap menampilkan hari, waktu, inventory, uang, stamina, dan quickbar tanpa terlalu menutupi world.
+10. Biarkan waktu berjalan untuk memeriksa perubahan pencahayaan pagi → siang → sore → malam dan cuaca hujan.
 
 ## Struktur utama
 
@@ -118,6 +98,12 @@ ui/
 
 ## Roadmap berikutnya
 
-- 0.0.7: save/load persistence untuk hari, waktu, cuaca, stamina, uang, inventory, dan kebun
-- 0.0.8: tutorial Day 1 + objective sederhana
+Untuk sementara fitur baru tetap **freeze** sampai arah visual 0.0.7 dianggap cukup enak dilihat.
+
+Setelah visual disetujui:
+
+- save/load persistence
+- tutorial Day 1
+- objective sederhana
+- polishing animasi karakter dan interaction feedback
 - 0.1.0: satu hari playable end-to-end yang dapat ditutup dan dilanjutkan kembali
