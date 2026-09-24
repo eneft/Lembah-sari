@@ -3,6 +3,7 @@ extends CharacterBody3D
 signal tool_changed(tool: String)
 signal farming_feedback(text: String)
 signal dialogue_requested(speaker: String, text: String)
+signal day_transition_requested(summary: String)
 
 @export var walk_speed: float = 4.2
 @export var run_speed: float = 6.4
@@ -41,10 +42,15 @@ func _physics_process(delta: float) -> void:
 	if direction.length() > 1.0:
 		direction = direction.normalized()
 
-	var target_speed: float = run_speed if Input.is_action_pressed("run") else walk_speed
+	var wants_run: bool = Input.is_action_pressed("run") and direction.length() > 0.1
+	var running: bool = wants_run and _has_running_stamina()
+	var target_speed: float = run_speed if running else walk_speed
 	var target_velocity: Vector3 = direction * target_speed
 	velocity.x = move_toward(velocity.x, target_velocity.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, target_velocity.z, acceleration * delta)
+
+	if running:
+		_drain_running_stamina(delta)
 
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -102,6 +108,13 @@ func _do_interact() -> void:
 				var activity_result: Dictionary = activity_value as Dictionary
 				if bool(activity_result.get("ok", false)):
 					var activity_message: String = str(activity_result.get("message", ""))
+					if bool(activity_result.get("sleep", false)):
+						var wake_value: Variant = activity_result.get("wake_position", global_position)
+						if wake_value is Vector3:
+							global_position = wake_value as Vector3
+						velocity = Vector3.ZERO
+						day_transition_requested.emit(activity_message)
+						return
 					if activity_message != "":
 						farming_feedback.emit(activity_message)
 					return
@@ -130,6 +143,24 @@ func _do_interact() -> void:
 	if message != "":
 		farming_feedback.emit(message)
 	print("[LembahSari] ", message)
+
+func _has_running_stamina() -> bool:
+	var stats_nodes: Array[Node] = get_tree().get_nodes_in_group("player_stats")
+	if stats_nodes.is_empty():
+		return true
+	var stats: Node = stats_nodes[0]
+	if not stats.has_method("has_stamina"):
+		return true
+	var result: Variant = stats.call("has_stamina", 0.2)
+	return bool(result)
+
+func _drain_running_stamina(delta: float) -> void:
+	var stats_nodes: Array[Node] = get_tree().get_nodes_in_group("player_stats")
+	if stats_nodes.is_empty():
+		return
+	var stats: Node = stats_nodes[0]
+	if stats.has_method("drain_running"):
+		stats.call("drain_running", delta)
 
 func _read_mobile_joystick() -> Vector2:
 	var nodes: Array[Node] = get_tree().get_nodes_in_group("mobile_joystick")
