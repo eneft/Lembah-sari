@@ -104,47 +104,47 @@ func _apply_world_lighting() -> void:
 	var env: Environment = world_environment.environment
 	var hour: float = current_minutes / 60.0
 	var daylight: float = 1.0
-	var sky_color: Color = Color("9fcddd")
-	var ambient: Color = Color("dce7ce")
-	var sun_color: Color = Color("fff0cf")
+	var sky_color: Color = Color("a9cad1")
+	var ambient: Color = Color("dedfc8")
+	var sun_color: Color = Color("ffe8bd")
 
 	if hour < 8.0:
 		var dawn_t: float = clampf((hour - 6.5) / 1.5, 0.0, 1.0)
-		daylight = lerpf(0.58, 1.0, dawn_t)
-		sky_color = Color("efb08b").lerp(Color("9fcddd"), dawn_t)
-		ambient = Color("e8c2a4").lerp(Color("dce7ce"), dawn_t)
-		sun_color = Color("ffc48d").lerp(Color("fff0cf"), dawn_t)
+		daylight = lerpf(0.52, 0.88, dawn_t)
+		sky_color = Color("e6b08e").lerp(Color("a9cad1"), dawn_t)
+		ambient = Color("dcc0a7").lerp(Color("dedfc8"), dawn_t)
+		sun_color = Color("efaa76").lerp(Color("ffe8bd"), dawn_t)
 	elif hour < 15.5:
-		daylight = 1.0
-		sky_color = Color("92c9df")
-		ambient = Color("dce8d0")
-		sun_color = Color("fff3d7")
+		daylight = 0.88
+		sky_color = Color("a6cbd5")
+		ambient = Color("dfdfc9")
+		sun_color = Color("ffecc7")
 	elif hour < 19.0:
 		var evening_t: float = clampf((hour - 15.5) / 3.5, 0.0, 1.0)
-		daylight = lerpf(1.0, 0.20, evening_t)
-		sky_color = Color("9bcbdc").lerp(Color("263752"), evening_t)
-		ambient = Color("dfe7cf").lerp(Color("59677c"), evening_t)
-		sun_color = Color("fff0cf").lerp(Color("f1a36e"), minf(1.0, evening_t * 1.25))
+		daylight = lerpf(0.88, 0.18, evening_t)
+		sky_color = Color("aacbd2").lerp(Color("334158"), evening_t)
+		ambient = Color("dfdec7").lerp(Color("626a78"), evening_t)
+		sun_color = Color("ffe6b5").lerp(Color("e89568"), minf(1.0, evening_t * 1.2))
 	else:
-		daylight = 0.20
-		sky_color = Color("263752")
-		ambient = Color("59677c")
-		sun_color = Color("b7c8e9")
+		daylight = 0.18
+		sky_color = Color("334158")
+		ambient = Color("626a78")
+		sun_color = Color("b4c0d8")
 
 	if weather == "rain":
-		sky_color = sky_color.lerp(Color("687986"), 0.58)
-		ambient = ambient.lerp(Color("95a1a2"), 0.38)
-		sun_color = sun_color.lerp(Color("c6d0d0"), 0.50)
-		daylight *= 0.70
+		sky_color = sky_color.lerp(Color("778489"), 0.58)
+		ambient = ambient.lerp(Color("9ba29c"), 0.40)
+		sun_color = sun_color.lerp(Color("c4c9c3"), 0.55)
+		daylight *= 0.68
 
 	env.background_color = sky_color
 	env.ambient_light_color = ambient
-	env.ambient_light_energy = maxf(0.28, daylight * 0.78)
+	env.ambient_light_energy = maxf(0.26, daylight * 0.64)
 	sun.light_color = sun_color
-	sun.light_energy = maxf(0.09, daylight * 1.12)
+	sun.light_energy = maxf(0.08, daylight * 0.92)
 
 	var day_progress: float = clampf((current_minutes - START_MINUTES) / float(END_MINUTES - START_MINUTES), 0.0, 1.0)
-	sun.rotation_degrees = Vector3(lerpf(-22.0, -158.0, day_progress), lerpf(-70.0, 70.0, day_progress), 0.0)
+	sun.rotation_degrees = Vector3(lerpf(-34.0, -142.0, day_progress), lerpf(-62.0, 62.0, day_progress), 0.0)
 
 func _build_rain_visual() -> void:
 	rain_visual = Node3D.new()
