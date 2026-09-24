@@ -40,9 +40,9 @@ func _process(delta: float) -> void:
 	status_changed.emit()
 
 func get_time_text() -> String:
-	var total := int(current_minutes)
-	var hour := total / 60
-	var minute := total % 60
+	var total: int = int(current_minutes)
+	var hour: int = total / 60
+	var minute: int = total % 60
 	return "%02d:%02d" % [hour, minute]
 
 func get_period_text() -> String:
@@ -64,8 +64,8 @@ func skip_to_next_day() -> Dictionary:
 
 func _start_next_day() -> Dictionary:
 	current_minutes = START_MINUTES
-	var message := "Hari berikutnya dimulai."
-	var managers := get_tree().get_nodes_in_group("farm_manager")
+	var message: String = "Hari berikutnya dimulai."
+	var managers: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
 	if not managers.is_empty():
 		var result: Dictionary = managers[0].next_day()
 		message = str(result.get("message", message))
@@ -79,15 +79,15 @@ func _roll_weather(apply_rain_water: bool) -> void:
 	# Prototype rainy-season bias: 35% chance of rain each new day.
 	weather = "rain" if rng.randf() < 0.35 else "sunny"
 	if apply_rain_water and weather == "rain":
-		var managers := get_tree().get_nodes_in_group("farm_manager")
+		var managers: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
 		if not managers.is_empty() and managers[0].has_method("water_all_planted"):
 			managers[0].water_all_planted()
 	_update_rain_visibility()
 	weather_changed.emit(weather)
 
 func _update_period() -> void:
-	var hour := current_minutes / 60.0
-	var next_period := "morning"
+	var hour: float = current_minutes / 60.0
+	var next_period: String = "morning"
 	if hour >= 18.5:
 		next_period = "night"
 	elif hour >= 16.5:
@@ -101,22 +101,22 @@ func _update_period() -> void:
 func _apply_world_lighting() -> void:
 	if world_environment == null or world_environment.environment == null:
 		return
-	var env := world_environment.environment
-	var hour := current_minutes / 60.0
-	var daylight := 1.0
-	var sky_color := Color("94cdf2")
-	var ambient := Color("d5e4ff")
+	var env: Environment = world_environment.environment
+	var hour: float = current_minutes / 60.0
+	var daylight: float = 1.0
+	var sky_color: Color = Color("94cdf2")
+	var ambient: Color = Color("d5e4ff")
 
 	if hour < 8.0:
-		var t := clamp((hour - 6.5) / 1.5, 0.0, 1.0)
-		daylight = lerp(0.55, 1.0, t)
+		var t: float = clampf((hour - 6.5) / 1.5, 0.0, 1.0)
+		daylight = lerpf(0.55, 1.0, t)
 		sky_color = Color("efaa83").lerp(Color("94cdf2"), t)
 		ambient = Color("e7b49b").lerp(Color("d5e4ff"), t)
 	elif hour < 16.5:
 		daylight = 1.0
 	elif hour < 19.0:
-		var t := clamp((hour - 16.5) / 2.5, 0.0, 1.0)
-		daylight = lerp(1.0, 0.22, t)
+		var t: float = clampf((hour - 16.5) / 2.5, 0.0, 1.0)
+		daylight = lerpf(1.0, 0.22, t)
 		sky_color = Color("94cdf2").lerp(Color("172844"), t)
 		ambient = Color("d5e4ff").lerp(Color("52627f"), t)
 	else:
@@ -131,12 +131,12 @@ func _apply_world_lighting() -> void:
 
 	env.background_color = sky_color
 	env.ambient_light_color = ambient
-	env.ambient_light_energy = max(0.25, daylight * 0.85)
-	sun.light_energy = max(0.08, daylight * 1.2)
+	env.ambient_light_energy = maxf(0.25, daylight * 0.85)
+	sun.light_energy = maxf(0.08, daylight * 1.2)
 
 	# Sun travels east to west during the playable day.
-	var day_progress := clamp((current_minutes - START_MINUTES) / float(END_MINUTES - START_MINUTES), 0.0, 1.0)
-	sun.rotation_degrees = Vector3(lerp(-22.0, -158.0, day_progress), lerp(-70.0, 70.0, day_progress), 0.0)
+	var day_progress: float = clampf((current_minutes - START_MINUTES) / float(END_MINUTES - START_MINUTES), 0.0, 1.0)
+	sun.rotation_degrees = Vector3(lerpf(-22.0, -158.0, day_progress), lerpf(-70.0, 70.0, day_progress), 0.0)
 
 func _build_rain_visual() -> void:
 	rain_visual = Node3D.new()
@@ -165,8 +165,8 @@ func _update_rain_visibility() -> void:
 func _update_rain(delta: float) -> void:
 	if weather != "rain" or rain_visual == null:
 		return
-	var players := get_tree().get_nodes_in_group("player")
-	var center := Vector3.ZERO
+	var players: Array[Node] = get_tree().get_nodes_in_group("player")
+	var center: Vector3 = Vector3.ZERO
 	if not players.is_empty():
 		center = players[0].global_position
 	for drop in rain_drops:
