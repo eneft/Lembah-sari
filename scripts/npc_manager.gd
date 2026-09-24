@@ -26,7 +26,6 @@ func try_interact(player_position: Vector3, player_facing: Vector3) -> Dictionar
 	var best_npc: Dictionary = {}
 	var best_distance: float = TALK_DISTANCE + 1.0
 	var flat_facing: Vector3 = Vector3(player_facing.x, 0.0, player_facing.z).normalized()
-
 	for npc: Dictionary in npcs:
 		var root: Node3D = npc["root"] as Node3D
 		var offset: Vector3 = root.global_position - player_position
@@ -40,10 +39,8 @@ func try_interact(player_position: Vector3, player_facing: Vector3) -> Dictionar
 				continue
 		best_npc = npc
 		best_distance = distance
-
 	if best_npc.is_empty():
 		return {"ok": false}
-
 	var npc_id: String = str(best_npc["id"])
 	var display_name: String = str(best_npc["display_name"])
 	var dialogue: String = _dialogue_for(npc_id)
@@ -61,51 +58,41 @@ func _make_npc(npc_id: String, display_name: String, start_position: Vector3, sh
 	root.position = start_position
 	add_child(root)
 
-	_add_box_part(root, "Torso", Vector3(0.0, 1.03, 0.0), Vector3(0.74, 0.78, 0.44), shirt_color)
-	_add_box_part(root, "Bottom", Vector3(0.0, 0.62, 0.0), Vector3(0.68, 0.34, 0.42), shirt_color.darkened(0.45))
-	_add_box_part(root, "LeftArm", Vector3(-0.46, 1.02, 0.0), Vector3(0.17, 0.60, 0.18), skin_color, Vector3(0.0, 0.0, -7.0))
-	_add_box_part(root, "RightArm", Vector3(0.46, 1.02, 0.0), Vector3(0.17, 0.60, 0.18), skin_color, Vector3(0.0, 0.0, 7.0))
-	_add_capsule_part(root, "LeftLeg", Vector3(-0.17, 0.30, 0.0), 0.12, 0.58, skin_color.darkened(0.04))
-	_add_capsule_part(root, "RightLeg", Vector3(0.17, 0.30, 0.0), 0.12, 0.58, skin_color.darkened(0.04))
-	_add_box_part(root, "LeftSandal", Vector3(-0.17, 0.08, 0.08), Vector3(0.27, 0.13, 0.38), Color("4e392c"))
-	_add_box_part(root, "RightSandal", Vector3(0.17, 0.08, 0.08), Vector3(0.27, 0.13, 0.38), Color("4e392c"))
-	_add_sphere_part(root, "Head", Vector3(0.0, 1.69, 0.0), 0.34, skin_color, Vector3(1.0, 1.04, 1.0))
+	_add_capsule_part(root, "Torso", Vector3(0.0, 1.03, 0.0), 0.34, 0.88, shirt_color, Vector3(1.0, 1.0, 0.82))
+	_add_cylinder_part(root, "Bottom", Vector3(0.0, 0.62, 0.0), 0.33, 0.31, shirt_color.darkened(0.42), Vector3.ONE)
+	_add_capsule_part(root, "LeftArm", Vector3(-0.42, 1.02, 0.0), 0.115, 0.58, skin_color, Vector3.ONE, Vector3(0.0, 0.0, -9.0))
+	_add_capsule_part(root, "RightArm", Vector3(0.42, 1.02, 0.0), 0.115, 0.58, skin_color, Vector3.ONE, Vector3(0.0, 0.0, 9.0))
+	_add_capsule_part(root, "LeftLeg", Vector3(-0.17, 0.30, 0.0), 0.115, 0.56, skin_color.darkened(0.04), Vector3.ONE)
+	_add_capsule_part(root, "RightLeg", Vector3(0.17, 0.30, 0.0), 0.115, 0.56, skin_color.darkened(0.04), Vector3.ONE)
+	_add_capsule_part(root, "LeftSandal", Vector3(-0.17, 0.09, 0.08), 0.13, 0.34, Color("4e392c"), Vector3(1.0, 1.0, 0.76), Vector3(90.0, 0.0, 0.0))
+	_add_capsule_part(root, "RightSandal", Vector3(0.17, 0.09, 0.08), 0.13, 0.34, Color("4e392c"), Vector3(1.0, 1.0, 0.76), Vector3(90.0, 0.0, 0.0))
+	_add_sphere_part(root, "Head", Vector3(0.0, 1.69, 0.0), 0.35, skin_color, Vector3(1.0, 1.04, 1.0))
+	_add_sphere_part(root, "LeftEye", Vector3(-0.12, 1.73, 0.32), 0.032, Color("2c201b"), Vector3.ONE)
+	_add_sphere_part(root, "RightEye", Vector3(0.12, 1.73, 0.32), 0.032, Color("2c201b"), Vector3.ONE)
 
 	match npc_id:
 		"pak_wiryo":
-			_add_sphere_part(root, "Hair", Vector3(0.0, 1.89, -0.02), 0.34, Color("4a443e"), Vector3(1.0, 0.5, 1.02))
-			_add_cylinder_part(root, "FarmerHat", Vector3(0.0, 2.03, 0.0), 0.54, 0.10, Color("c4a363"))
-			_add_cylinder_part(root, "HatTop", Vector3(0.0, 2.11, 0.0), 0.30, 0.18, Color("b89455"))
+			_add_sphere_part(root, "Hair", Vector3(0.0, 1.90, -0.02), 0.35, Color("4a443e"), Vector3(1.0, 0.52, 1.02))
+			_add_cylinder_part(root, "FarmerHat", Vector3(0.0, 2.04, 0.0), 0.53, 0.09, Color("c4a363"), Vector3.ONE)
+			_add_cylinder_part(root, "HatTop", Vector3(0.0, 2.13, 0.0), 0.29, 0.19, Color("b89455"), Vector3(0.82, 1.0, 0.82))
 		"bu_ratih":
-			_add_sphere_part(root, "Hair", Vector3(0.0, 1.88, -0.03), 0.36, Color("30251f"), Vector3(1.02, 0.55, 1.02))
+			_add_sphere_part(root, "Hair", Vector3(0.0, 1.90, -0.02), 0.36, Color("30251f"), Vector3(1.02, 0.58, 1.02))
 			_add_sphere_part(root, "HairBun", Vector3(0.0, 1.91, -0.30), 0.18, Color("30251f"), Vector3.ONE)
-			_add_box_part(root, "Apron", Vector3(0.0, 0.96, 0.24), Vector3(0.52, 0.66, 0.05), Color("ead6ae"))
+			_add_sphere_part(root, "Apron", Vector3(0.0, 0.99, 0.29), 0.31, Color("ead6ae"), Vector3(0.88, 1.15, 0.22))
 		"laras":
-			_add_sphere_part(root, "Hair", Vector3(0.0, 1.90, -0.02), 0.36, Color("2f241f"), Vector3(1.03, 0.60, 1.05))
-			_add_box_part(root, "HairBack", Vector3(0.0, 1.58, -0.26), Vector3(0.48, 0.66, 0.18), Color("2f241f"))
-			_add_box_part(root, "SlingBag", Vector3(0.30, 0.86, -0.25), Vector3(0.32, 0.38, 0.18), Color("8a5f3e"))
+			_add_sphere_part(root, "Hair", Vector3(0.0, 1.91, -0.02), 0.36, Color("2f241f"), Vector3(1.03, 0.62, 1.05))
+			_add_sphere_part(root, "HairBack", Vector3(0.0, 1.58, -0.24), 0.32, Color("2f241f"), Vector3(0.78, 1.18, 0.45))
+			_add_sphere_part(root, "SlingBag", Vector3(0.30, 0.87, -0.26), 0.24, Color("8a5f3e"), Vector3(0.80, 1.0, 0.46))
 
 	var label: Label3D = Label3D.new()
 	label.text = display_name
 	label.position = Vector3(0.0, 2.48, 0.0)
-	label.font_size = 26
+	label.font_size = 25
 	label.outline_size = 6
 	label.modulate = Color("fff5d9")
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	root.add_child(label)
-
 	return {"id": npc_id, "display_name": display_name, "root": root}
-
-func _add_box_part(parent_node: Node3D, part_name: String, part_position: Vector3, size_value: Vector3, color_value: Color, rotation_value: Vector3 = Vector3.ZERO) -> void:
-	var part: MeshInstance3D = MeshInstance3D.new()
-	part.name = part_name
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size_value
-	part.mesh = mesh
-	part.position = part_position
-	part.rotation_degrees = rotation_value
-	part.material_override = _make_material(color_value)
-	parent_node.add_child(part)
 
 func _add_sphere_part(parent_node: Node3D, part_name: String, part_position: Vector3, radius_value: float, color_value: Color, scale_value: Vector3) -> void:
 	var part: MeshInstance3D = MeshInstance3D.new()
@@ -113,39 +100,47 @@ func _add_sphere_part(parent_node: Node3D, part_name: String, part_position: Vec
 	var mesh: SphereMesh = SphereMesh.new()
 	mesh.radius = radius_value
 	mesh.height = radius_value * 2.0
+	mesh.radial_segments = 10
+	mesh.rings = 5
 	part.mesh = mesh
 	part.position = part_position
 	part.scale = scale_value
 	part.material_override = _make_material(color_value)
 	parent_node.add_child(part)
 
-func _add_capsule_part(parent_node: Node3D, part_name: String, part_position: Vector3, radius_value: float, height_value: float, color_value: Color) -> void:
+func _add_capsule_part(parent_node: Node3D, part_name: String, part_position: Vector3, radius_value: float, height_value: float, color_value: Color, scale_value: Vector3, rotation_value: Vector3 = Vector3.ZERO) -> void:
 	var part: MeshInstance3D = MeshInstance3D.new()
 	part.name = part_name
 	var mesh: CapsuleMesh = CapsuleMesh.new()
 	mesh.radius = radius_value
 	mesh.height = height_value
+	mesh.radial_segments = 8
+	mesh.rings = 3
 	part.mesh = mesh
 	part.position = part_position
+	part.scale = scale_value
+	part.rotation_degrees = rotation_value
 	part.material_override = _make_material(color_value)
 	parent_node.add_child(part)
 
-func _add_cylinder_part(parent_node: Node3D, part_name: String, part_position: Vector3, radius_value: float, height_value: float, color_value: Color) -> void:
+func _add_cylinder_part(parent_node: Node3D, part_name: String, part_position: Vector3, radius_value: float, height_value: float, color_value: Color, scale_value: Vector3) -> void:
 	var part: MeshInstance3D = MeshInstance3D.new()
 	part.name = part_name
 	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = radius_value
+	mesh.top_radius = radius_value * 0.95
 	mesh.bottom_radius = radius_value
 	mesh.height = height_value
+	mesh.radial_segments = 9
 	part.mesh = mesh
 	part.position = part_position
+	part.scale = scale_value
 	part.material_override = _make_material(color_value)
 	parent_node.add_child(part)
 
 func _make_material(color_value: Color) -> StandardMaterial3D:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_color = color_value
-	material.roughness = 0.9
+	material.roughness = 0.92
 	return material
 
 func _get_hour() -> float:
@@ -190,7 +185,6 @@ func _dialogue_for(npc_id: String) -> String:
 				return "Selamat datang kembali di Lembah Sari. Kalau butuh kabar desa, mampir saja ke warung. Orang biasanya cerita banyak sambil minum teh."
 			"laras":
 				return "Jadi benar kamu yang menempati rumah lama itu? Aku Laras. Sudah lama rumah itu tidak punya lampu di malam hari."
-
 	var period: String = _get_period()
 	var weather_text: String = _get_weather()
 	match npc_id:
