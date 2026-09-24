@@ -2,59 +2,95 @@
 
 Prototype cozy farming/life-sim tropis Indonesia, dibangun dengan Godot 4.
 
-## Version 0.0.3
+## Version 0.0.4
 
-Milestone ini menambahkan waktu dunia dan cuaca di atas farming 0.0.2:
+Milestone ini menambahkan NPC hidup dan dialog di atas farming + waktu/cuaca:
 
 - world 3D stylized + kamera 3/4
 - movement + collision
 - farming 20 petak: Cangkul → Benih → Siram → Panen
 - jam game berjalan otomatis mulai 06:30
-- satu hari playable sekitar 15 menit real-time
 - periode Pagi → Siang → Sore → Malam
-- warna langit, ambient light, dan matahari berubah sepanjang hari
-- cuaca Cerah / Hujan
-- visual hujan sederhana di sekitar pemain
-- hari hujan otomatis menyiram tanaman yang sudah ditanam
-- HUD menampilkan Hari, hasil panen, jam, periode, dan cuaca
-- tombol **+ HARI** tetap tersedia untuk mempercepat testing
-- joystick touch tetap kompatibel dengan Xogot/iPhone
+- cuaca Cerah / Hujan + hujan menyiram tanaman
+- NPC pertama: **Pak Wiryo, Bu Ratih, Laras**
+- NPC berpindah lokasi mengikuti jadwal harian
+- nama NPC tampil di atas karakter
+- dialog pembuka khusus saat pertama kali berbicara
+- dialog berikutnya berubah berdasarkan waktu dan cuaca
+- player berhenti saat panel dialog terbuka
+- **E / Space / AKSI** memprioritaskan bicara jika NPC berada dekat pemain
 
 ## Menjalankan di PC
 
-1. Clone/pull repository `eneft/Lembah-sari` dengan GitHub Desktop.
-2. Buka `project.godot` dari Godot Project Manager.
-3. Tekan **F6/F5** atau tombol Play.
-4. Pastikan kiri atas tertulis **Lembah Sari 0.0.3**.
+1. Buka GitHub Desktop.
+2. **Fetch origin → Pull origin** pada repository `eneft/Lembah-sari`.
+3. Buka `project.godot` dari Godot Project Manager.
+4. Tekan **F6/F5** atau tombol Play.
+5. Pastikan kiri atas tertulis **Lembah Sari 0.0.4**.
 
 ### Kontrol desktop
 
 - WASD / arrow keys: bergerak
 - Shift: lari
-- E / Space: gunakan alat
+- E / Space: interaksi / gunakan alat
 - 1: Cangkul
 - 2: Benih
 - 3: Siram
 - 4: Panen
 - tombol HUD **+ HARI**: lompat ke pagi hari berikutnya
 
-### Tes farming + waktu/cuaca
+### Tes NPC
+
+Saat game mulai sekitar 06:30:
+
+- **Pak Wiryo** berada di area sawah bagian utara.
+- **Bu Ratih** berada di Warung Bu Ratih di sisi kiri jalan desa.
+- **Laras** berada dekat sungai/jembatan.
+
+Cara tes:
+
+1. Jalan mendekati salah satu NPC sampai berjarak sekitar 1–2 meter.
+2. Hadapkan karakter ke NPC.
+3. Tekan **E**, **Space**, atau tombol **AKSI**.
+4. Panel dialog akan muncul dan player berhenti bergerak.
+5. Tekan **TUTUP** atau **AKSI/E** lagi untuk menutup dialog.
+6. Bicara lagi untuk mendapatkan dialog kontekstual berdasarkan waktu/cuaca.
+7. Biarkan jam berjalan atau gunakan **+ HARI** untuk melihat NPC berpindah jadwal.
+
+### Jadwal prototype
+
+**Pak Wiryo**
+- pagi: sawah
+- siang: pintu irigasi
+- sore: area warung
+- malam: pulang
+
+**Bu Ratih**
+- pagi–sore: warung
+- malam: pulang
+
+**Laras**
+- pagi: sungai
+- siang: jalan desa
+- sore: area warung
+- malam: pulang
+
+## Tes farming + waktu/cuaca
 
 1. Jalan ke kebun dekat rumah.
 2. Arahkan karakter ke petak sampai muncul bingkai kuning.
 3. Cangkul → tanam Benih → Siram.
-4. Perhatikan jam berjalan dari 06:30 dan warna dunia berubah menuju sore/malam.
+4. Perhatikan jam berjalan dan warna dunia berubah menuju sore/malam.
 5. Gunakan **+ HARI** untuk mempercepat pertumbuhan tanaman.
-6. Saat hari baru berganti, cuaca dipilih ulang (Cerah/Hujan).
-7. Jika Hujan, tanaman yang sudah ditanam otomatis menjadi tersiram.
-8. Setelah tiga pertumbuhan, pilih Panen lalu gunakan aksi.
+6. Jika Hujan, tanaman yang sudah ditanam otomatis menjadi tersiram.
+7. Setelah tiga pertumbuhan, pilih Panen lalu gunakan aksi.
 
 ## Menjalankan di iPhone/iPad dengan Xogot
 
 1. Update/download project dari GitHub di Xogot.
 2. Buka `project.godot`.
 3. Tekan Play.
-4. Pastikan HUD menunjukkan **Lembah Sari 0.0.3**.
+4. Pastikan HUD menunjukkan **Lembah Sari 0.0.4**.
 
 ## Struktur
 
@@ -67,6 +103,7 @@ scripts/
   world_builder.gd
   farm_manager.gd
   game_time_manager.gd
+  npc_manager.gd
   mobile_joystick.gd
   mobile_controls.gd
 ui/
@@ -75,6 +112,6 @@ ui/
 
 ## Roadmap terdekat
 
-- 0.0.4: NPC schedule/dialog (Pak Wiryo, Bu Ratih, Laras)
 - 0.0.5: irrigation interaktif + fishing + inventory/selling
+- 0.0.6: rumah, tidur, transisi hari, stamina dasar
 - 0.1.0: satu hari playable end-to-end + save persistence

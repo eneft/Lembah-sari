@@ -100,10 +100,10 @@ text = "+ HARI"
 layout_mode = 0
 offset_left = 24.0
 offset_top = 18.0
-offset_right = 820.0
+offset_right = 900.0
 offset_bottom = 52.0
 theme_override_font_sizes/font_size = 20
-text = "Lembah Sari 0.0.3  •  Cangkul dipilih  •  A = gunakan"
+text = "Lembah Sari 0.0.4  •  Cangkul dipilih  •  E / AKSI = interaksi"
 
 [node name="Status" type="Label" parent="Root"]
 layout_mode = 0
@@ -122,4 +122,39 @@ offset_right = 1010.0
 offset_bottom = 612.0
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
-text = "Arahkan ke petak kebun lalu gunakan alat."
+text = "Dekati NPC dan tekan E / AKSI untuk berbicara."
+
+[node name="DialoguePanel" type="Panel" parent="Root"]
+layout_mode = 0
+offset_left = 255.0
+offset_top = 395.0
+offset_right = 1025.0
+offset_bottom = 570.0
+
+[node name="Speaker" type="Label" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 14.0
+offset_right = 570.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 24
+text = "Pak Wiryo"
+
+[node name="Text" type="Label" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 54.0
+offset_right = 635.0
+offset_bottom = 150.0
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+text = "Dialog NPC tampil di sini."
+
+[node name="CloseButton" type="Button" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 650.0
+offset_top = 100.0
+offset_right = 746.0
+offset_bottom = 152.0
+theme_override_font_sizes/font_size = 18
+text = "TUTUP"
