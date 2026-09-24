@@ -9,7 +9,7 @@ func _mat(color: Color, roughness := 0.9) -> StandardMaterial3D:
 	m.roughness = roughness
 	return m
 
-func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision := false) -> Node3D:
+func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, collision := false) -> Node3D:
 	var root: Node3D
 	if collision:
 		var body := StaticBody3D.new()
@@ -22,7 +22,7 @@ func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision := 
 	else:
 		root = Node3D.new()
 
-	root.name = name
+	root.name = node_name
 	root.position = pos
 	add_child(root)
 
@@ -34,7 +34,7 @@ func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision := 
 	root.add_child(mesh_i)
 	return root
 
-func _cylinder(name: String, pos: Vector3, radius: float, height: float, color: Color, collision := false) -> Node3D:
+func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, color: Color, collision := false) -> Node3D:
 	var root: Node3D
 	if collision:
 		var body := StaticBody3D.new()
@@ -47,7 +47,7 @@ func _cylinder(name: String, pos: Vector3, radius: float, height: float, color: 
 		body.add_child(shape)
 	else:
 		root = Node3D.new()
-	root.name = name
+	root.name = node_name
 	root.position = pos
 	add_child(root)
 	var mesh_i := MeshInstance3D.new()
