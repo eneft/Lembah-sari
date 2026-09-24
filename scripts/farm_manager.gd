@@ -121,20 +121,24 @@ func use_tool(world_pos: Vector3, tool: String) -> Dictionary:
 				return {"ok": false, "message": "Petak ini sudah ditanami."}
 			if tile["tilled"]:
 				return {"ok": false, "message": "Tanah sudah dicangkul."}
+			if not _spend_stamina(5.0):
+				return {"ok": false, "message": "Stamina tidak cukup untuk mencangkul. Pulang dan tidur dulu."}
 			tile["tilled"] = true
 			_refresh_tile(tile)
-			return {"ok": true, "message": "Tanah dicangkul."}
+			return {"ok": true, "message": "Tanah dicangkul. -5 stamina."}
 		"seed":
 			if not tile["tilled"]:
 				return {"ok": false, "message": "Cangkul tanah terlebih dahulu."}
 			if tile["seed"] != "":
 				return {"ok": false, "message": "Sudah ada tanaman di sini."}
+			if not _spend_stamina(2.0):
+				return {"ok": false, "message": "Stamina tidak cukup untuk menanam."}
 			tile["seed"] = "chili"
 			tile["growth"] = 0
 			tile["watered"] = false
 			tile["ready"] = false
 			_refresh_tile(tile)
-			return {"ok": true, "message": "Benih cabai ditanam."}
+			return {"ok": true, "message": "Benih cabai ditanam. -2 stamina."}
 		"water":
 			if tile["seed"] == "":
 				return {"ok": false, "message": "Belum ada tanaman untuk disiram."}
@@ -142,12 +146,16 @@ func use_tool(world_pos: Vector3, tool: String) -> Dictionary:
 				return {"ok": false, "message": "Cabai sudah siap dipanen."}
 			if tile["watered"]:
 				return {"ok": false, "message": "Tanaman sudah disiram hari ini."}
+			if not _spend_stamina(3.0):
+				return {"ok": false, "message": "Stamina tidak cukup untuk menyiram."}
 			tile["watered"] = true
 			_refresh_tile(tile)
-			return {"ok": true, "message": "Tanaman disiram."}
+			return {"ok": true, "message": "Tanaman disiram. -3 stamina."}
 		"hand":
 			if not tile["ready"]:
 				return {"ok": false, "message": "Belum ada hasil panen."}
+			if not _spend_stamina(2.0):
+				return {"ok": false, "message": "Stamina tidak cukup untuk memanen."}
 			chili_harvested += 1
 			tile["seed"] = ""
 			tile["growth"] = 0
@@ -156,7 +164,7 @@ func use_tool(world_pos: Vector3, tool: String) -> Dictionary:
 			tile["tilled"] = true
 			_refresh_tile(tile)
 			harvest_changed.emit(chili_harvested)
-			return {"ok": true, "message": "Cabai dipanen! Total: %d" % chili_harvested}
+			return {"ok": true, "message": "Cabai dipanen! Total: %d. -2 stamina." % chili_harvested}
 	return {"ok": false, "message": "Alat tidak dikenal."}
 
 func next_day() -> Dictionary:
@@ -187,6 +195,16 @@ func water_all_planted() -> int:
 
 func get_status_text() -> String:
 	return "Hari %d  •  Cabai %d" % [day, chili_harvested]
+
+func _spend_stamina(cost: float) -> bool:
+	var stats_nodes: Array[Node] = get_tree().get_nodes_in_group("player_stats")
+	if stats_nodes.is_empty():
+		return true
+	var stats: Node = stats_nodes[0]
+	if not stats.has_method("spend_stamina"):
+		return true
+	var result: Variant = stats.call("spend_stamina", cost)
+	return bool(result)
 
 func _refresh_tile(tile: Dictionary) -> void:
 	var soil: MeshInstance3D = tile["soil"]
