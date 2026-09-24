@@ -50,9 +50,9 @@ func _apply_platform_layout() -> void:
 	joystick_control.visible = is_mobile_platform
 	action_button.visible = is_mobile_platform
 	if is_mobile_platform:
-		hint_label.text = "Lembah Sari 0.0.7  •  pilih alat • AKSI"
+		hint_label.text = "Lembah Sari 0.0.7b  •  pilih alat • AKSI"
 	else:
-		hint_label.text = "Lembah Sari 0.0.7  •  1–6 alat • E interaksi"
+		hint_label.text = "Lembah Sari 0.0.7b  •  1–6 alat • E interaksi"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if dialogue_panel.visible and event.is_action_pressed("interact"):
@@ -166,9 +166,9 @@ func _on_tool_changed(tool: String) -> void:
 		"sell": sell_button.text = "● Jual"
 	var platform_name: String = OS.get_name()
 	if platform_name == "Android" or platform_name == "iOS":
-		hint_label.text = "Lembah Sari 0.0.7  •  %s • AKSI" % str(labels.get(tool, tool))
+		hint_label.text = "Lembah Sari 0.0.7b  •  %s • AKSI" % str(labels.get(tool, tool))
 	else:
-		hint_label.text = "Lembah Sari 0.0.7  •  %s • E interaksi" % str(labels.get(tool, tool))
+		hint_label.text = "Lembah Sari 0.0.7b  •  %s • E interaksi" % str(labels.get(tool, tool))
 
 func _on_dialogue_requested(speaker: String, text: String) -> void:
 	dialogue_name.text = speaker
