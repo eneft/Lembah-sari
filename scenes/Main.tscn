@@ -29,7 +29,6 @@ rotation_degrees = Vector3(-52, -38, 0)
 light_color = Color(1, 0.91, 0.76, 1)
 light_energy = 0.92
 shadow_enabled = true
-shadow_blur = 1.8
 
 [node name="ConceptVisualLayer" type="Node3D" parent="."]
 script = ExtResource("10")
