@@ -55,7 +55,7 @@ text = "A"
 layout_mode = 0
 offset_left = 24.0
 offset_top = 18.0
-offset_right = 475.0
+offset_right = 520.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 22
-text = "Lembah Sari 0.0.1  •  WASD / joystick  •  E / A = interaksi"
+text = "Lembah Sari 0.0.1a  •  WASD / joystick  •  E / A = interaksi"
