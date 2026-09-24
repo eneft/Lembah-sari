@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/farm_manager.gd" id="4"]
 [ext_resource type="Script" path="res://scripts/game_time_manager.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/npc_manager.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/inventory_manager.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/activity_manager.gd" id="8"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -25,6 +27,9 @@ rotation_degrees = Vector3(-48, -35, 0)
 light_energy = 1.2
 shadow_enabled = true
 
+[node name="InventoryManager" type="Node" parent="."]
+script = ExtResource("7")
+
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector3(8.0, 0.2, 15.0)
 
@@ -36,5 +41,8 @@ script = ExtResource("5")
 
 [node name="NPCManager" type="Node3D" parent="."]
 script = ExtResource("6")
+
+[node name="ActivityManager" type="Node3D" parent="."]
+script = ExtResource("8")
 
 [node name="MobileControls" parent="." instance=ExtResource("3")]

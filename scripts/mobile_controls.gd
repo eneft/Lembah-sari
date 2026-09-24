@@ -3,14 +3,18 @@ extends CanvasLayer
 var player: Node = null
 var farm_manager: Node = null
 var time_manager: Node = null
+var inventory_manager: Node = null
 
 @onready var action_button: Button = $Root/ActionButton
 @onready var hoe_button: Button = $Root/HoeButton
 @onready var seed_button: Button = $Root/SeedButton
 @onready var water_button: Button = $Root/WaterButton
 @onready var hand_button: Button = $Root/HandButton
+@onready var rod_button: Button = $Root/RodButton
+@onready var sell_button: Button = $Root/SellButton
 @onready var day_button: Button = $Root/DayButton
 @onready var status_label: Label = $Root/Status
+@onready var inventory_label: Label = $Root/Inventory
 @onready var feedback_label: Label = $Root/Feedback
 @onready var hint_label: Label = $Root/Hint
 @onready var dialogue_panel: Panel = $Root/DialoguePanel
@@ -25,6 +29,8 @@ func _ready() -> void:
 	seed_button.pressed.connect(func() -> void: _select_tool("seed"))
 	water_button.pressed.connect(func() -> void: _select_tool("water"))
 	hand_button.pressed.connect(func() -> void: _select_tool("hand"))
+	rod_button.pressed.connect(func() -> void: _select_tool("rod"))
+	sell_button.pressed.connect(func() -> void: _select_tool("sell"))
 	day_button.pressed.connect(_on_next_day_pressed)
 	dialogue_close.pressed.connect(_close_dialogue)
 	dialogue_panel.visible = false
@@ -62,8 +68,15 @@ func _bind_game() -> void:
 		if time_manager.has_signal("weather_changed"):
 			time_manager.connect("weather_changed", Callable(self, "_on_weather_changed"))
 
+	var inventories: Array[Node] = get_tree().get_nodes_in_group("inventory_manager")
+	if not inventories.is_empty():
+		inventory_manager = inventories[0]
+		if inventory_manager.has_signal("inventory_changed"):
+			inventory_manager.connect("inventory_changed", Callable(self, "_refresh_inventory"))
+
 	_on_tool_changed("hoe")
 	_refresh_status()
+	_refresh_inventory()
 
 func _on_action_pressed() -> void:
 	if dialogue_panel.visible:
@@ -83,13 +96,17 @@ func _on_next_day_pressed() -> void:
 	if dialogue_panel.visible:
 		return
 	if time_manager != null and time_manager.has_method("skip_to_next_day"):
-		var result: Dictionary = time_manager.call("skip_to_next_day")
-		_on_feedback(str(result.get("message", "Hari berikutnya dimulai.")))
+		var day_value: Variant = time_manager.call("skip_to_next_day")
+		if day_value is Dictionary:
+			var result: Dictionary = day_value as Dictionary
+			_on_feedback(str(result.get("message", "Hari berikutnya dimulai.")))
 		_refresh_status()
 		return
 	if farm_manager != null and farm_manager.has_method("next_day"):
-		var fallback: Dictionary = farm_manager.call("next_day")
-		_on_feedback(str(fallback.get("message", "Hari berikutnya dimulai.")))
+		var fallback_value: Variant = farm_manager.call("next_day")
+		if fallback_value is Dictionary:
+			var fallback: Dictionary = fallback_value as Dictionary
+			_on_feedback(str(fallback.get("message", "Hari berikutnya dimulai.")))
 		_refresh_status()
 		return
 	_on_feedback("Sistem waktu belum siap.")
@@ -99,18 +116,24 @@ func _on_tool_changed(tool: String) -> void:
 		"hoe": "Cangkul",
 		"seed": "Benih",
 		"water": "Siram",
-		"hand": "Panen"
+		"hand": "Panen",
+		"rod": "Pancing",
+		"sell": "Jual"
 	}
 	hoe_button.text = "Cangkul"
 	seed_button.text = "Benih"
 	water_button.text = "Siram"
 	hand_button.text = "Panen"
+	rod_button.text = "Pancing"
+	sell_button.text = "Jual"
 	match tool:
 		"hoe": hoe_button.text = "● Cangkul"
 		"seed": seed_button.text = "● Benih"
 		"water": water_button.text = "● Siram"
 		"hand": hand_button.text = "● Panen"
-	hint_label.text = "Lembah Sari 0.0.4  •  %s dipilih  •  E / AKSI = interaksi" % str(labels.get(tool, tool))
+		"rod": rod_button.text = "● Pancing"
+		"sell": sell_button.text = "● Jual"
+	hint_label.text = "Lembah Sari 0.0.5  •  %s dipilih  •  E / AKSI = interaksi" % str(labels.get(tool, tool))
 
 func _on_dialogue_requested(speaker: String, text: String) -> void:
 	dialogue_name.text = speaker
@@ -136,6 +159,7 @@ func _on_day_changed(_day: int) -> void:
 
 func _on_harvest_changed(_total: int) -> void:
 	_refresh_status()
+	_refresh_inventory()
 
 func _on_feedback(text: String) -> void:
 	if dialogue_panel.visible:
@@ -147,10 +171,16 @@ func _on_feedback(text: String) -> void:
 	tween.tween_property(feedback_label, "modulate:a", 0.35, 0.6)
 
 func _refresh_status() -> void:
-	var farm_text: String = "Hari 1  •  Cabai 0"
+	var farm_text: String = "Hari 1  •  Cabai panen 0"
 	if farm_manager != null and farm_manager.has_method("get_status_text"):
 		farm_text = str(farm_manager.call("get_status_text"))
 	var clock_text: String = "06:30  •  Pagi  •  Cerah"
 	if time_manager != null and time_manager.has_method("get_status_text"):
 		clock_text = str(time_manager.call("get_status_text"))
 	status_label.text = "%s\n%s" % [farm_text, clock_text]
+
+func _refresh_inventory() -> void:
+	if inventory_manager != null and inventory_manager.has_method("get_inventory_text"):
+		inventory_label.text = str(inventory_manager.call("get_inventory_text"))
+	else:
+		inventory_label.text = "Tas: Cabai 0  •  Ikan 0\nRp 0"

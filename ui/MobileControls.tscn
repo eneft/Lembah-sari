@@ -53,39 +53,57 @@ text = "AKSI"
 
 [node name="HoeButton" type="Button" parent="Root"]
 layout_mode = 0
-offset_left = 345.0
+offset_left = 260.0
 offset_top = 625.0
-offset_right = 505.0
+offset_right = 375.0
 offset_bottom = 690.0
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "● Cangkul"
 
 [node name="SeedButton" type="Button" parent="Root"]
 layout_mode = 0
-offset_left = 510.0
+offset_left = 380.0
 offset_top = 625.0
-offset_right = 650.0
+offset_right = 495.0
 offset_bottom = 690.0
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "Benih"
 
 [node name="WaterButton" type="Button" parent="Root"]
 layout_mode = 0
-offset_left = 655.0
+offset_left = 500.0
 offset_top = 625.0
-offset_right = 795.0
+offset_right = 615.0
 offset_bottom = 690.0
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "Siram"
 
 [node name="HandButton" type="Button" parent="Root"]
 layout_mode = 0
-offset_left = 800.0
+offset_left = 620.0
 offset_top = 625.0
-offset_right = 940.0
+offset_right = 735.0
 offset_bottom = 690.0
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "Panen"
+
+[node name="RodButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 740.0
+offset_top = 625.0
+offset_right = 855.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 17
+text = "Pancing"
+
+[node name="SellButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 860.0
+offset_top = 625.0
+offset_right = 975.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 17
+text = "Jual"
 
 [node name="DayButton" type="Button" parent="Root"]
 layout_mode = 0
@@ -100,10 +118,10 @@ text = "+ HARI"
 layout_mode = 0
 offset_left = 24.0
 offset_top = 18.0
-offset_right = 900.0
+offset_right = 650.0
 offset_bottom = 52.0
 theme_override_font_sizes/font_size = 20
-text = "Lembah Sari 0.0.4  •  Cangkul dipilih  •  E / AKSI = interaksi"
+text = "Lembah Sari 0.0.5  •  Cangkul dipilih  •  E / AKSI = interaksi"
 
 [node name="Status" type="Label" parent="Root"]
 layout_mode = 0
@@ -114,15 +132,25 @@ offset_bottom = 125.0
 theme_override_font_sizes/font_size = 20
 text = "Hari 1  •  Cabai 0\n06:30  •  Pagi  •  Cerah"
 
+[node name="Inventory" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 675.0
+offset_top = 18.0
+offset_right = 1065.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 2
+text = "Tas: Cabai 0  •  Ikan 0\nRp 0"
+
 [node name="Feedback" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 350.0
+offset_left = 280.0
 offset_top = 565.0
-offset_right = 1010.0
+offset_right = 1040.0
 offset_bottom = 612.0
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
-text = "Dekati NPC dan tekan E / AKSI untuk berbicara."
+text = "Cari tanda irigasi, spot mancing, atau jual hasil."
 
 [node name="DialoguePanel" type="Panel" parent="Root"]
 layout_mode = 0
