@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/mobile_controls.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/mobile_joystick.gd" id="2"]
+
+[node name="MobileControls" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Joystick" type="Control" parent="Root"]
+custom_minimum_size = Vector2(170, 170)
+layout_mode = 0
+offset_left = 32.0
+offset_top = 510.0
+offset_right = 202.0
+offset_bottom = 680.0
+mouse_filter = 0
+script = ExtResource("2")
+
+[node name="Base" type="ColorRect" parent="Root/Joystick"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = 155.0
+offset_bottom = 155.0
+color = Color(0.08, 0.08, 0.08, 0.25)
+mouse_filter = 2
+
+[node name="Knob" type="ColorRect" parent="Root/Joystick"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 0
+offset_right = 58.0
+offset_bottom = 58.0
+color = Color(1, 1, 1, 0.65)
+mouse_filter = 2
+
+[node name="ActionButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 1110.0
+offset_top = 548.0
+offset_right = 1245.0
+offset_bottom = 683.0
+theme_override_font_sizes/font_size = 28
+text = "A"
+
+[node name="Hint" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 475.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 22
+text = "Lembah Sari 0.0.1  •  WASD / joystick  •  E / A = interaksi"
