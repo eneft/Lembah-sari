@@ -1,51 +1,175 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape"]
-radius = 0.4
-height = 1.7
+radius = 0.38
+height = 1.65
 
-[sub_resource type="CapsuleMesh" id="BodyMesh"]
-radius = 0.4
-height = 1.5
+[sub_resource type="CapsuleMesh" id="TorsoMesh"]
+radius = 0.36
+height = 0.92
+radial_segments = 10
+rings = 4
 
-[sub_resource type="StandardMaterial3D" id="BodyMat"]
-albedo_color = Color(0.19, 0.42, 0.67, 1)
-roughness = 0.85
+[sub_resource type="StandardMaterial3D" id="ShirtMat"]
+albedo_color = Color(0.16, 0.43, 0.49, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="WaistMesh"]
+top_radius = 0.34
+bottom_radius = 0.36
+height = 0.32
+radial_segments = 10
+
+[sub_resource type="StandardMaterial3D" id="ShortsMat"]
+albedo_color = Color(0.20, 0.23, 0.24, 1)
+roughness = 0.95
+
+[sub_resource type="CapsuleMesh" id="LimbMesh"]
+radius = 0.12
+height = 0.62
+radial_segments = 8
+rings = 3
+
+[sub_resource type="StandardMaterial3D" id="SkinMat"]
+albedo_color = Color(0.84, 0.65, 0.47, 1)
+roughness = 0.88
+
+[sub_resource type="CapsuleMesh" id="ShoeMesh"]
+radius = 0.14
+height = 0.36
+radial_segments = 8
+rings = 3
+
+[sub_resource type="StandardMaterial3D" id="ShoeMat"]
+albedo_color = Color(0.24, 0.18, 0.14, 1)
+roughness = 0.95
 
 [sub_resource type="SphereMesh" id="HeadMesh"]
-radius = 0.32
-height = 0.64
+radius = 0.37
+height = 0.74
+radial_segments = 12
+rings = 6
 
-[sub_resource type="StandardMaterial3D" id="HeadMat"]
-albedo_color = Color(0.83, 0.63, 0.45, 1)
-roughness = 0.8
+[sub_resource type="SphereMesh" id="HairMesh"]
+radius = 0.39
+height = 0.54
+radial_segments = 10
+rings = 5
+
+[sub_resource type="StandardMaterial3D" id="HairMat"]
+albedo_color = Color(0.12, 0.09, 0.07, 1)
+roughness = 0.98
+
+[sub_resource type="SphereMesh" id="BagMesh"]
+radius = 0.33
+height = 0.66
+radial_segments = 10
+rings = 5
+
+[sub_resource type="StandardMaterial3D" id="BagMat"]
+albedo_color = Color(0.54, 0.31, 0.16, 1)
+roughness = 0.95
+
+[sub_resource type="SphereMesh" id="EyeMesh"]
+radius = 0.035
+height = 0.07
+radial_segments = 8
+rings = 4
+
+[sub_resource type="StandardMaterial3D" id="EyeMat"]
+albedo_color = Color(0.08, 0.06, 0.05, 1)
+roughness = 1.0
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.85, 0)
+position = Vector3(0, 0.82, 0)
 shape = SubResource("CapsuleShape")
 
 [node name="Visual" type="Node3D" parent="."]
 
-[node name="Body" type="MeshInstance3D" parent="Visual"]
-position = Vector3(0, 0.78, 0)
-mesh = SubResource("BodyMesh")
-material_override = SubResource("BodyMat")
+[node name="Torso" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 1.02, 0)
+scale = Vector3(1.0, 1.0, 0.82)
+mesh = SubResource("TorsoMesh")
+material_override = SubResource("ShirtMat")
+
+[node name="Waist" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 0.62, 0)
+mesh = SubResource("WaistMesh")
+material_override = SubResource("ShortsMat")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="Visual"]
+position = Vector3(-0.18, 0.30, 0)
+mesh = SubResource("LimbMesh")
+material_override = SubResource("SkinMat")
+
+[node name="RightLeg" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0.18, 0.30, 0)
+mesh = SubResource("LimbMesh")
+material_override = SubResource("SkinMat")
+
+[node name="LeftShoe" type="MeshInstance3D" parent="Visual"]
+position = Vector3(-0.18, 0.10, 0.09)
+rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(1.0, 1.0, 0.78)
+mesh = SubResource("ShoeMesh")
+material_override = SubResource("ShoeMat")
+
+[node name="RightShoe" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0.18, 0.10, 0.09)
+rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(1.0, 1.0, 0.78)
+mesh = SubResource("ShoeMesh")
+material_override = SubResource("ShoeMat")
+
+[node name="LeftArm" type="MeshInstance3D" parent="Visual"]
+position = Vector3(-0.43, 1.02, 0)
+rotation_degrees = Vector3(0, 0, -10)
+mesh = SubResource("LimbMesh")
+material_override = SubResource("SkinMat")
+
+[node name="RightArm" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0.43, 1.02, 0)
+rotation_degrees = Vector3(0, 0, 10)
+mesh = SubResource("LimbMesh")
+material_override = SubResource("SkinMat")
 
 [node name="Head" type="MeshInstance3D" parent="Visual"]
 position = Vector3(0, 1.72, 0)
 mesh = SubResource("HeadMesh")
-material_override = SubResource("HeadMat")
+material_override = SubResource("SkinMat")
+
+[node name="Hair" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 1.94, -0.01)
+scale = Vector3(1.03, 0.70, 1.03)
+mesh = SubResource("HairMesh")
+material_override = SubResource("HairMat")
+
+[node name="LeftEye" type="MeshInstance3D" parent="Visual"]
+position = Vector3(-0.13, 1.76, 0.34)
+mesh = SubResource("EyeMesh")
+material_override = SubResource("EyeMat")
+
+[node name="RightEye" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0.13, 1.76, 0.34)
+mesh = SubResource("EyeMesh")
+material_override = SubResource("EyeMat")
+
+[node name="Backpack" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 1.00, -0.35)
+scale = Vector3(0.82, 0.92, 0.46)
+mesh = SubResource("BagMesh")
+material_override = SubResource("BagMat")
 
 [node name="CameraRig" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
-position = Vector3(8.5, 10.5, 8.5)
+position = Vector3(7.4, 8.8, 7.4)
 current = true
-fov = 42.0
+fov = 38.0
 near = 0.1
-far = 100.0
+far = 110.0

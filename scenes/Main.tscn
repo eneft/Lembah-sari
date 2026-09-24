@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
@@ -8,13 +8,14 @@
 [ext_resource type="Script" path="res://scripts/npc_manager.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/inventory_manager.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/activity_manager.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/player_stats_manager.gd" id="9"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
-background_color = Color(0.58, 0.79, 0.95, 1)
+background_color = Color(0.63, 0.80, 0.88, 1)
 ambient_light_source = 3
-ambient_light_color = Color(0.82, 0.88, 1, 1)
-ambient_light_energy = 0.85
+ambient_light_color = Color(0.88, 0.90, 0.80, 1)
+ambient_light_energy = 0.72
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -24,11 +25,15 @@ environment = SubResource("Environment_main")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-48, -35, 0)
-light_energy = 1.2
+light_color = Color(1, 0.92, 0.79, 1)
+light_energy = 1.12
 shadow_enabled = true
 
 [node name="InventoryManager" type="Node" parent="."]
 script = ExtResource("7")
+
+[node name="PlayerStatsManager" type="Node" parent="."]
+script = ExtResource("9")
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector3(8.0, 0.2, 15.0)

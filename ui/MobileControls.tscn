@@ -15,6 +15,33 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+[node name="TopLeftCard" type="ColorRect" parent="Root"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 468.0
+offset_bottom = 128.0
+color = Color(0.055, 0.07, 0.075, 0.72)
+mouse_filter = 2
+
+[node name="TopRightCard" type="ColorRect" parent="Root"]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 14.0
+offset_right = 1068.0
+offset_bottom = 128.0
+color = Color(0.055, 0.07, 0.075, 0.72)
+mouse_filter = 2
+
+[node name="QuickbarCard" type="ColorRect" parent="Root"]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 614.0
+offset_right = 989.0
+offset_bottom = 700.0
+color = Color(0.055, 0.07, 0.075, 0.72)
+mouse_filter = 2
+
 [node name="Joystick" type="Control" parent="Root"]
 custom_minimum_size = Vector2(170, 170)
 layout_mode = 0
@@ -48,116 +75,140 @@ offset_left = 1090.0
 offset_top = 535.0
 offset_right = 1250.0
 offset_bottom = 695.0
-theme_override_font_sizes/font_size = 25
+theme_override_font_sizes/font_size = 23
 text = "AKSI"
 
 [node name="HoeButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 260.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 375.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "● Cangkul"
 
 [node name="SeedButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 380.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 495.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "Benih"
 
 [node name="WaterButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 500.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 615.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "Siram"
 
 [node name="HandButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 620.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 735.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "Panen"
 
 [node name="RodButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 740.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 855.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "Pancing"
 
 [node name="SellButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 860.0
-offset_top = 625.0
+offset_top = 627.0
 offset_right = 975.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 17
+offset_bottom = 687.0
+theme_override_font_sizes/font_size = 16
 text = "Jual"
 
 [node name="DayButton" type="Button" parent="Root"]
 layout_mode = 0
 offset_left = 1090.0
-offset_top = 28.0
+offset_top = 24.0
 offset_right = 1248.0
-offset_bottom = 88.0
-theme_override_font_sizes/font_size = 20
+offset_bottom = 78.0
+theme_override_font_sizes/font_size = 17
 text = "+ HARI"
 
 [node name="Hint" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 18.0
-offset_right = 650.0
-offset_bottom = 52.0
-theme_override_font_sizes/font_size = 20
-text = "Lembah Sari 0.0.5  •  Cangkul dipilih  •  E / AKSI = interaksi"
+offset_left = 32.0
+offset_top = 23.0
+offset_right = 445.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.94, 0.87, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+text = "Lembah Sari 0.0.7  •  Cangkul"
 
 [node name="Status" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 55.0
-offset_right = 520.0
-offset_bottom = 125.0
-theme_override_font_sizes/font_size = 20
+offset_left = 32.0
+offset_top = 53.0
+offset_right = 448.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.97, 0.98, 0.94, 1)
+theme_override_font_sizes/font_size = 18
 text = "Hari 1  •  Cabai 0\n06:30  •  Pagi  •  Cerah"
 
 [node name="Inventory" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 675.0
-offset_top = 18.0
-offset_right = 1065.0
-offset_bottom = 88.0
-theme_override_font_sizes/font_size = 18
+offset_left = 807.0
+offset_top = 26.0
+offset_right = 1050.0
+offset_bottom = 75.0
+theme_override_colors/font_color = Color(0.97, 0.98, 0.94, 1)
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 2
 text = "Tas: Cabai 0  •  Ikan 0\nRp 0"
 
+[node name="StaminaLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 807.0
+offset_top = 83.0
+offset_right = 925.0
+offset_bottom = 110.0
+theme_override_colors/font_color = Color(0.94, 0.87, 0.7, 1)
+theme_override_font_sizes/font_size = 15
+text = "Stamina 100/100"
+
+[node name="StaminaBar" type="ProgressBar" parent="Root"]
+layout_mode = 0
+offset_left = 927.0
+offset_top = 86.0
+offset_right = 1050.0
+offset_bottom = 108.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
 [node name="Feedback" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 280.0
-offset_top = 565.0
-offset_right = 1040.0
-offset_bottom = 612.0
-theme_override_font_sizes/font_size = 22
+offset_left = 300.0
+offset_top = 568.0
+offset_right = 1010.0
+offset_bottom = 608.0
+theme_override_colors/font_color = Color(1, 0.96, 0.82, 1)
+theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
-text = "Cari tanda irigasi, spot mancing, atau jual hasil."
+text = ""
 
 [node name="DialoguePanel" type="Panel" parent="Root"]
 layout_mode = 0
 offset_left = 255.0
-offset_top = 395.0
+offset_top = 390.0
 offset_right = 1025.0
-offset_bottom = 570.0
+offset_bottom = 565.0
 
 [node name="Speaker" type="Label" parent="Root/DialoguePanel"]
 layout_mode = 0
@@ -165,7 +216,8 @@ offset_left = 24.0
 offset_top = 14.0
 offset_right = 570.0
 offset_bottom = 48.0
-theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.78, 0.56, 0.3, 1)
+theme_override_font_sizes/font_size = 23
 text = "Pak Wiryo"
 
 [node name="Text" type="Label" parent="Root/DialoguePanel"]
@@ -174,7 +226,7 @@ offset_left = 24.0
 offset_top = 54.0
 offset_right = 635.0
 offset_bottom = 150.0
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 19
 autowrap_mode = 2
 text = "Dialog NPC tampil di sini."
 
@@ -184,5 +236,29 @@ offset_left = 650.0
 offset_top = 100.0
 offset_right = 746.0
 offset_bottom = 152.0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 17
 text = "TUTUP"
+
+[node name="DayTransition" type="ColorRect" parent="Root"]
+z_index = 50
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.035, 0.045, 0.065, 0.96)
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Root/DayTransition"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 30
+text = "Hari Baru"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
