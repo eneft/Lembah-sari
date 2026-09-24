@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
@@ -10,6 +10,9 @@
 [ext_resource type="Script" path="res://scripts/activity_manager.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/player_stats_manager.gd" id="9"]
 [ext_resource type="Script" path="res://scripts/concept_visual_layer.gd" id="10"]
+[ext_resource type="Script" path="res://scripts/concept_ground_layer.gd" id="11"]
+[ext_resource type="Script" path="res://scripts/concept_composition_v2.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/presentation_manager.gd" id="13"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -30,8 +33,14 @@ light_color = Color(1, 0.91, 0.76, 1)
 light_energy = 0.92
 shadow_enabled = true
 
+[node name="ConceptGroundLayer" type="Node3D" parent="."]
+script = ExtResource("11")
+
 [node name="ConceptVisualLayer" type="Node3D" parent="."]
 script = ExtResource("10")
+
+[node name="ConceptCompositionV2" type="Node3D" parent="."]
+script = ExtResource("12")
 
 [node name="InventoryManager" type="Node" parent="."]
 script = ExtResource("7")
@@ -55,3 +64,6 @@ script = ExtResource("6")
 script = ExtResource("8")
 
 [node name="MobileControls" parent="." instance=ExtResource("3")]
+
+[node name="PresentationManager" type="Node" parent="."]
+script = ExtResource("13")
