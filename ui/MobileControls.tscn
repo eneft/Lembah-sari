@@ -121,7 +121,7 @@ offset_top = 18.0
 offset_right = 650.0
 offset_bottom = 52.0
 theme_override_font_sizes/font_size = 20
-text = "Lembah Sari 0.0.5  •  Cangkul dipilih  •  E / AKSI = interaksi"
+text = "Lembah Sari 0.0.6  •  Cangkul dipilih  •  E / AKSI = interaksi"
 
 [node name="Status" type="Label" parent="Root"]
 layout_mode = 0
@@ -142,6 +142,25 @@ theme_override_font_sizes/font_size = 18
 horizontal_alignment = 2
 text = "Tas: Cabai 0  •  Ikan 0\nRp 0"
 
+[node name="StaminaLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 675.0
+offset_top = 92.0
+offset_right = 815.0
+offset_bottom = 122.0
+theme_override_font_sizes/font_size = 17
+text = "Stamina 100/100"
+
+[node name="StaminaBar" type="ProgressBar" parent="Root"]
+layout_mode = 0
+offset_left = 820.0
+offset_top = 94.0
+offset_right = 1065.0
+offset_bottom = 119.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
 [node name="Feedback" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 280.0
@@ -150,7 +169,7 @@ offset_right = 1040.0
 offset_bottom = 612.0
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
-text = "Cari tanda irigasi, spot mancing, atau jual hasil."
+text = "Aktivitas menguras stamina. Pulang dan tidur untuk pulih."
 
 [node name="DialoguePanel" type="Panel" parent="Root"]
 layout_mode = 0
@@ -186,3 +205,27 @@ offset_right = 746.0
 offset_bottom = 152.0
 theme_override_font_sizes/font_size = 18
 text = "TUTUP"
+
+[node name="DayTransition" type="ColorRect" parent="Root"]
+z_index = 50
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.035, 0.045, 0.065, 0.96)
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Root/DayTransition"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 30
+text = "Hari Baru"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
