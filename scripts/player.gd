@@ -1,5 +1,8 @@
 extends CharacterBody3D
 
+signal tool_changed(tool: String)
+signal farming_feedback(text: String)
+
 @export var walk_speed: float = 4.2
 @export var run_speed: float = 6.4
 @export var acceleration: float = 18.0
@@ -10,9 +13,12 @@ extends CharacterBody3D
 
 var mobile_input := Vector2.ZERO
 var facing := Vector3(0, 0, 1)
+var selected_tool: String = "hoe"
 
 func _ready() -> void:
+	add_to_group("player")
 	camera.look_at(global_position + Vector3(0, 1.0, 0), Vector3.UP)
+	tool_changed.emit(selected_tool)
 
 func _physics_process(delta: float) -> void:
 	var desktop := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -40,7 +46,43 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if Input.is_action_just_pressed("interact"):
-		print("[LembahSari] interact at ", global_position)
+		_do_interact()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event is InputEventKey:
+		return
+	if not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_1:
+			set_tool("hoe")
+		KEY_2:
+			set_tool("seed")
+		KEY_3:
+			set_tool("water")
+		KEY_4:
+			set_tool("hand")
+
+func set_tool(tool: String) -> void:
+	if tool not in ["hoe", "seed", "water", "hand"]:
+		return
+	selected_tool = tool
+	tool_changed.emit(selected_tool)
+
+func get_selected_tool() -> String:
+	return selected_tool
+
+func _do_interact() -> void:
+	var managers := get_tree().get_nodes_in_group("farm_manager")
+	if managers.is_empty():
+		farming_feedback.emit("Belum ada objek untuk diinteraksikan.")
+		return
+	var target_pos := global_position + facing * 1.55
+	var result: Dictionary = managers[0].use_tool(target_pos, selected_tool)
+	var message := str(result.get("message", ""))
+	if message != "":
+		farming_feedback.emit(message)
+	print("[LembahSari] ", message)
 
 func _read_mobile_joystick() -> Vector2:
 	var nodes := get_tree().get_nodes_in_group("mobile_joystick")
