@@ -115,5 +115,7 @@ func _read_mobile_joystick() -> Vector2:
 		return Vector2.ZERO
 	var joystick: Node = nodes[0]
 	if joystick.has_method("get_output"):
-		return joystick.call("get_output") as Vector2
+		var output_value: Variant = joystick.call("get_output")
+		if output_value is Vector2:
+			return output_value
 	return Vector2.ZERO
