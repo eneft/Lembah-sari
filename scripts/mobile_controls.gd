@@ -4,6 +4,7 @@ var player: Node = null
 var farm_manager: Node = null
 var time_manager: Node = null
 var inventory_manager: Node = null
+var stats_manager: Node = null
 
 @onready var action_button: Button = $Root/ActionButton
 @onready var hoe_button: Button = $Root/HoeButton
@@ -15,12 +16,16 @@ var inventory_manager: Node = null
 @onready var day_button: Button = $Root/DayButton
 @onready var status_label: Label = $Root/Status
 @onready var inventory_label: Label = $Root/Inventory
+@onready var stamina_bar: ProgressBar = $Root/StaminaBar
+@onready var stamina_label: Label = $Root/StaminaLabel
 @onready var feedback_label: Label = $Root/Feedback
 @onready var hint_label: Label = $Root/Hint
 @onready var dialogue_panel: Panel = $Root/DialoguePanel
 @onready var dialogue_name: Label = $Root/DialoguePanel/Speaker
 @onready var dialogue_text: Label = $Root/DialoguePanel/Text
 @onready var dialogue_close: Button = $Root/DialoguePanel/CloseButton
+@onready var day_transition: ColorRect = $Root/DayTransition
+@onready var day_transition_text: Label = $Root/DayTransition/Text
 
 func _ready() -> void:
 	add_to_group("mobile_controls")
@@ -34,6 +39,7 @@ func _ready() -> void:
 	day_button.pressed.connect(_on_next_day_pressed)
 	dialogue_close.pressed.connect(_close_dialogue)
 	dialogue_panel.visible = false
+	day_transition.visible = false
 	call_deferred("_bind_game")
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -51,6 +57,8 @@ func _bind_game() -> void:
 			player.connect("farming_feedback", Callable(self, "_on_feedback"))
 		if player.has_signal("dialogue_requested"):
 			player.connect("dialogue_requested", Callable(self, "_on_dialogue_requested"))
+		if player.has_signal("day_transition_requested"):
+			player.connect("day_transition_requested", Callable(self, "_on_day_transition_requested"))
 
 	var managers: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
 	if not managers.is_empty():
@@ -74,11 +82,20 @@ func _bind_game() -> void:
 		if inventory_manager.has_signal("inventory_changed"):
 			inventory_manager.connect("inventory_changed", Callable(self, "_refresh_inventory"))
 
+	var stats_nodes: Array[Node] = get_tree().get_nodes_in_group("player_stats")
+	if not stats_nodes.is_empty():
+		stats_manager = stats_nodes[0]
+		if stats_manager.has_signal("stamina_changed"):
+			stats_manager.connect("stamina_changed", Callable(self, "_on_stamina_changed"))
+
 	_on_tool_changed("hoe")
 	_refresh_status()
 	_refresh_inventory()
+	_refresh_stamina()
 
 func _on_action_pressed() -> void:
+	if day_transition.visible:
+		return
 	if dialogue_panel.visible:
 		_close_dialogue()
 		return
@@ -87,13 +104,13 @@ func _on_action_pressed() -> void:
 	Input.action_release("interact")
 
 func _select_tool(tool: String) -> void:
-	if dialogue_panel.visible:
+	if dialogue_panel.visible or day_transition.visible:
 		return
 	if player != null and player.has_method("set_tool"):
 		player.call("set_tool", tool)
 
 func _on_next_day_pressed() -> void:
-	if dialogue_panel.visible:
+	if dialogue_panel.visible or day_transition.visible:
 		return
 	if time_manager != null and time_manager.has_method("skip_to_next_day"):
 		var day_value: Variant = time_manager.call("skip_to_next_day")
@@ -101,6 +118,7 @@ func _on_next_day_pressed() -> void:
 			var result: Dictionary = day_value as Dictionary
 			_on_feedback(str(result.get("message", "Hari berikutnya dimulai.")))
 		_refresh_status()
+		_refresh_stamina()
 		return
 	if farm_manager != null and farm_manager.has_method("next_day"):
 		var fallback_value: Variant = farm_manager.call("next_day")
@@ -108,6 +126,7 @@ func _on_next_day_pressed() -> void:
 			var fallback: Dictionary = fallback_value as Dictionary
 			_on_feedback(str(fallback.get("message", "Hari berikutnya dimulai.")))
 		_refresh_status()
+		_refresh_stamina()
 		return
 	_on_feedback("Sistem waktu belum siap.")
 
@@ -133,7 +152,7 @@ func _on_tool_changed(tool: String) -> void:
 		"hand": hand_button.text = "● Panen"
 		"rod": rod_button.text = "● Pancing"
 		"sell": sell_button.text = "● Jual"
-	hint_label.text = "Lembah Sari 0.0.5  •  %s dipilih  •  E / AKSI = interaksi" % str(labels.get(tool, tool))
+	hint_label.text = "Lembah Sari 0.0.6  •  %s dipilih  •  E / AKSI = interaksi" % str(labels.get(tool, tool))
 
 func _on_dialogue_requested(speaker: String, text: String) -> void:
 	dialogue_name.text = speaker
@@ -150,19 +169,41 @@ func _close_dialogue() -> void:
 	if player != null and player.has_method("set_input_locked"):
 		player.call("set_input_locked", false)
 
+func _on_day_transition_requested(summary: String) -> void:
+	if player != null and player.has_method("set_input_locked"):
+		player.call("set_input_locked", true)
+	day_transition_text.text = "Hari Baru\n\n%s" % summary
+	day_transition.modulate.a = 0.0
+	day_transition.visible = true
+	var tween: Tween = create_tween()
+	tween.tween_property(day_transition, "modulate:a", 1.0, 0.35)
+	tween.tween_interval(1.1)
+	tween.tween_property(day_transition, "modulate:a", 0.0, 0.6)
+	await tween.finished
+	day_transition.visible = false
+	if player != null and player.has_method("set_input_locked"):
+		player.call("set_input_locked", false)
+	_refresh_status()
+	_refresh_inventory()
+	_refresh_stamina()
+
 func _on_weather_changed(weather_value: String) -> void:
 	if weather_value == "rain":
 		_on_feedback("Hujan turun. Tanaman yang sudah ditanam akan tersiram.")
 
 func _on_day_changed(_day: int) -> void:
 	_refresh_status()
+	_refresh_stamina()
 
 func _on_harvest_changed(_total: int) -> void:
 	_refresh_status()
 	_refresh_inventory()
 
+func _on_stamina_changed(_current: float, _maximum: float) -> void:
+	_refresh_stamina()
+
 func _on_feedback(text: String) -> void:
-	if dialogue_panel.visible:
+	if dialogue_panel.visible or day_transition.visible:
 		return
 	feedback_label.text = text
 	feedback_label.modulate.a = 1.0
@@ -184,3 +225,15 @@ func _refresh_inventory() -> void:
 		inventory_label.text = str(inventory_manager.call("get_inventory_text"))
 	else:
 		inventory_label.text = "Tas: Cabai 0  •  Ikan 0\nRp 0"
+
+func _refresh_stamina() -> void:
+	var current: float = 100.0
+	var maximum: float = 100.0
+	if stats_manager != null:
+		if stats_manager.has_method("get_stamina"):
+			current = float(stats_manager.call("get_stamina"))
+		if stats_manager.has_method("get_max_stamina"):
+			maximum = float(stats_manager.call("get_max_stamina"))
+	stamina_bar.max_value = maximum
+	stamina_bar.value = current
+	stamina_label.text = "Stamina %d/%d" % [int(round(current)), int(round(maximum))]
