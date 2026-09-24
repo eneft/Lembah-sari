@@ -2,6 +2,7 @@ extends CharacterBody3D
 
 signal tool_changed(tool: String)
 signal farming_feedback(text: String)
+signal dialogue_requested(speaker: String, text: String)
 
 @export var walk_speed: float = 4.2
 @export var run_speed: float = 6.4
@@ -11,9 +12,10 @@ signal farming_feedback(text: String)
 @onready var visual: Node3D = $Visual
 @onready var camera: Camera3D = $CameraRig/Camera3D
 
-var mobile_input := Vector2.ZERO
-var facing := Vector3(0, 0, 1)
+var mobile_input: Vector2 = Vector2.ZERO
+var facing: Vector3 = Vector3(0, 0, 1)
 var selected_tool: String = "hoe"
+var input_locked: bool = false
 
 func _ready() -> void:
 	add_to_group("player")
@@ -21,16 +23,26 @@ func _ready() -> void:
 	tool_changed.emit(selected_tool)
 
 func _physics_process(delta: float) -> void:
-	var desktop := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if input_locked:
+		velocity.x = move_toward(velocity.x, 0.0, acceleration * delta)
+		velocity.z = move_toward(velocity.z, 0.0, acceleration * delta)
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		else:
+			velocity.y = 0.0
+		move_and_slide()
+		return
+
+	var desktop: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	mobile_input = _read_mobile_joystick()
-	var input_vec := mobile_input if mobile_input.length() > 0.05 else desktop
+	var input_vec: Vector2 = mobile_input if mobile_input.length() > 0.05 else desktop
 
-	var dir := Vector3(input_vec.x, 0.0, input_vec.y)
-	if dir.length() > 1.0:
-		dir = dir.normalized()
+	var direction: Vector3 = Vector3(input_vec.x, 0.0, input_vec.y)
+	if direction.length() > 1.0:
+		direction = direction.normalized()
 
-	var target_speed := run_speed if Input.is_action_pressed("run") else walk_speed
-	var target_velocity := dir * target_speed
+	var target_speed: float = run_speed if Input.is_action_pressed("run") else walk_speed
+	var target_velocity: Vector3 = direction * target_speed
 	velocity.x = move_toward(velocity.x, target_velocity.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, target_velocity.z, acceleration * delta)
 
@@ -39,8 +51,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 
-	if dir.length() > 0.1:
-		facing = dir.normalized()
+	if direction.length() > 0.1:
+		facing = direction.normalized()
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), 10.0 * delta)
 
 	move_and_slide()
@@ -51,9 +63,10 @@ func _physics_process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey:
 		return
-	if not event.pressed or event.echo:
+	var key_event: InputEventKey = event as InputEventKey
+	if not key_event.pressed or key_event.echo or input_locked:
 		return
-	match event.keycode:
+	match key_event.keycode:
 		KEY_1:
 			set_tool("hoe")
 		KEY_2:
@@ -72,23 +85,35 @@ func set_tool(tool: String) -> void:
 func get_selected_tool() -> String:
 	return selected_tool
 
+func set_input_locked(locked: bool) -> void:
+	input_locked = locked
+
 func _do_interact() -> void:
-	var managers := get_tree().get_nodes_in_group("farm_manager")
-	if managers.is_empty():
+	var npc_managers: Array[Node] = get_tree().get_nodes_in_group("npc_manager")
+	if not npc_managers.is_empty():
+		var npc_manager: Node = npc_managers[0]
+		if npc_manager.has_method("try_interact"):
+			var talk_result: Dictionary = npc_manager.call("try_interact", global_position, facing)
+			if bool(talk_result.get("ok", false)):
+				dialogue_requested.emit(str(talk_result.get("speaker", "")), str(talk_result.get("text", "")))
+				return
+
+	var farm_managers: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
+	if farm_managers.is_empty():
 		farming_feedback.emit("Belum ada objek untuk diinteraksikan.")
 		return
-	var target_pos := global_position + facing * 1.55
-	var result: Dictionary = managers[0].use_tool(target_pos, selected_tool)
-	var message := str(result.get("message", ""))
+	var target_position: Vector3 = global_position + facing * 1.55
+	var result: Dictionary = farm_managers[0].call("use_tool", target_position, selected_tool)
+	var message: String = str(result.get("message", ""))
 	if message != "":
 		farming_feedback.emit(message)
 	print("[LembahSari] ", message)
 
 func _read_mobile_joystick() -> Vector2:
-	var nodes := get_tree().get_nodes_in_group("mobile_joystick")
+	var nodes: Array[Node] = get_tree().get_nodes_in_group("mobile_joystick")
 	if nodes.is_empty():
 		return Vector2.ZERO
-	var joystick = nodes[0]
+	var joystick: Node = nodes[0]
 	if joystick.has_method("get_output"):
-		return joystick.get_output()
+		return joystick.call("get_output") as Vector2
 	return Vector2.ZERO
