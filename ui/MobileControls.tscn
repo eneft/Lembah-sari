@@ -39,23 +39,87 @@ custom_minimum_size = Vector2(58, 58)
 layout_mode = 0
 offset_right = 58.0
 offset_bottom = 58.0
-color = Color(1, 1, 1, 0.65)
+color = Color(1, 1, 1, 0.72)
 mouse_filter = 2
 
 [node name="ActionButton" type="Button" parent="Root"]
 layout_mode = 0
-offset_left = 1110.0
-offset_top = 548.0
-offset_right = 1245.0
-offset_bottom = 683.0
-theme_override_font_sizes/font_size = 28
-text = "A"
+offset_left = 1090.0
+offset_top = 535.0
+offset_right = 1250.0
+offset_bottom = 695.0
+theme_override_font_sizes/font_size = 25
+text = "AKSI"
+
+[node name="HoeButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 345.0
+offset_top = 625.0
+offset_right = 505.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 20
+text = "● Cangkul"
+
+[node name="SeedButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 510.0
+offset_top = 625.0
+offset_right = 650.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 20
+text = "Benih"
+
+[node name="WaterButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 655.0
+offset_top = 625.0
+offset_right = 795.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 20
+text = "Siram"
+
+[node name="HandButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 625.0
+offset_right = 940.0
+offset_bottom = 690.0
+theme_override_font_sizes/font_size = 20
+text = "Panen"
+
+[node name="DayButton" type="Button" parent="Root"]
+layout_mode = 0
+offset_left = 1090.0
+offset_top = 28.0
+offset_right = 1248.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 20
+text = "+ HARI"
 
 [node name="Hint" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 18.0
-offset_right = 520.0
-offset_bottom = 72.0
+offset_right = 820.0
+offset_bottom = 52.0
+theme_override_font_sizes/font_size = 20
+text = "Lembah Sari 0.0.2  •  Cangkul dipilih  •  A = gunakan"
+
+[node name="Status" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 55.0
+offset_right = 420.0
+offset_bottom = 92.0
+theme_override_font_sizes/font_size = 20
+text = "Hari 1  •  Cabai 0"
+
+[node name="Feedback" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 350.0
+offset_top = 565.0
+offset_right = 1010.0
+offset_bottom = 612.0
 theme_override_font_sizes/font_size = 22
-text = "Lembah Sari 0.0.1a  •  WASD / joystick  •  E / A = interaksi"
+horizontal_alignment = 1
+text = "Arahkan ke petak kebun lalu gunakan alat."
