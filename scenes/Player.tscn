@@ -168,8 +168,8 @@ material_override = SubResource("BagMat")
 [node name="CameraRig" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
-position = Vector3(7.4, 8.8, 7.4)
+position = Vector3(10.2, 12.5, 10.2)
 current = true
-fov = 38.0
+fov = 32.0
 near = 0.1
-far = 110.0
+far = 140.0
