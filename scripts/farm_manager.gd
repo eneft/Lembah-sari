@@ -176,6 +176,15 @@ func next_day() -> Dictionary:
 		return {"message": "Hari %d dimulai. %d tanaman bertumbuh." % [day, grew]}
 	return {"message": "Hari %d dimulai. Tanaman yang tidak disiram belum tumbuh." % day}
 
+func water_all_planted() -> int:
+	var watered_count := 0
+	for tile in tiles:
+		if tile["seed"] != "" and not tile["ready"]:
+			tile["watered"] = true
+			watered_count += 1
+			_refresh_tile(tile)
+	return watered_count
+
 func get_status_text() -> String:
 	return "Hari %d  •  Cabai %d" % [day, chili_harvested]
 
