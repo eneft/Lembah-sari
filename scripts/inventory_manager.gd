@@ -17,9 +17,26 @@ var items: Dictionary = {
 	"fish_nila": 0
 }
 var money: int = 0
+var last_harvest_total: int = 0
 
 func _ready() -> void:
 	add_to_group("inventory_manager")
+	call_deferred("_bind_farm_manager")
+
+func _bind_farm_manager() -> void:
+	var farm_nodes: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
+	if farm_nodes.is_empty():
+		return
+	var farm_manager: Node = farm_nodes[0]
+	last_harvest_total = int(farm_manager.get("chili_harvested"))
+	if farm_manager.has_signal("harvest_changed"):
+		farm_manager.connect("harvest_changed", Callable(self, "_on_harvest_changed"))
+
+func _on_harvest_changed(total: int) -> void:
+	var gained: int = maxi(0, total - last_harvest_total)
+	last_harvest_total = total
+	if gained > 0:
+		add_item("chili", gained)
 
 func add_item(item_id: String, amount: int = 1) -> void:
 	if amount <= 0:
