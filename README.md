@@ -2,38 +2,41 @@
 
 Prototype cozy farming/life-sim tropis Indonesia, dibangun dengan Godot 4.
 
-## Version 0.0.5
+## Version 0.0.6
 
-Milestone ini menambahkan loop ekonomi dan aktivitas desa di atas farming, waktu/cuaca, serta NPC:
+Milestone ini mulai membentuk loop harian yang utuh:
 
 - world 3D stylized + kamera 3/4
 - movement + collision
-- farming 20 petak: Cangkul → Benih → Siram → Panen
+- farming: Cangkul → Benih → Siram → Panen
 - waktu Pagi → Siang → Sore → Malam
 - cuaca Cerah / Hujan
-- NPC: Pak Wiryo, Bu Ratih, Laras + jadwal + dialog
-- **irigasi interaktif** di pintu air
-- irigasi menyiram seluruh tanaman aktif sekaligus, maksimal sekali per hari
-- **mancing** di spot sungai
-- ikan prototype: Wader, Lele Sungai, Nila
-- **inventory/tas** untuk cabai dan ikan
-- hasil panen cabai otomatis masuk tas
-- **jual hasil** di depan Warung Bu Ratih
-- uang hasil penjualan tampil di HUD
-- quickbar: Cangkul, Benih, Siram, Panen, Pancing, Jual
+- NPC Pak Wiryo, Bu Ratih, dan Laras + jadwal/dialog
+- irigasi interaktif
+- memancing di sungai
+- inventory hasil panen dan ikan
+- jual hasil di Warung Bu Ratih
+- uang Rupiah
+- stamina maksimum 100
+- farming, irigasi, mancing, dan lari menguras stamina
+- rumah menjadi titik tidur
+- tidur normal setelah pukul 18:00
+- jika stamina kritis (15 atau kurang), pemain boleh tidur lebih awal
+- tidur memulai hari berikutnya dan memulihkan stamina penuh
+- transisi layar **Hari Baru** saat tidur
 
 ## Menjalankan di PC
 
 1. Buka GitHub Desktop.
-2. **Fetch origin → Pull origin** pada repository `eneft/Lembah-sari`.
-3. Buka `project.godot` dari Godot Project Manager.
-4. Tekan **F6/F5** atau tombol Play.
-5. Pastikan kiri atas tertulis **Lembah Sari 0.0.5**.
+2. Pada repository `eneft/Lembah-sari`, pilih **Fetch origin → Pull origin**.
+3. Buka `project.godot` di Godot.
+4. Tekan **F5 / Run Project**.
+5. Pastikan HUD menampilkan **Lembah Sari 0.0.6**.
 
 ### Kontrol desktop
 
-- WASD / arrow keys: bergerak
-- Shift: lari
+- WASD / Arrow Keys: bergerak
+- Shift: lari (menguras stamina)
 - E / Space: interaksi / gunakan alat
 - 1: Cangkul
 - 2: Benih
@@ -41,63 +44,58 @@ Milestone ini menambahkan loop ekonomi dan aktivitas desa di atas farming, waktu
 - 4: Panen
 - 5: Pancing
 - 6: Jual
-- tombol HUD **+ HARI**: lompat ke pagi hari berikutnya
+- **+ HARI** pada HUD tetap tersedia sebagai tombol testing cepat
 
-## Tes 0.0.5
+## Biaya stamina prototype
 
-### A. Inventory dan panen
+- Cangkul: 5
+- Tanam benih: 2
+- Siram: 3
+- Panen: 2
+- Irigasi: 8
+- Mancing: 6
+- Lari: berkurang terus selama Shift ditekan saat bergerak
 
-1. Cangkul → tanam Benih → Siram.
-2. Gunakan **+ HARI** sampai cabai matang.
-3. Pilih **Panen** lalu tekan **E/Space/AKSI**.
-4. Cabai harus bertambah pada indikator **Tas** di kanan atas.
+Jika stamina habis, pemain tetap dapat berjalan tetapi tidak dapat melakukan aktivitas yang membutuhkan tenaga sampai stamina pulih.
 
-### B. Irigasi
+## Tes loop 0.0.6
 
-1. Tanam beberapa cabai tetapi jangan siram manual.
-2. Jalan ke **Pintu Irigasi** dekat sawah Pak Wiryo.
-3. Dekati label `Pintu Irigasi • E / AKSI`.
-4. Tekan **E/Space/AKSI**.
-5. Semua tanaman aktif harus berubah menjadi tersiram.
-6. Irigasi hanya dapat dipakai sekali pada hari yang sama.
+1. Mulai pagi pukul 06:30 dengan stamina 100/100.
+2. Jalan ke kebun dan Cangkul → Benih → Siram beberapa petak.
+3. Perhatikan bar stamina berkurang.
+4. Tahan Shift sambil berjalan untuk memastikan lari menguras stamina.
+5. Coba irigasi atau memancing untuk mengurangi stamina lagi.
+6. Setelah pukul 18:00, pulang ke rumah pemain di sisi kanan bawah map.
+7. Dekati marker **Rumah • Tidur setelah 18:00** di depan rumah.
+8. Tekan **E / Space / AKSI**.
+9. Layar **Hari Baru** muncul.
+10. Pemain bangun kembali di depan rumah, waktu menjadi 06:30, tanaman diproses ke hari berikutnya, cuaca baru dipilih, dan stamina kembali 100/100.
 
-### C. Mancing
+Jika stamina sudah 15 atau kurang sebelum pukul 18:00, rumah mengizinkan tidur lebih awal.
 
-1. Tekan **5** atau pilih **Pancing** di quickbar.
-2. Jalan ke label `Spot Mancing • pilih Pancing` di tepi sungai.
-3. Tekan **E/Space/AKSI**.
-4. Ikan hasil tangkapan masuk ke Tas.
+## Aktivitas lain
 
-### D. Jual hasil
+### NPC
 
-1. Pastikan Tas berisi cabai dan/atau ikan.
-2. Tekan **6** atau pilih **Jual**.
-3. Jalan ke label `Jual Hasil • pilih Jual` di depan Warung Bu Ratih.
-4. Tekan **E/Space/AKSI**.
-5. Isi Tas yang dapat dijual menjadi 0 dan uang bertambah.
+- Pak Wiryo: pagi di sawah
+- Bu Ratih: pagi–sore di warung
+- Laras: pagi di area sungai
 
-Harga prototype:
-- Cabai: Rp5.000
-- Wader: Rp8.000
-- Lele Sungai: Rp12.000
-- Nila: Rp15.000
+Dekati NPC, hadapkan karakter, lalu tekan **E / Space / AKSI**.
 
-## NPC prototype
+### Irigasi
 
-- Pak Wiryo: sawah → pintu irigasi → warung → pulang
-- Bu Ratih: warung → pulang malam
-- Laras: sungai → jalan desa → warung → pulang
+Pergi ke pintu irigasi dekat sawah Pak Wiryo. Tekan **E / AKSI**. Semua tanaman aktif akan tersiram sekaligus. Irigasi normal hanya perlu digunakan sekali per hari.
 
-Dekati NPC lalu tekan **E/Space/AKSI** untuk berbicara. Interaksi aktivitas khusus seperti Pancing/Jual dan Pintu Irigasi diproses sebelum farming.
+### Mancing
 
-## Menjalankan di iPhone/iPad dengan Xogot
+Pilih **Pancing (5)**, cari label **Spot Mancing** di tepi sungai, lalu tekan **E / AKSI**. Ikan Wader, Lele, atau Nila akan masuk ke tas.
 
-1. Update/download project dari GitHub di Xogot.
-2. Buka `project.godot`.
-3. Tekan Play.
-4. Pastikan HUD menunjukkan **Lembah Sari 0.0.5**.
+### Jual hasil
 
-## Struktur
+Pilih **Jual (6)**, datang ke marker di depan Warung Bu Ratih, lalu tekan **E / AKSI**. Semua cabai dan ikan di tas dijual menjadi Rupiah.
+
+## Struktur utama
 
 ```text
 scenes/
@@ -109,16 +107,17 @@ scripts/
   farm_manager.gd
   game_time_manager.gd
   npc_manager.gd
-  activity_manager.gd
   inventory_manager.gd
+  activity_manager.gd
+  player_stats_manager.gd
   mobile_joystick.gd
   mobile_controls.gd
 ui/
   MobileControls.tscn
 ```
 
-## Roadmap terdekat
+## Roadmap berikutnya
 
-- 0.0.6: rumah, tidur, transisi hari, stamina dasar
-- 0.0.7: kualitas hasil, toko/warung lebih lengkap, ekonomi dasar
-- 0.1.0: satu hari playable end-to-end + save persistence
+- 0.0.7: save/load persistence untuk hari, waktu, cuaca, stamina, uang, inventory, dan kebun
+- 0.0.8: tutorial Day 1 + objective sederhana
+- 0.1.0: satu hari playable end-to-end yang dapat ditutup dan dilanjutkan kembali
