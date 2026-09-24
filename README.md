@@ -2,37 +2,51 @@
 
 Prototype cozy farming/life-sim tropis Indonesia, dibangun dengan Godot 4.
 
-## Version 0.0.1
+## Version 0.0.2
 
-Milestone pertama berfokus pada rasa dasar dunia dan kontrol:
+Milestone ini sudah playable di area kebun:
 
-- world 3D stylized sederhana
-- kamera 3/4 fixed-follow
-- player movement + collision
-- layout awal rumah dan kebun pemain
-- jalan desa
-- Warung Bu Ratih
-- sungai + jembatan
-- sawah Pak Wiryo + saluran irigasi
-- kontrol keyboard
-- virtual joystick mobile + action button
-- renderer GL Compatibility untuk fondasi iOS/mobile
+- world 3D stylized + kamera 3/4
+- movement + collision
+- joystick touch yang kompatibel dengan Xogot/iPhone
+- 20 petak kebun interaktif
+- target/highlight petak yang sedang diarahkan pemain
+- Cangkul → Benih Cabai → Siram → Ganti Hari → Panen
+- tiga tahap pertumbuhan cabai + buah merah saat matang
+- tanah berubah visual saat dicangkul dan disiram
+- counter hari dan total cabai panen
+- quickbar farming mobile
+- feedback aksi langsung di HUD
 
-## Menjalankan
+## Menjalankan di iPhone/iPad dengan Xogot
 
-1. Install Godot 4.3+.
-2. Buka `project.godot` dari Godot Project Manager.
-3. Tekan **F6/F5** untuk menjalankan project.
+1. Download/update project `eneft/Lembah-sari` dari GitHub di Xogot.
+2. Buka `project.godot`.
+3. Tekan **Play**.
+4. Pastikan kiri atas tertulis **Lembah Sari 0.0.2**.
 
-### Kontrol desktop
+### Cara tes farming di mobile
+
+1. Gerakkan karakter dengan joystick kiri ke kebun di dekat rumah.
+2. Arahkan karakter ke salah satu petak sampai muncul bingkai kuning.
+3. Pilih **Cangkul**, lalu tekan **AKSI**.
+4. Pilih **Benih**, tekan **AKSI**.
+5. Pilih **Siram**, tekan **AKSI**.
+6. Tekan **+ HARI** untuk maju satu hari.
+7. Siram lagi lalu maju hari sampai cabai matang (3 pertumbuhan).
+8. Pilih **Panen**, lalu tekan **AKSI**.
+
+Tanaman hanya bertumbuh pada pergantian hari jika sudah disiram.
+
+## Desktop
 
 - WASD / arrow keys: bergerak
 - Shift: lari
-- E / Space: interaksi (fondasi untuk sistem berikutnya)
-
-### Mobile
-
-UI prototype menyediakan joystick kiri dan tombol aksi kanan. Build iOS final membutuhkan macOS + Xcode dan signing Apple.
+- E / Space: gunakan alat
+- 1: Cangkul
+- 2: Benih
+- 3: Siram
+- 4: Panen
 
 ## Struktur
 
@@ -43,18 +57,16 @@ scenes/
 scripts/
   player.gd
   world_builder.gd
+  farm_manager.gd
   mobile_joystick.gd
   mobile_controls.gd
 ui/
   MobileControls.tscn
-assets/
-data/
 ```
 
 ## Roadmap terdekat
 
-- 0.0.2: farming grid, hoe, seed, watering, crop state
 - 0.0.3: game time + sunrise/night + weather
 - 0.0.4: NPC schedule/dialog (Pak Wiryo, Bu Ratih, Laras)
-- 0.0.5: irrigation + fishing + inventory/selling
+- 0.0.5: irrigation interaktif + fishing + inventory/selling
 - 0.1.0: satu hari playable end-to-end + save persistence
