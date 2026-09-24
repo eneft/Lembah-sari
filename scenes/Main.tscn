@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/npc_manager.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/inventory_manager.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/activity_manager.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/player_stats_manager.gd" id="9"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -29,6 +30,9 @@ shadow_enabled = true
 
 [node name="InventoryManager" type="Node" parent="."]
 script = ExtResource("7")
+
+[node name="PlayerStatsManager" type="Node" parent="."]
+script = ExtResource("9")
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector3(8.0, 0.2, 15.0)
