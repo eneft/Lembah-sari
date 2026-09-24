@@ -6,6 +6,7 @@ var time_manager: Node = null
 var inventory_manager: Node = null
 var stats_manager: Node = null
 
+@onready var joystick_control: Control = $Root/Joystick
 @onready var action_button: Button = $Root/ActionButton
 @onready var hoe_button: Button = $Root/HoeButton
 @onready var seed_button: Button = $Root/SeedButton
@@ -40,7 +41,18 @@ func _ready() -> void:
 	dialogue_close.pressed.connect(_close_dialogue)
 	dialogue_panel.visible = false
 	day_transition.visible = false
+	_apply_platform_layout()
 	call_deferred("_bind_game")
+
+func _apply_platform_layout() -> void:
+	var platform_name: String = OS.get_name()
+	var is_mobile_platform: bool = platform_name == "Android" or platform_name == "iOS"
+	joystick_control.visible = is_mobile_platform
+	action_button.visible = is_mobile_platform
+	if is_mobile_platform:
+		hint_label.text = "Lembah Sari 0.0.7  •  pilih alat • AKSI"
+	else:
+		hint_label.text = "Lembah Sari 0.0.7  •  1–6 alat • E interaksi"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if dialogue_panel.visible and event.is_action_pressed("interact"):
@@ -152,7 +164,11 @@ func _on_tool_changed(tool: String) -> void:
 		"hand": hand_button.text = "● Panen"
 		"rod": rod_button.text = "● Pancing"
 		"sell": sell_button.text = "● Jual"
-	hint_label.text = "Lembah Sari 0.0.6  •  %s dipilih  •  E / AKSI = interaksi" % str(labels.get(tool, tool))
+	var platform_name: String = OS.get_name()
+	if platform_name == "Android" or platform_name == "iOS":
+		hint_label.text = "Lembah Sari 0.0.7  •  %s • AKSI" % str(labels.get(tool, tool))
+	else:
+		hint_label.text = "Lembah Sari 0.0.7  •  %s • E interaksi" % str(labels.get(tool, tool))
 
 func _on_dialogue_requested(speaker: String, text: String) -> void:
 	dialogue_name.text = speaker
