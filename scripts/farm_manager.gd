@@ -3,11 +3,11 @@ extends Node3D
 signal day_changed(day: int)
 signal harvest_changed(total: int)
 
-const COLS := 5
-const ROWS := 4
-const SPACING := 1.6
-const GRID_ORIGIN := Vector3(4.8, 0.12, 7.7)
-const MAX_GROWTH := 3
+const COLS: int = 5
+const ROWS: int = 4
+const SPACING: float = 1.6
+const GRID_ORIGIN: Vector3 = Vector3(4.8, 0.12, 7.7)
+const MAX_GROWTH: int = 3
 
 var day: int = 1
 var chili_harvested: int = 0
@@ -23,35 +23,87 @@ func _process(_delta: float) -> void:
 	_update_highlight()
 
 func _mat(color: Color) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
+	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.95
 	return material
 
-func _mesh_box(size: Vector3, color: Color) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
+func _soil_mesh(color: Color) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	var mesh: CylinderMesh = CylinderMesh.new()
+	mesh.top_radius = 0.70
+	mesh.bottom_radius = 0.74
+	mesh.height = 0.11
+	mesh.radial_segments = 8
+	mesh_instance.mesh = mesh
+	mesh_instance.scale = Vector3(1.0, 1.0, 1.0)
+	mesh_instance.material_override = _mat(color)
+	return mesh_instance
+
+func _box_mesh(size: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	var mesh: BoxMesh = BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = _mat(color)
 	return mesh_instance
 
+func _stem_mesh(height_value: float, radius_value: float, color: Color) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	var mesh: CylinderMesh = CylinderMesh.new()
+	mesh.top_radius = radius_value * 0.85
+	mesh.bottom_radius = radius_value
+	mesh.height = height_value
+	mesh.radial_segments = 7
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = _mat(color)
+	return mesh_instance
+
+func _leaf_mesh(length_value: float, width_value: float, color: Color) -> MeshInstance3D:
+	var vertices: PackedVector3Array = PackedVector3Array([
+		Vector3(-width_value * 0.5, 0.0, 0.0),
+		Vector3(width_value * 0.5, 0.0, 0.0),
+		Vector3(0.0, 0.05, length_value),
+		Vector3(-width_value * 0.5, 0.0, 0.0),
+		Vector3(0.0, 0.05, length_value),
+		Vector3(0.0, -0.02, length_value * 0.50)
+	])
+	var surface: SurfaceTool = SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for vertex: Vector3 in vertices:
+		surface.add_vertex(vertex)
+	surface.generate_normals()
+	var mesh: ArrayMesh = surface.commit()
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = _mat(color)
+	return mesh_instance
+
+func _fruit_mesh(color: Color) -> MeshInstance3D:
+	var fruit: MeshInstance3D = MeshInstance3D.new()
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = 0.075
+	sphere.height = 0.20
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	fruit.mesh = sphere
+	fruit.scale = Vector3(0.75, 1.15, 0.75)
+	fruit.material_override = _mat(color)
+	return fruit
+
 func _build_grid() -> void:
-	for row in range(ROWS):
-		for col in range(COLS):
-			var root := Node3D.new()
+	for row: int in range(ROWS):
+		for col: int in range(COLS):
+			var root: Node3D = Node3D.new()
 			root.name = "FarmTile_%d_%d" % [col, row]
-			root.position = GRID_ORIGIN + Vector3(col * SPACING, 0.0, row * SPACING)
+			root.position = GRID_ORIGIN + Vector3(float(col) * SPACING, 0.0, float(row) * SPACING)
 			add_child(root)
-
-			var soil := _mesh_box(Vector3(1.35, 0.12, 1.35), Color("9d744f"))
+			var soil: MeshInstance3D = _soil_mesh(Color("98714f"))
 			root.add_child(soil)
-
-			var plant_root := Node3D.new()
+			var plant_root: Node3D = Node3D.new()
 			plant_root.name = "Plant"
 			plant_root.position.y = 0.08
 			root.add_child(plant_root)
-
 			tiles.append({
 				"root": root,
 				"soil": soil,
@@ -67,53 +119,57 @@ func _build_highlight() -> void:
 	highlight = Node3D.new()
 	highlight.name = "FarmTarget"
 	add_child(highlight)
-	var yellow := Color("ffd95a")
-	var edge := 1.42
-	var thick := 0.07
-	for data in [
-		[Vector3(0, 0, -edge * 0.5), Vector3(edge, 0.04, thick)],
-		[Vector3(0, 0, edge * 0.5), Vector3(edge, 0.04, thick)],
-		[Vector3(-edge * 0.5, 0, 0), Vector3(thick, 0.04, edge)],
-		[Vector3(edge * 0.5, 0, 0), Vector3(thick, 0.04, edge)]
-	]:
-		var bar := _mesh_box(data[1], yellow)
-		bar.position = data[0]
+	var yellow: Color = Color("f5cf57")
+	var edge: float = 1.42
+	var thick: float = 0.055
+	var bar_data: Array[Array] = [
+		[Vector3(0.0, 0.0, -edge * 0.5), Vector3(edge, 0.025, thick)],
+		[Vector3(0.0, 0.0, edge * 0.5), Vector3(edge, 0.025, thick)],
+		[Vector3(-edge * 0.5, 0.0, 0.0), Vector3(thick, 0.025, edge)],
+		[Vector3(edge * 0.5, 0.0, 0.0), Vector3(thick, 0.025, edge)]
+	]
+	for data: Array in bar_data:
+		var bar_position: Vector3 = data[0]
+		var bar_size: Vector3 = data[1]
+		var bar: MeshInstance3D = _box_mesh(bar_size, yellow)
+		bar.position = bar_position
 		highlight.add_child(bar)
 	highlight.visible = false
 
 func _update_highlight() -> void:
-	var players := get_tree().get_nodes_in_group("player")
+	var players: Array[Node] = get_tree().get_nodes_in_group("player")
 	if players.is_empty():
 		highlight.visible = false
 		return
-	var player = players[0]
-	var target: Vector3 = player.global_position + player.facing * 1.55
-	var index := _nearest_tile_index(target)
+	var player: Node = players[0]
+	var target: Vector3 = player.global_position + Vector3(player.get("facing")) * 1.55
+	var index: int = _nearest_tile_index(target)
 	if index < 0:
 		highlight.visible = false
 		return
 	var root: Node3D = tiles[index]["root"]
-	highlight.position = root.position + Vector3(0, 0.17, 0)
+	highlight.position = root.position + Vector3(0.0, 0.17, 0.0)
 	highlight.visible = true
 
 func _nearest_tile_index(world_pos: Vector3) -> int:
-	var best_index := -1
-	var best_distance := 999.0
-	var point := Vector2(world_pos.x, world_pos.z)
-	for i in range(tiles.size()):
-		var root: Node3D = tiles[i]["root"]
-		var tile_point := Vector2(root.global_position.x, root.global_position.z)
-		var distance := point.distance_to(tile_point)
+	var best_index: int = -1
+	var best_distance: float = 999.0
+	var point: Vector2 = Vector2(world_pos.x, world_pos.z)
+	for index: int in range(tiles.size()):
+		var root: Node3D = tiles[index]["root"]
+		var tile_point: Vector2 = Vector2(root.global_position.x, root.global_position.z)
+		var distance: float = point.distance_to(tile_point)
 		if distance < best_distance:
 			best_distance = distance
-			best_index = i
-	return best_index if best_distance <= 1.0 else -1
+			best_index = index
+	if best_distance <= 1.0:
+		return best_index
+	return -1
 
 func use_tool(world_pos: Vector3, tool: String) -> Dictionary:
-	var index := _nearest_tile_index(world_pos)
+	var index: int = _nearest_tile_index(world_pos)
 	if index < 0:
 		return {"ok": false, "message": "Arahkan ke petak kebun."}
-
 	var tile: Dictionary = tiles[index]
 	match tool:
 		"hoe":
@@ -169,13 +225,13 @@ func use_tool(world_pos: Vector3, tool: String) -> Dictionary:
 
 func next_day() -> Dictionary:
 	day += 1
-	var grew := 0
-	for tile in tiles:
+	var grew: int = 0
+	for tile: Dictionary in tiles:
 		if tile["seed"] != "" and not tile["ready"]:
 			if tile["watered"]:
-				tile["growth"] = min(int(tile["growth"]) + 1, MAX_GROWTH)
+				tile["growth"] = mini(int(tile["growth"]) + 1, MAX_GROWTH)
 				grew += 1
-				if tile["growth"] >= MAX_GROWTH:
+				if int(tile["growth"]) >= MAX_GROWTH:
 					tile["ready"] = true
 			tile["watered"] = false
 			_refresh_tile(tile)
@@ -185,8 +241,8 @@ func next_day() -> Dictionary:
 	return {"message": "Hari %d dimulai. Tanaman yang tidak disiram belum tumbuh." % day}
 
 func water_all_planted() -> int:
-	var watered_count := 0
-	for tile in tiles:
+	var watered_count: int = 0
+	for tile: Dictionary in tiles:
 		if tile["seed"] != "" and not tile["ready"]:
 			tile["watered"] = true
 			watered_count += 1
@@ -209,44 +265,45 @@ func _spend_stamina(cost: float) -> bool:
 func _refresh_tile(tile: Dictionary) -> void:
 	var soil: MeshInstance3D = tile["soil"]
 	if tile["watered"]:
-		soil.material_override = _mat(Color("4d4038"))
+		soil.material_override = _mat(Color("493d36"))
 	elif tile["tilled"]:
-		soil.material_override = _mat(Color("674733"))
+		soil.material_override = _mat(Color("654733"))
 	else:
-		soil.material_override = _mat(Color("9d744f"))
+		soil.material_override = _mat(Color("98714f"))
 
 	var plant_root: Node3D = tile["plant"]
-	for child in plant_root.get_children():
+	for child: Node in plant_root.get_children():
 		child.queue_free()
 	if tile["seed"] == "":
 		return
 
 	var stage: int = int(tile["growth"])
-	var height := 0.20 + stage * 0.18
-	var stem := _mesh_box(Vector3(0.10, height, 0.10), Color("3f8f46"))
-	stem.position.y = height * 0.5
+	var height_value: float = 0.25 + float(stage) * 0.18
+	var stem: MeshInstance3D = _stem_mesh(height_value, 0.045 + float(stage) * 0.008, Color("418b45"))
+	stem.position.y = height_value * 0.5
 	plant_root.add_child(stem)
 
-	var leaf_size := 0.22 + stage * 0.08
-	var leaf_a := _mesh_box(Vector3(leaf_size, 0.07, 0.15), Color("55a955"))
-	leaf_a.position = Vector3(-leaf_size * 0.35, height * 0.72, 0)
-	plant_root.add_child(leaf_a)
-	var leaf_b := _mesh_box(Vector3(0.15, 0.07, leaf_size), Color("62b55b"))
-	leaf_b.position = Vector3(0, height * 0.85, leaf_size * 0.30)
-	plant_root.add_child(leaf_b)
+	var leaf_count: int = 2 + stage * 2
+	var leaf_length: float = 0.26 + float(stage) * 0.07
+	for leaf_index: int in range(leaf_count):
+		var leaf: MeshInstance3D = _leaf_mesh(leaf_length, 0.15 + float(stage) * 0.025, Color("55a052").lightened(float(leaf_index % 2) * 0.05))
+		leaf.position = Vector3(0.0, height_value * (0.45 + 0.08 * float(leaf_index % 3)), 0.0)
+		leaf.rotation_degrees = Vector3(-58.0 + float(stage) * 4.0, float(leaf_index) * (360.0 / float(leaf_count)), 0.0)
+		plant_root.add_child(leaf)
 
 	if stage >= 2:
-		var crown := _mesh_box(Vector3(0.48, 0.13, 0.48), Color("4f9f4e"))
-		crown.position.y = height
+		var crown: MeshInstance3D = _leaf_mesh(0.38 + float(stage) * 0.04, 0.22, Color("4c984c"))
+		crown.position.y = height_value * 0.92
+		crown.rotation_degrees = Vector3(-70.0, 35.0, 0.0)
 		plant_root.add_child(crown)
 
 	if tile["ready"]:
-		for fruit_pos in [Vector3(-0.18, height + 0.05, 0.12), Vector3(0.20, height - 0.02, -0.10), Vector3(0.05, height + 0.10, 0.22)]:
-			var fruit := MeshInstance3D.new()
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.08
-			sphere.height = 0.18
-			fruit.mesh = sphere
-			fruit.material_override = _mat(Color("d83b32"))
-			fruit.position = fruit_pos
+		var fruit_positions: Array[Vector3] = [
+			Vector3(-0.17, height_value + 0.05, 0.12),
+			Vector3(0.19, height_value - 0.01, -0.10),
+			Vector3(0.05, height_value + 0.10, 0.20)
+		]
+		for fruit_position: Vector3 in fruit_positions:
+			var fruit: MeshInstance3D = _fruit_mesh(Color("d73b31"))
+			fruit.position = fruit_position
 			plant_root.add_child(fruit)
