@@ -75,9 +75,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			set_tool("water")
 		KEY_4:
 			set_tool("hand")
+		KEY_5:
+			set_tool("rod")
+		KEY_6:
+			set_tool("sell")
 
 func set_tool(tool: String) -> void:
-	if tool not in ["hoe", "seed", "water", "hand"]:
+	if tool not in ["hoe", "seed", "water", "hand", "rod", "sell"]:
 		return
 	selected_tool = tool
 	tool_changed.emit(selected_tool)
@@ -89,21 +93,39 @@ func set_input_locked(locked: bool) -> void:
 	input_locked = locked
 
 func _do_interact() -> void:
+	var activity_managers: Array[Node] = get_tree().get_nodes_in_group("activity_manager")
+	if not activity_managers.is_empty():
+		var activity_manager: Node = activity_managers[0]
+		if activity_manager.has_method("try_interact"):
+			var activity_value: Variant = activity_manager.call("try_interact", global_position, facing, selected_tool)
+			if activity_value is Dictionary:
+				var activity_result: Dictionary = activity_value as Dictionary
+				if bool(activity_result.get("ok", false)):
+					var activity_message: String = str(activity_result.get("message", ""))
+					if activity_message != "":
+						farming_feedback.emit(activity_message)
+					return
+
 	var npc_managers: Array[Node] = get_tree().get_nodes_in_group("npc_manager")
 	if not npc_managers.is_empty():
 		var npc_manager: Node = npc_managers[0]
 		if npc_manager.has_method("try_interact"):
-			var talk_result: Dictionary = npc_manager.call("try_interact", global_position, facing)
-			if bool(talk_result.get("ok", false)):
-				dialogue_requested.emit(str(talk_result.get("speaker", "")), str(talk_result.get("text", "")))
-				return
+			var talk_value: Variant = npc_manager.call("try_interact", global_position, facing)
+			if talk_value is Dictionary:
+				var talk_result: Dictionary = talk_value as Dictionary
+				if bool(talk_result.get("ok", false)):
+					dialogue_requested.emit(str(talk_result.get("speaker", "")), str(talk_result.get("text", "")))
+					return
 
 	var farm_managers: Array[Node] = get_tree().get_nodes_in_group("farm_manager")
 	if farm_managers.is_empty():
 		farming_feedback.emit("Belum ada objek untuk diinteraksikan.")
 		return
 	var target_position: Vector3 = global_position + facing * 1.55
-	var result: Dictionary = farm_managers[0].call("use_tool", target_position, selected_tool)
+	var farm_value: Variant = farm_managers[0].call("use_tool", target_position, selected_tool)
+	if not farm_value is Dictionary:
+		return
+	var result: Dictionary = farm_value as Dictionary
 	var message: String = str(result.get("message", ""))
 	if message != "":
 		farming_feedback.emit(message)
