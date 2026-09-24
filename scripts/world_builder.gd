@@ -83,10 +83,8 @@ func _build_world() -> void:
 	for x in [-20.0, -8.0, 12.0, 21.0]:
 		_box("RiverRock", Vector3(x, 0.18, -8.2), Vector3(1.1, 0.35, 0.9), Color("8b8d88"), true)
 
-	# Player farm
-	_box("FarmPlot", Vector3(8.5, 0.02, 10.5), Vector3(14.0, 0.06, 11.0), Color("8c5e3c"), false)
-	for row in range(4):
-		_box("TilledRow%d" % row, Vector3(6.2 + row * 1.7, 0.08, 10.4), Vector3(1.15, 0.08, 7.7), Color("6c432d"), false)
+	# Player farm base. Individual interactive tiles are built by FarmManager.
+	_box("FarmPlot", Vector3(8.5, 0.02, 10.5), Vector3(14.0, 0.06, 11.0), Color("a57b55"), false)
 
 	# House
 	_box("HouseBody", Vector3(15.7, 1.55, 13.2), Vector3(6.0, 3.1, 5.0), Color("e9d0a2"), true)
