@@ -103,16 +103,16 @@ offset_top = 18.0
 offset_right = 820.0
 offset_bottom = 52.0
 theme_override_font_sizes/font_size = 20
-text = "Lembah Sari 0.0.2  •  Cangkul dipilih  •  A = gunakan"
+text = "Lembah Sari 0.0.3  •  Cangkul dipilih  •  A = gunakan"
 
 [node name="Status" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 55.0
-offset_right = 420.0
-offset_bottom = 92.0
+offset_right = 520.0
+offset_bottom = 125.0
 theme_override_font_sizes/font_size = 20
-text = "Hari 1  •  Cabai 0"
+text = "Hari 1  •  Cabai 0\n06:30  •  Pagi  •  Cerah"
 
 [node name="Feedback" type="Label" parent="Root"]
 layout_mode = 0

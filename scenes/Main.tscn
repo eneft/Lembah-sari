@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://ui/MobileControls.tscn" id="3"]
 [ext_resource type="Script" path="res://scripts/farm_manager.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/game_time_manager.gd" id="5"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -28,5 +29,8 @@ position = Vector3(8.0, 0.2, 15.0)
 
 [node name="FarmManager" type="Node3D" parent="."]
 script = ExtResource("4")
+
+[node name="GameTimeManager" type="Node" parent="."]
+script = ExtResource("5")
 
 [node name="MobileControls" parent="." instance=ExtResource("3")]
