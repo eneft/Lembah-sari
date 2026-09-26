@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' \
-            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroHouseShowcase.tscn
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroHouseShowcaseV2.tscn
           test -s hero_house_preview.png
           file hero_house_preview.png
 
