@@ -68,23 +68,23 @@ func _build_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("b9dce5")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("dce6d0")
-	env.ambient_light_energy = 0.48
+	env.ambient_light_color = Color("e1e7d6")
+	env.ambient_light_energy = 0.44
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
 
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-46.0, -28.0, 0.0)
-	sun.light_color = Color("fff0d2")
-	sun.light_energy = 0.88
+	sun.rotation_degrees = Vector3(-48.0, -36.0, 0.0)
+	sun.light_color = Color("fff3dc")
+	sun.light_energy = 0.82
 	sun.shadow_enabled = true
 	add_child(sun)
 
 func _build_ground() -> void:
-	var grass := _mat("grass", Color("6f9f54"))
-	var grass_dark := _mat("grass_dark", Color("567f45"))
+	var grass := _mat("grass", Color("789866"))
+	var grass_dark := _mat("grass_dark", Color("5c7d50"))
 	var soil := _mat("soil", Color("76563d"))
 	var water := _mat("water", Color("62a9ba"), 0.35)
 	var stone := _mat("stone", Color("8b8a7e"))
@@ -114,8 +114,9 @@ func _load_house() -> void:
 	var house := packed.instantiate()
 	house.name = "HouseMain01"
 	house.position = Vector3(-0.8, 0.0, 1.5)
-	# Blender front imported toward Godot -X; rotate it toward the hero camera.
-	house.rotation_degrees.y = -90.0
+	# Blender -Y front becomes Godot +Z on import. Rotate that front toward the
+	# camera direction (+X/-Z) so the veranda, windows and door are the hero face.
+	house.rotation_degrees.y = 140.0
 	house.scale = Vector3.ONE * 1.10
 	add_child(house)
 
@@ -127,7 +128,6 @@ func _build_context() -> void:
 	var flower_a := _mat("flower_a", Color("edbd62"))
 	var flower_b := _mat("flower_b", Color("e69cab"))
 
-	# Kitchen garden crops.
 	for row: int in range(2):
 		for col: int in range(5):
 			var px: float = 4.45 + float(col) * 0.62
@@ -136,13 +136,11 @@ func _build_context() -> void:
 			_sphere("CropLeafA", Vector3(px - 0.12, 0.43, pz), 0.17, leaf_light, Vector3(1.25, 0.52, 0.76))
 			_sphere("CropLeafB", Vector3(px + 0.13, 0.40, pz + 0.04), 0.15, leaf, Vector3(1.10, 0.52, 0.82))
 
-	# Bamboo fence, intentionally uneven.
 	for z_value: float in [-3.0, -1.6, -0.2, 1.2, 2.6]:
 		_cyl("BambooPost", Vector3(7.4, 0.56, z_value), 0.055, 1.15, bamboo, 8)
 	for z_value: float in [-2.3, -0.9, 0.5, 1.9]:
 		_cyl("BambooRail", Vector3(7.4, 0.67, z_value), 0.042, 1.50, bamboo, 8, Vector3(90.0, 0.0, 0.0))
 
-	# Flower rhythm around the front garden.
 	for flower_data: Dictionary in [
 		{"p": Vector3(3.4, 0.0, -2.8), "m": flower_a},
 		{"p": Vector3(4.0, 0.0, -2.95), "m": flower_b},
@@ -154,7 +152,6 @@ func _build_context() -> void:
 		_cyl("FlowerStem", fp + Vector3(0.0, 0.20, 0.0), 0.018, 0.40, leaf, 6)
 		_sphere("Flower", fp + Vector3(0.0, 0.45, 0.0), 0.09, fm, Vector3(1.1, 0.58, 1.1))
 
-	# Minimal framing vegetation. Imported nature assets replace these next.
 	for tree_data: Dictionary in [
 		{"p": Vector3(-8.2, 0.0, 3.4), "s": 1.00},
 		{"p": Vector3(9.7, 0.0, 2.8), "s": 0.88},
@@ -169,7 +166,7 @@ func _build_context() -> void:
 func _build_camera() -> void:
 	var camera := Camera3D.new()
 	camera.name = "HeroCamera"
-	camera.position = Vector3(10.8, 6.5, -12.4)
+	camera.position = Vector3(10.8, 6.2, -12.4)
 	camera.fov = 32.0
 	camera.current = true
 	add_child(camera)
