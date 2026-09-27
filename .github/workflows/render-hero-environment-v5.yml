@@ -11,6 +11,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_path_texture.py'
       - 'tools/blender/build_hero_scene_v5_water_texture.py'
       - 'tools/blender/build_hero_scene_v5_bridge_texture.py'
+      - 'tools/blender/build_hero_scene_v5_paddy_texture.py'
       - 'tools/blender/texture_main_house_wood.py'
       - 'tools/blender/texture_main_house_roof.py'
       - 'tools/blender/build_hero_scene.py'
@@ -94,14 +95,14 @@ jobs:
             curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
           done
 
-      - name: Build sequential V5 bridge-wood review GLB
+      - name: Build sequential V5 rice-paddy review GLB
         shell: bash
         run: |
           set -euo pipefail
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_v5.glb" \
           LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene_v5_bridge_texture.py
+            blender --background --python tools/blender/build_hero_scene_v5_paddy_texture.py
           test -s assets/models/hero_scene_v5.glb
           file assets/models/hero_scene_v5.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
