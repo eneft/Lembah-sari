@@ -171,10 +171,14 @@ def catmull_rom(p0, p1, p2, p3, t):
     )
 
 
-def smooth_profile(points, subdivisions=5):
-    """Densify the sparse V5 control points into a gentle rolling silhouette."""
+def smooth_profile(points, subdivisions=6, phase=0.0, wave_a=0.0, wave_b=0.0, z_offset=0.0, x_shift=0.0):
+    """Densify sparse controls while giving each layer an independent skyline."""
     if len(points) < 3:
         return points
+    tau = math.pi * 2.0
+    min_x = points[0][0]
+    max_x = points[-1][0]
+    span_x = max(max_x - min_x, 1e-5)
     result = []
     for i in range(len(points) - 1):
         p0 = points[max(0, i - 1)]
@@ -185,16 +189,29 @@ def smooth_profile(points, subdivisions=5):
             t = step / float(subdivisions)
             x = mix(p1[0], p2[0], t)
             z = catmull_rom(p0[2], p1[2], p2[2], p3[2], t)
-            # Damp cubic overshoot so the distant ridge never becomes spiky.
             local_min = min(p0[2], p1[2], p2[2], p3[2]) - 0.04
             local_max = max(p0[2], p1[2], p2[2], p3[2]) + 0.04
             z = clamp(z, local_min, local_max)
-            result.append((x, p1[1], z))
-    result.append(points[-1])
+            u = (x - min_x) / span_x
+            z += math.sin((u + phase) * tau) * wave_a
+            z += math.sin((u * 0.52 + phase * 1.73) * tau) * wave_b
+            result.append((x + x_shift, p1[1], z + z_offset))
+    last = points[-1]
+    u = 1.0
+    last_z = last[2] + math.sin((u + phase) * tau) * wave_a + math.sin((u * 0.52 + phase * 1.73) * tau) * wave_b
+    result.append((last[0] + x_shift, last[1], last_z + z_offset))
     return result
 
 
-def make_terrain_curtain(obj, base_z=-0.44):
+def make_terrain_curtain(
+    obj,
+    base_z=-0.44,
+    phase=0.0,
+    wave_a=0.0,
+    wave_b=0.0,
+    z_offset=0.0,
+    x_shift=0.0,
+):
     """Replace the shallow ribbon with one calm, filled distant-hill curtain."""
     old_mesh = obj.data
     original = [tuple(vertex.co) for vertex in old_mesh.vertices]
@@ -202,11 +219,17 @@ def make_terrain_curtain(obj, base_z=-0.44):
         raise RuntimeError("Unexpected ridge topology for %s: %d vertices" % (obj.name, len(original)))
 
     count = len(original) // 2
-    # The first row carries the full V5 contour; average the original two-row Y
-    # positions so the replacement remains at the same atmospheric depth.
     y_center = sum(vertex[1] for vertex in original) / float(len(original))
     controls = [(vertex[0], y_center, vertex[2]) for vertex in original[:count]]
-    top = smooth_profile(controls, subdivisions=6)
+    top = smooth_profile(
+        controls,
+        subdivisions=6,
+        phase=phase,
+        wave_a=wave_a,
+        wave_b=wave_b,
+        z_offset=z_offset,
+        x_shift=x_shift,
+    )
 
     verts = list(top)
     base_start = len(verts)
@@ -281,28 +304,27 @@ near_source = source_material(near)
 mid_source = source_material(mid)
 far_source = source_material(far)
 
-# Final values stay deliberately below the bright sky/fog range. The farther
-# layers are lighter and less saturated, but all three remain recognizably sage
-# terrain instead of reading as white graphic ribbons under the Godot sun.
+# Keep all layers in a muted sage family. Values are intentionally conservative
+# because the fixed Godot sun/fog lifts these vertical faces substantially.
 near_img = build_ridge_image(
     "Lembah Ridge Near Haze",
-    dark=(0.145, 0.235, 0.135),
-    mid=(0.205, 0.315, 0.185),
-    light=(0.275, 0.385, 0.245),
+    dark=(0.090, 0.160, 0.080),
+    mid=(0.130, 0.220, 0.120),
+    light=(0.180, 0.280, 0.160),
     phase=0.11,
 )
 mid_img = build_ridge_image(
     "Lembah Ridge Mid Haze",
-    dark=(0.205, 0.300, 0.195),
-    mid=(0.270, 0.365, 0.255),
-    light=(0.335, 0.430, 0.315),
+    dark=(0.130, 0.210, 0.120),
+    mid=(0.180, 0.270, 0.170),
+    light=(0.240, 0.330, 0.220),
     phase=0.39,
 )
 far_img = build_ridge_image(
     "Lembah Ridge Far Haze",
-    dark=(0.290, 0.360, 0.280),
-    mid=(0.350, 0.420, 0.335),
-    light=(0.410, 0.480, 0.390),
+    dark=(0.190, 0.260, 0.180),
+    mid=(0.240, 0.310, 0.230),
+    light=(0.300, 0.370, 0.280),
     phase=0.67,
 )
 
@@ -310,9 +332,35 @@ near_mat = ridge_material("V5 Textured Ridge Near", near_source, near_img)
 mid_mat = ridge_material("V5 Textured Ridge Mid", mid_source, mid_img)
 far_mat = ridge_material("V5 Textured Ridge Far", far_source, far_img)
 
-make_terrain_curtain(near, base_z=-0.46)
-make_terrain_curtain(mid, base_z=-0.43)
-make_terrain_curtain(far, base_z=-0.40)
+# Each layer gets a deliberately different low-frequency silhouette so the
+# horizon reads as overlapping hills, not parallel contour lines.
+make_terrain_curtain(
+    near,
+    base_z=-0.46,
+    phase=0.06,
+    wave_a=0.080,
+    wave_b=0.040,
+    z_offset=-0.10,
+    x_shift=0.65,
+)
+make_terrain_curtain(
+    mid,
+    base_z=-0.43,
+    phase=0.34,
+    wave_a=0.105,
+    wave_b=0.050,
+    z_offset=0.04,
+    x_shift=-0.45,
+)
+make_terrain_curtain(
+    far,
+    base_z=-0.40,
+    phase=0.63,
+    wave_a=0.135,
+    wave_b=0.065,
+    z_offset=0.18,
+    x_shift=0.10,
+)
 assign(near, near_mat)
 assign(mid, mid_mat)
 assign(far, far_mat)
