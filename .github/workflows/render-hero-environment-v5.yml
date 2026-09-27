@@ -1,0 +1,111 @@
+name: Render Hero Environment V5
+
+on:
+  push:
+    branches:
+      - visual/rebuild-vs01-v2
+    paths:
+      - 'tools/blender/build_hero_scene_v5.py'
+      - 'tools/blender/build_hero_scene.py'
+      - 'tools/blender/build_hero_scene_polish.py'
+      - 'tools/blender/build_hero_scene_v4.py'
+      - 'tools/blender/build_main_house.py'
+      - 'scripts/hero_environment_showcase_v5.gd'
+      - 'scenes/HeroEnvironmentShowcaseV5.tscn'
+      - '.github/workflows/render-hero-environment-v5.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: lembah-sari-hero-environment-v5
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Blender and Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y blender python3-numpy unzip xvfb libgl1-mesa-dri libglx-mesa0 libxrandr2 libxi6 libxcursor1 libxinerama1 libxkbcommon0 libasound2t64
+          blender --version
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_v4.7-stable_linux.x86_64
+          sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
+
+      - name: Build current main house GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/models
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/build_main_house.py
+          test -s assets/models/house_main_01.glb
+          file assets/models/house_main_01.glb
+
+      - name: Fetch pinned CC0 stylized nature sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quaternius
+          BASE="https://raw.githubusercontent.com/ladybug-tools/3d-models/009902a16ca3ffed250b13b6b11f9402da119b73/quaternius/ultimate-nature-pack"
+          for ASSET in CommonTree_4 PalmTree_2 Bush_2 Grass_Short Flowers Rock_Moss_3 Wheat Lilypad Plant_3; do
+            curl -fL --retry 3 "$BASE/$ASSET.obj" -o "/tmp/quaternius/$ASSET.obj"
+            curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
+          done
+
+      - name: Build V5 hero environment GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_v5.glb" \
+          LEMBAH_CC0_DIR="/tmp/quaternius" \
+            blender --background --python tools/blender/build_hero_scene_v5.py
+          test -s assets/models/hero_scene_v5.glb
+          file assets/models/hero_scene_v5.glb
+          ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
+
+      - name: Import and validate project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit-after 60
+
+      - name: Render V5 full environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroEnvironmentShowcaseV5.tscn
+          test -s hero_environment_v5_preview.png
+          file hero_environment_v5_preview.png
+
+      - name: Upload V5 screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: hero-environment-v5-preview
+          path: hero_environment_v5_preview.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload V5 generated GLB
+        uses: actions/upload-artifact@v4
+        with:
+          name: hero-environment-v5-glb
+          path: assets/models/hero_scene_v5.glb
+          if-no-files-found: error
+          retention-days: 14
