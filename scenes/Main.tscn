@@ -1,6 +1,6 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=12 format=3]
 
-[ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world_2p5d.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://ui/MobileControls.tscn" id="3"]
 [ext_resource type="Script" path="res://scripts/farm_manager.gd" id="4"]
@@ -9,18 +9,14 @@
 [ext_resource type="Script" path="res://scripts/inventory_manager.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/activity_manager.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/player_stats_manager.gd" id="9"]
-[ext_resource type="Script" path="res://scripts/concept_visual_layer.gd" id="10"]
-[ext_resource type="Script" path="res://scripts/concept_ground_layer.gd" id="11"]
-[ext_resource type="Script" path="res://scripts/concept_composition_v2.gd" id="12"]
-[ext_resource type="Script" path="res://scripts/presentation_manager.gd" id="13"]
-[ext_resource type="Script" path="res://scripts/vertical_slice_visual.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/presentation_manager.gd" id="10"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
-background_color = Color(0.72, 0.84, 0.91, 1)
+background_color = Color(0.70, 0.84, 0.91, 1)
 ambient_light_source = 3
-ambient_light_color = Color(0.94, 0.88, 0.75, 1)
-ambient_light_energy = 0.78
+ambient_light_color = Color(0.95, 0.90, 0.78, 1)
+ambient_light_energy = 0.82
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -29,22 +25,10 @@ script = ExtResource("1")
 environment = SubResource("Environment_main")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-48, -38, 0)
-light_color = Color(1, 0.87, 0.70, 1)
-light_energy = 1.05
+rotation_degrees = Vector3(-52, -36, 0)
+light_color = Color(1, 0.91, 0.77, 1)
+light_energy = 0.82
 shadow_enabled = true
-
-[node name="ConceptGroundLayer" type="Node3D" parent="."]
-script = ExtResource("11")
-
-[node name="ConceptVisualLayer" type="Node3D" parent="."]
-script = ExtResource("10")
-
-[node name="ConceptCompositionV2" type="Node3D" parent="."]
-script = ExtResource("12")
-
-[node name="VerticalSliceVisual" type="Node3D" parent="."]
-script = ExtResource("14")
 
 [node name="InventoryManager" type="Node" parent="."]
 script = ExtResource("7")
@@ -53,7 +37,7 @@ script = ExtResource("7")
 script = ExtResource("9")
 
 [node name="Player" parent="." instance=ExtResource("2")]
-position = Vector3(8.0, 0.2, 15.0)
+position = Vector3(0.0, 0.2, 4.0)
 
 [node name="FarmManager" type="Node3D" parent="."]
 script = ExtResource("4")
@@ -70,4 +54,4 @@ script = ExtResource("8")
 [node name="MobileControls" parent="." instance=ExtResource("3")]
 
 [node name="PresentationManager" type="Node" parent="."]
-script = ExtResource("13")
+script = ExtResource("10")
