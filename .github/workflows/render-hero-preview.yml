@@ -8,8 +8,12 @@ on:
       - 'assets/models/**'
   workflow_dispatch:
 
+concurrency:
+  group: lembah-sari-hero-preview
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   render:
@@ -19,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Install Blender and render dependencies
         shell: bash
@@ -68,18 +72,6 @@ jobs:
           test -s assets/models/hero_scene_01.glb
           file assets/models/hero_scene_01.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_01.glb
-
-      - name: Persist generated hero assets on branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/house_main_01.glb assets/models/hero_scene_01.glb
-          if ! git diff --cached --quiet; then
-            git commit -m "build(art): generate Blender hero scene GLBs"
-            git push origin HEAD:visual/rebuild-vs01-v2
-          fi
 
       - name: Import and validate project
         shell: bash
