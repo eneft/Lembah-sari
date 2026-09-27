@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 420">
+  <defs><filter id="s" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="8"/><feComponentTransfer><feFuncA type="linear" slope=".22"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <g filter="url(#s)">
+    <ellipse cx="160" cy="385" rx="74" ry="18" fill="#274d2e" opacity=".24"/>
+    <path d="M147 191c-9 52-12 103-5 171h38c-2-60 4-116 16-171z" fill="#8b5a37"/>
+    <path d="M158 202c2 39 0 89-4 146" stroke="#b97a4a" stroke-width="7" opacity=".55"/>
+    <g>
+      <ellipse cx="115" cy="163" rx="77" ry="63" fill="#3f7d46"/>
+      <ellipse cx="187" cy="139" rx="82" ry="70" fill="#4b8f50"/>
+      <ellipse cx="216" cy="207" rx="70" ry="58" fill="#3c7845"/>
+      <ellipse cx="111" cy="226" rx="72" ry="55" fill="#529b56"/>
+      <ellipse cx="162" cy="87" rx="66" ry="54" fill="#5aa35c"/>
+      <ellipse cx="160" cy="180" rx="99" ry="78" fill="#4a8e4d" opacity=".92"/>
+    </g>
+    <g fill="#72b86d" opacity=".9"><ellipse cx="93" cy="171" rx="27" ry="20"/><ellipse cx="196" cy="106" rx="31" ry="22"/><ellipse cx="229" cy="209" rx="25" ry="18"/></g>
+    <g fill="#e9a94a"><circle cx="115" cy="184" r="7"/><circle cx="173" cy="141" r="7"/><circle cx="203" cy="194" r="7"/><circle cx="137" cy="226" r="7"/></g>
+  </g>
+</svg>
