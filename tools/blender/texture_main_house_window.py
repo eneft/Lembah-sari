@@ -53,19 +53,19 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_window_image(name, size=256):
-    """Bake a readable stylized glass surface for the fixed hero camera.
+    """Bake stylized village glass that remains readable at gameplay scale.
 
-    This stays opaque for predictable GLB/Godot rendering. Glass is conveyed by
-    cool depth, broad hand-painted sky reflections, darker edge depth, and very
-    restrained age streaking. The contrast is intentionally large-scale so the
-    material still reads at the actual gameplay camera distance.
+    The pane stays opaque for predictable GLB/Godot rendering. The texture gives
+    it cool depth, broad sky variation, subtle age streaking, and darker edges.
+    Explicit reflection slashes are added as tiny front-surface details later in
+    this pass because the texture-only version still read as a flat cyan card at
+    the fixed hero camera distance.
     """
     tau = math.pi * 2.0
-    deep = (0.030, 0.145, 0.175)
-    mid = (0.075, 0.310, 0.345)
-    sky = (0.345, 0.650, 0.670)
-    sky_bright = (0.560, 0.790, 0.785)
-    dust = (0.255, 0.315, 0.255)
+    deep = (0.025, 0.115, 0.150)
+    mid = (0.065, 0.275, 0.325)
+    sky = (0.285, 0.585, 0.630)
+    dust = (0.245, 0.300, 0.245)
     rows = []
 
     for py in range(size):
@@ -74,45 +74,33 @@ def build_window_image(name, size=256):
         for px in range(size):
             u = px / float(size - 1)
 
-            # Stronger top-to-bottom depth plus one very broad hand-painted
-            # modulation. This gives each pane volume instead of one cyan fill.
-            vertical = clamp(0.22 + (1.0 - v) * 0.42)
-            broad = math.sin((u * 0.82 + v * 0.54 + 0.13) * tau) * 0.075
+            vertical = clamp(0.16 + (1.0 - v) * 0.50)
+            broad = (
+                math.sin((u * 0.72 + v * 0.48 + 0.11) * tau) * 0.080
+                + math.sin((u * 0.31 - v * 0.83 + 0.47) * tau) * 0.035
+            )
             t = clamp(vertical + broad)
             rgb = tuple(mix(deep[c], mid[c], t) for c in range(3))
 
-            # Primary diagonal sky reflection: broad enough to survive the fixed
-            # camera, with a brighter core that still avoids a mirror-like pane.
-            axis = u * 0.88 + (1.0 - v) * 0.66
-            soft_band = math.exp(-((axis - 0.79) / 0.19) ** 2) * 0.66
-            core_band = math.exp(-((axis - 0.79) / 0.070) ** 2) * 0.42
-            rgb = tuple(mix(rgb[c], sky[c], clamp(soft_band)) for c in range(3))
-            rgb = tuple(mix(rgb[c], sky_bright[c], clamp(core_band)) for c in range(3))
+            # Very broad reflected-sky lift. It is intentionally not a narrow
+            # stripe; the geometric reflection accents below supply the crisp cue.
+            axis = u * 0.78 + (1.0 - v) * 0.62
+            reflected = math.exp(-((axis - 0.80) / 0.24) ** 2) * 0.42
+            rgb = tuple(mix(rgb[c], sky[c], reflected) for c in range(3))
 
-            # A secondary faint reflection break prevents the single-band texture
-            # from looking like a painted stripe while keeping the design graphic.
-            axis_2 = u * 0.52 + v * 0.74
-            secondary = math.exp(-((axis_2 - 0.93) / 0.13) ** 2) * 0.18
-            rgb = tuple(mix(rgb[c], sky[c], secondary) for c in range(3))
-
-            # Darken the perimeter slightly. Window frames already define the
-            # silhouette; this just adds glass depth at the pane edge.
             edge_distance = min(u, 1.0 - u, v, 1.0 - v)
-            edge_mask = 1.0 - clamp(edge_distance / 0.18)
-            rgb = tuple(mix(rgb[c], deep[c], edge_mask * 0.18) for c in range(3))
+            edge_mask = 1.0 - clamp(edge_distance / 0.20)
+            rgb = tuple(mix(rgb[c], deep[c], edge_mask * 0.28) for c in range(3))
 
-            # Very low-contrast age streaks, never dominant over the broad glass
-            # read at game scale.
             streak = (
-                math.sin((u * 11.0 + 0.23) * tau) * 0.006
-                + math.sin((u * 19.0 + v * 0.65 + 0.61) * tau) * 0.004
+                math.sin((u * 9.0 + 0.23) * tau) * 0.0045
+                + math.sin((u * 15.0 + v * 0.55 + 0.61) * tau) * 0.0030
             )
             rgb = tuple(clamp(channel + streak) for channel in rgb)
 
-            # Slight sill dust warms only the lowest part of the pane.
-            lower = clamp((v - 0.78) / 0.22)
-            dust_noise = 0.58 + math.sin((u * 2.4 + 0.17) * tau) * 0.18
-            dust_amount = lower * dust_noise * 0.055
+            lower = clamp((v - 0.80) / 0.20)
+            dust_noise = 0.58 + math.sin((u * 2.1 + 0.17) * tau) * 0.17
+            dust_amount = lower * dust_noise * 0.050
             rgb = tuple(mix(rgb[c], dust[c], dust_amount) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
@@ -163,15 +151,60 @@ def texture_material(material, image):
     tex.extension = "REPEAT"
     links.new(tex.outputs["Color"], base_socket)
 
-    shader.inputs["Roughness"].default_value = 0.34
+    shader.inputs["Roughness"].default_value = 0.28
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.38
+        shader.inputs["Specular IOR Level"].default_value = 0.42
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.38
+        shader.inputs["Specular"].default_value = 0.42
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
         shader.inputs["Emission Strength"].default_value = 0.0
+
+
+def reflection_material():
+    material = bpy.data.materials.get("Window Sky Reflection") or bpy.data.materials.new("Window Sky Reflection")
+    material.diffuse_color = (0.42, 0.72, 0.73, 1.0)
+    material.use_nodes = True
+    shader = material.node_tree.nodes.get("Principled BSDF")
+    if shader is not None:
+        shader.inputs["Base Color"].default_value = (0.42, 0.72, 0.73, 1.0)
+        shader.inputs["Roughness"].default_value = 0.24
+        if "Specular IOR Level" in shader.inputs:
+            shader.inputs["Specular IOR Level"].default_value = 0.46
+        elif "Specular" in shader.inputs:
+            shader.inputs["Specular"].default_value = 0.46
+        if "Metallic" in shader.inputs:
+            shader.inputs["Metallic"].default_value = 0.0
+        if "Emission Strength" in shader.inputs:
+            shader.inputs["Emission Strength"].default_value = 0.0
+    return material
+
+
+def add_reflection_band(glass_obj, suffix, x_offset, z_offset, width, length, angle_deg, material):
+    """Add one clipped-looking reflection slash just in front of a pane.
+
+    The generated house windows are axis-aligned facade boxes. The slash is kept
+    deliberately short so it remains inside the glass field and underneath the
+    existing wooden mullion read, rather than becoming a decorative stripe.
+    """
+    center = glass_obj.matrix_world.translation
+    front_y = center.y - (glass_obj.dimensions.y * 0.5) - 0.004
+    bpy.ops.mesh.primitive_cube_add(
+        location=(center.x + x_offset, front_y, center.z + z_offset),
+        rotation=(0.0, math.radians(angle_deg), 0.0),
+    )
+    band = bpy.context.object
+    band.name = "%s_Reflection_%s" % (glass_obj.name, suffix)
+    band.dimensions = (width, 0.008, length)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    band.data.materials.append(material)
+    bevel = band.modifiers.new("Soft reflection edge", "BEVEL")
+    bevel.width = 0.014
+    bevel.segments = 2
+    bpy.context.view_layer.objects.active = band
+    bpy.ops.object.modifier_apply(modifier=bevel.name)
+    return band
 
 
 window_image = build_window_image("Lembah Weathered Teal Window")
@@ -185,6 +218,7 @@ if not matched_materials:
     raise RuntimeError("Muted Teal Window material not found after house GLB import")
 
 matched_objects = []
+window_objects = []
 for obj in bpy.context.scene.objects:
     if obj.type != "MESH":
         continue
@@ -195,9 +229,23 @@ for obj in bpy.context.scene.objects:
     if uses_window:
         ensure_uv(obj)
         matched_objects.append(obj.name)
+        window_objects.append(obj)
 
 if not matched_objects:
     raise RuntimeError("No WindowGlass mesh uses the expected Muted Teal Window material")
+
+# Texture-only V1 still read as a cyan card in the actual hero render. Two small,
+# broad reflection slashes per window make the material identity survive the fixed
+# gameplay camera while retaining the stylized low-poly language.
+reflection_mat = reflection_material()
+reflection_count = 0
+for glass in window_objects:
+    add_reflection_band(glass, "A", -0.18, 0.17, 0.105, 0.62, -28.0, reflection_mat)
+    add_reflection_band(glass, "B", 0.20, -0.12, 0.070, 0.42, -28.0, reflection_mat)
+    reflection_count += 2
+
+if reflection_count != len(window_objects) * 2:
+    raise RuntimeError("Window reflection overlay count mismatch")
 
 bpy.ops.object.select_all(action="SELECT")
 bpy.ops.export_scene.gltf(
@@ -207,4 +255,7 @@ bpy.ops.export_scene.gltf(
     export_apply=True,
     export_yup=True,
 )
-print("Textured hero-house window glass exported to %s (%s)" % (OUT_PATH, ", ".join(matched_objects)))
+print(
+    "Textured hero-house window glass exported to %s (%s, %d reflection accents)"
+    % (OUT_PATH, ", ".join(matched_objects), reflection_count)
+)
