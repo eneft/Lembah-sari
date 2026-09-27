@@ -1,13 +1,6 @@
 name: Deploy Visual Preview to Pages
 
 on:
-  workflow_run:
-    workflows:
-      - Build Godot Web Preview
-    types:
-      - completed
-    branches:
-      - visual/rebuild-vs01-v2
   workflow_dispatch:
 
 concurrency:
@@ -21,21 +14,16 @@ permissions:
 
 jobs:
   deploy:
-    if: >-
-      ${{
-        github.event_name == 'workflow_dispatch' ||
-        github.event.workflow_run.conclusion == 'success'
-      }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout visual preview commit
+      - name: Checkout latest visual preview branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'visual/rebuild-vs01-v2' }}
+          ref: visual/rebuild-vs01-v2
 
       - name: Install Godot 4.7 and Web export templates
         shell: bash
