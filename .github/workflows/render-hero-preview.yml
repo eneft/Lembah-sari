@@ -18,7 +18,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-24.04
-    timeout-minutes: 24
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y blender python3-numpy unzip xvfb libgl1-mesa-dri libglx-mesa0 libxrandr2 libxi6 libxcursor1 libxinerama1 libxkbcommon0 libasound2t64
+          sudo apt-get install -y blender unzip xvfb libgl1-mesa-dri libglx-mesa0 libxrandr2 libxi6 libxcursor1 libxinerama1 libxkbcommon0 libasound2t64
           blender --version
           curl -fL --retry 3 -o /tmp/godot.zip \
             https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
@@ -39,7 +39,7 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build main house GLB in Blender
+      - name: Build 2.5D main house GLB in Blender
         shell: bash
         run: |
           set -euo pipefail
@@ -48,30 +48,7 @@ jobs:
             blender --background --python tools/blender/build_main_house.py
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
-
-      - name: Fetch pinned CC0 stylized nature sources
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/quaternius
-          BASE="https://raw.githubusercontent.com/ladybug-tools/3d-models/009902a16ca3ffed250b13b6b11f9402da119b73/quaternius/ultimate-nature-pack"
-          for ASSET in CommonTree_4 PalmTree_2 Bush_2 Grass_Short Flowers Rock_Moss_3 Wheat Lilypad Plant_3; do
-            curl -fL --retry 3 "$BASE/$ASSET.obj" -o "/tmp/quaternius/$ASSET.obj"
-            curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
-          done
-          find /tmp/quaternius -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-
-      - name: Build hero environment GLB in Blender
-        shell: bash
-        run: |
-          set -euo pipefail
-          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
-          LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_01.glb" \
-          LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene_v4.py
-          test -s assets/models/hero_scene_01.glb
-          file assets/models/hero_scene_01.glb
-          ls -lh assets/models/house_main_01.glb assets/models/hero_scene_01.glb
+          ls -lh assets/models/house_main_01.glb
 
       - name: Import and validate project
         shell: bash
@@ -79,27 +56,25 @@ jobs:
           set -euo pipefail
           godot --headless --path . --editor --quit-after 60
 
-      - name: Render full hero environment in Godot
+      - name: Render house-only concept review in Godot
         shell: bash
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' \
-            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroEnvironmentShowcase.tscn
-          test -s hero_environment_preview.png
-          file hero_environment_preview.png
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroHouseShowcaseV2.tscn
+          test -s hero_house_focus_preview.png
+          file hero_house_focus_preview.png
 
-      - name: Upload hero environment screenshot
+      - name: Upload house focus screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: hero-environment-preview
-          path: hero_environment_preview.png
+          name: hero-house-focus-preview
+          path: hero_house_focus_preview.png
           if-no-files-found: error
 
-      - name: Upload generated GLBs
+      - name: Upload generated house GLB
         uses: actions/upload-artifact@v4
         with:
-          name: hero-scene-glbs
-          path: |
-            assets/models/house_main_01.glb
-            assets/models/hero_scene_01.glb
+          name: main-house-25d-glb
+          path: assets/models/house_main_01.glb
           if-no-files-found: error
