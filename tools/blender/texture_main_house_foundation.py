@@ -53,19 +53,21 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_foundation_image(name, size=256):
-    """Bake restrained warm stone variation for the low house footing.
+    """Bake bold-but-broad warm village-stone variation for the low footing.
 
-    The footing is a thin strip at game scale, so the map uses broad tonal
-    patches plus a few soft mineral veins instead of tiny photographic noise or
-    hard brick lines. It should read as aged village stone, not concrete or a
-    repeated masonry wallpaper.
+    The footing is only a thin strip at the gameplay camera, so the previous
+    restrained map collapsed into one grey value. This pass deliberately widens
+    the value and hue separation at a *large* spatial scale: warm ochre stone,
+    muted greige stone, shaded brown stone, and a little damp olive aging. There
+    are no brick courses, hard mortar lines, or fine photographic noise.
     """
     tau = math.pi * 2.0
-    dark = (0.235, 0.205, 0.165)
-    mid = (0.390, 0.345, 0.280)
-    light = (0.535, 0.470, 0.365)
-    warm = (0.505, 0.385, 0.245)
-    cool = (0.285, 0.325, 0.285)
+    shadow = (0.160, 0.125, 0.085)
+    brown = (0.315, 0.240, 0.145)
+    greige = (0.475, 0.410, 0.305)
+    light = (0.690, 0.590, 0.410)
+    ochre = (0.665, 0.455, 0.225)
+    damp = (0.245, 0.315, 0.245)
     rows = []
 
     for py in range(size):
@@ -74,38 +76,48 @@ def build_foundation_image(name, size=256):
         for px in range(size):
             u = px / float(size - 1)
 
+            # Large irregular stone-value masses. These are intentionally much
+            # stronger than pass 1 so they survive downsampling to ~10 px high.
             broad = (
-                math.sin((u * 1.45 + v * 1.10 + 0.18) * tau) * 0.125
-                + math.sin((u * 2.85 - v * 2.10 + 0.47) * tau) * 0.060
-                + math.sin((u * 5.25 + v * 3.60 + 0.71) * tau) * 0.024
+                math.sin((u * 0.92 + v * 0.54 + 0.11) * tau) * 0.235
+                + math.sin((u * 1.85 - v * 1.20 + 0.39) * tau) * 0.115
+                + math.sin((u * 3.20 + v * 1.65 + 0.73) * tau) * 0.050
             )
-            t = clamp(0.50 + broad)
-            if t < 0.50:
-                q = t / 0.50
-                rgb = tuple(mix(dark[c], mid[c], q) for c in range(3))
+            t = clamp(0.53 + broad)
+            if t < 0.38:
+                q = t / 0.38
+                rgb = tuple(mix(shadow[c], brown[c], q) for c in range(3))
+            elif t < 0.68:
+                q = (t - 0.38) / 0.30
+                rgb = tuple(mix(brown[c], greige[c], q) for c in range(3))
             else:
-                q = (t - 0.50) / 0.50
-                rgb = tuple(mix(mid[c], light[c], q) for c in range(3))
+                q = (t - 0.68) / 0.32
+                rgb = tuple(mix(greige[c], light[c], q) for c in range(3))
 
-            # Warm oxidized mineral patches keep the footing tied to the house's
-            # timber/terracotta palette without making it orange.
+            # Broad warm mineral blooms give the base a lived-in tropical stone
+            # identity and separate it from the cool ground shadow.
             warm_field = (
-                math.sin((u * 1.20 - v * 1.75 + 0.34) * tau) * 0.70
-                + math.sin((u * 3.10 + v * 1.15 + 0.12) * tau) * 0.22
+                math.sin((u * 1.08 - v * 0.72 + 0.27) * tau) * 0.72
+                + math.sin((u * 2.35 + v * 1.10 + 0.58) * tau) * 0.28
             )
-            warm_amount = clamp((warm_field - 0.48) / 0.38) * 0.12
-            rgb = tuple(mix(rgb[c], warm[c], warm_amount) for c in range(3))
+            warm_amount = clamp((warm_field - 0.18) / 0.72) * 0.32
+            rgb = tuple(mix(rgb[c], ochre[c], warm_amount) for c in range(3))
 
-            # Sparse muted cool aging suggests damp tropical exposure near grade.
-            cool_field = math.sin((u * 2.20 + v * 3.40 + 0.61) * tau)
-            cool_amount = clamp((cool_field - 0.72) / 0.28) * 0.075
-            rgb = tuple(mix(rgb[c], cool[c], cool_amount) for c in range(3))
+            # Wider muted damp patches near the lower half. They break the warm
+            # mass without becoming green moss or tiny speckled noise.
+            lower = clamp((v - 0.42) / 0.58)
+            damp_field = (
+                math.sin((u * 1.55 + v * 1.85 + 0.66) * tau) * 0.76
+                + math.sin((u * 3.15 - v * 0.85 + 0.16) * tau) * 0.18
+            )
+            damp_amount = lower * clamp((damp_field - 0.34) / 0.58) * 0.22
+            rgb = tuple(mix(rgb[c], damp[c], damp_amount) for c in range(3))
 
-            # Soft mineral vein: wide enough to survive filtering, low contrast
-            # enough that it never becomes a cartoon crack pattern.
-            vein_axis = v - (0.42 + 0.11 * math.sin((u * 2.1 + 0.23) * tau))
-            vein = math.exp(-((vein_axis / 0.030) ** 2)) * 0.075
-            rgb = tuple(mix(rgb[c], dark[c], vein) for c in range(3))
+            # A soft, broad mineral shadow meanders across the texture. Width is
+            # intentionally generous so it reads as stone variation, never a crack.
+            mineral_axis = v - (0.46 + 0.15 * math.sin((u * 1.32 + 0.19) * tau))
+            mineral = math.exp(-((mineral_axis / 0.085) ** 2)) * 0.15
+            rgb = tuple(mix(rgb[c], shadow[c], mineral) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
             row.extend(int(round(clamp(channel) * 255.0)) for channel in encoded)
@@ -129,7 +141,7 @@ def ensure_uv(obj):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.cube_project(cube_size=2.15, correct_aspect=True)
+    bpy.ops.uv.cube_project(cube_size=1.55, correct_aspect=True)
     bpy.ops.object.mode_set(mode="OBJECT")
     obj.select_set(False)
 
@@ -155,18 +167,18 @@ def texture_material(material, image):
     tex.extension = "REPEAT"
     links.new(tex.outputs["Color"], base_socket)
 
-    shader.inputs["Roughness"].default_value = 0.96
+    shader.inputs["Roughness"].default_value = 0.97
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.09
+        shader.inputs["Specular IOR Level"].default_value = 0.07
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.09
+        shader.inputs["Specular"].default_value = 0.07
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
         shader.inputs["Emission Strength"].default_value = 0.0
 
 
-stone_image = build_foundation_image("Lembah Warm Foundation Stone")
+stone_image = build_foundation_image("Lembah Warm Foundation Stone Bold")
 matched_materials = []
 for material in bpy.data.materials:
     if material.name.startswith("Warm Foundation Stone"):
