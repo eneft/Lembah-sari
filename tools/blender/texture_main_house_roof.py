@@ -48,7 +48,7 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_terracotta_image(name, dark, mid, light, phase=0.0, size=256):
-    """Bake gentle clay color variation, avoiding photographic micro-noise."""
+    """Bake small-scale handmade clay variation; roof geometry supplies the tile read."""
     tau = math.pi * 2.0
     rows = []
     for py in range(size):
@@ -56,13 +56,20 @@ def build_terracotta_image(name, dark, mid, light, phase=0.0, size=256):
         row = bytearray()
         for px in range(size):
             u = px / float(size - 1)
+
+            # Keep albedo variation below the scale of the modeled roof bands.
+            # Earlier broad waves read like cloth/checker streaks from the game camera.
             broad = (
-                math.sin((u * 1.8 + v * 0.9 + phase) * tau) * 0.15
-                + math.sin((u * 3.6 - v * 2.2 + 0.27) * tau) * 0.075
-                + math.sin((u * 7.0 + v * 5.2 + 0.53) * tau) * 0.030
+                math.sin((u * 4.8 + v * 2.2 + phase) * tau) * 0.050
+                + math.sin((u * 8.4 - v * 5.6 + 0.27 + phase * 0.4) * tau) * 0.030
+                + math.sin((u * 15.5 + v * 12.0 + 0.53) * tau) * 0.014
             )
-            age = math.sin((u * 11.0 - v * 9.0 + phase * 0.7) * tau) * 0.018
-            t = clamp(0.50 + broad + age)
+            clay = (
+                math.sin((u * 24.0 - v * 19.0 + phase * 0.7) * tau)
+                * math.sin((u * 17.0 + v * 23.0 + 0.21) * tau)
+            ) * 0.008
+            t = clamp(0.50 + broad + clay)
+
             if t < 0.50:
                 q = t / 0.50
                 rgb = tuple(mix(dark[c], mid[c], q) for c in range(3))
@@ -70,8 +77,8 @@ def build_terracotta_image(name, dark, mid, light, phase=0.0, size=256):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(mix(mid[c], light[c], q) for c in range(3))
 
-            # Sparse sun-faded clay patches keep the roof handmade rather than flat.
-            fade = clamp((math.sin((u * 4.1 + v * 3.3 + 0.42) * tau) - 0.76) / 0.24) * 0.035
+            # Rare sun-faded flecks, intentionally low contrast.
+            fade = clamp((math.sin((u * 13.0 + v * 10.0 + 0.42) * tau) - 0.86) / 0.14) * 0.015
             faded = (0.62, 0.27, 0.14)
             rgb = tuple(mix(rgb[c], faded[c], fade) for c in range(3))
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
@@ -96,7 +103,7 @@ def ensure_uv(obj):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.cube_project(cube_size=2.2, correct_aspect=True)
+    bpy.ops.uv.cube_project(cube_size=1.6, correct_aspect=True)
     bpy.ops.object.mode_set(mode="OBJECT")
     obj.select_set(False)
 
