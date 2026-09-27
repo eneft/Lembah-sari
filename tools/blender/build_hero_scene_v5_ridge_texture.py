@@ -281,28 +281,28 @@ near_source = source_material(near)
 mid_source = source_material(mid)
 far_source = source_material(far)
 
-# Every farther layer becomes lighter and less saturated. The texture carries
-# only broad haze-scale changes so the horizon supports, rather than competes
-# with, the playable foreground.
+# Final values stay deliberately below the bright sky/fog range. The farther
+# layers are lighter and less saturated, but all three remain recognizably sage
+# terrain instead of reading as white graphic ribbons under the Godot sun.
 near_img = build_ridge_image(
     "Lembah Ridge Near Haze",
-    dark=(0.300, 0.405, 0.285),
-    mid=(0.370, 0.470, 0.340),
-    light=(0.435, 0.525, 0.395),
+    dark=(0.145, 0.235, 0.135),
+    mid=(0.205, 0.315, 0.185),
+    light=(0.275, 0.385, 0.245),
     phase=0.11,
 )
 mid_img = build_ridge_image(
     "Lembah Ridge Mid Haze",
-    dark=(0.380, 0.470, 0.355),
-    mid=(0.445, 0.530, 0.415),
-    light=(0.505, 0.585, 0.470),
+    dark=(0.205, 0.300, 0.195),
+    mid=(0.270, 0.365, 0.255),
+    light=(0.335, 0.430, 0.315),
     phase=0.39,
 )
 far_img = build_ridge_image(
     "Lembah Ridge Far Haze",
-    dark=(0.465, 0.535, 0.440),
-    mid=(0.525, 0.590, 0.500),
-    light=(0.585, 0.645, 0.555),
+    dark=(0.290, 0.360, 0.280),
+    mid=(0.350, 0.420, 0.335),
+    light=(0.410, 0.480, 0.390),
     phase=0.67,
 )
 
