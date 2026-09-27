@@ -23,6 +23,14 @@ OUT_PATH = os.path.abspath(
 )
 os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 
+# V5's ground rebuild intentionally retires the old sphere/capsule horizon. Those
+# objects are marked hide_render by build_hero_scene_v5.py, but Blender's glTF
+# exporter does not serialize hide_render as runtime visibility. If selected,
+# they therefore survive into Godot and completely occlude the V5 ridge meshes.
+# Exclude only that retired horizon family at this gate's final export; every
+# other accepted scene object remains untouched.
+LEGACY_HORIZON_PREFIXES = ("BackHill", "FarHill", "HazeRidge", "MidRidge")
+
 
 def clamp(value, lo=0.0, hi=1.0):
     return max(lo, min(hi, value))
@@ -177,6 +185,24 @@ def assign(obj, material):
     obj.data.materials.append(material)
 
 
+def select_v5_export_set():
+    bpy.ops.object.select_all(action="DESELECT")
+    omitted = []
+    selected = 0
+    for obj in bpy.context.scene.objects:
+        if any(obj.name.startswith(prefix) for prefix in LEGACY_HORIZON_PREFIXES):
+            omitted.append(obj.name)
+            continue
+        obj.select_set(True)
+        selected += 1
+    if selected == 0:
+        raise RuntimeError("Atmospheric ridge export selection is empty")
+    if not all(any(name.startswith(prefix) for name in omitted) for prefix in ("BackHill", "HazeRidge", "MidRidge")):
+        raise RuntimeError("Expected retired legacy horizon objects were not found: %s" % omitted)
+    print("Atmospheric ridge final export excludes retired horizon: %s" % ", ".join(sorted(omitted)))
+    print("Atmospheric ridge final export keeps %d scene objects" % selected)
+
+
 near = require_mesh("V5NearRidge")
 mid = require_mesh("V5MidRidge")
 far = require_mesh("V5FarRidge")
@@ -213,7 +239,7 @@ assign(near, near_mat)
 assign(mid, mid_mat)
 assign(far, far_mat)
 
-bpy.ops.object.select_all(action="SELECT")
+select_v5_export_set()
 bpy.ops.export_scene.gltf(
     filepath=OUT_PATH,
     export_format="GLB",
