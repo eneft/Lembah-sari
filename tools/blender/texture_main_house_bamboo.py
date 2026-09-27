@@ -53,19 +53,21 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_bamboo_image(name, size=256):
-    """Bake warm dry bamboo variation for the porch lattice.
+    """Bake sun-dried porch bamboo that separates clearly from dark timber.
 
-    The same material is shared by vertical poles and horizontal rails, so this
-    deliberately avoids painted node rings. Geometry supplies the segmentation;
-    the map adds long soft fibre, sun bleaching, and restrained olive age marks
-    that remain readable without turning into stripes at the fixed hero camera.
+    The lattice is tiny at gameplay scale, so the palette deliberately keeps a
+    brighter golden midtone and broad value variation. There are still no hard
+    painted node rings because vertical poles and horizontal rails share the same
+    material; geometry supplies those breaks. Soft fibre and sparse olive aging
+    keep it natural rather than flat yellow plastic.
     """
     tau = math.pi * 2.0
-    dark = (0.225, 0.165, 0.055)
-    mid = (0.455, 0.355, 0.115)
-    light = (0.675, 0.560, 0.225)
-    sun = (0.760, 0.665, 0.335)
-    olive = (0.185, 0.245, 0.070)
+    dark = (0.355, 0.245, 0.070)
+    mid = (0.610, 0.475, 0.145)
+    light = (0.810, 0.690, 0.320)
+    sun = (0.900, 0.805, 0.455)
+    olive = (0.245, 0.315, 0.095)
+    dry_brown = (0.410, 0.265, 0.075)
     rows = []
 
     for py in range(size):
@@ -75,14 +77,14 @@ def build_bamboo_image(name, size=256):
             u = px / float(size - 1)
 
             broad = (
-                math.sin((u * 1.65 + v * 1.05 + 0.21) * tau) * 0.105
-                + math.sin((u * 3.10 - v * 1.75 + 0.48) * tau) * 0.050
+                math.sin((u * 1.42 + v * 0.92 + 0.21) * tau) * 0.165
+                + math.sin((u * 2.65 - v * 1.48 + 0.48) * tau) * 0.075
             )
             fibre = (
-                math.sin((u * 13.0 + v * 1.8 + 0.32) * tau) * 0.020
-                + math.sin((u * 27.0 - v * 2.4 + 0.71) * tau) * 0.009
+                math.sin((u * 11.0 + v * 1.45 + 0.32) * tau) * 0.026
+                + math.sin((u * 23.0 - v * 2.0 + 0.71) * tau) * 0.012
             )
-            t = clamp(0.50 + broad + fibre)
+            t = clamp(0.58 + broad + fibre)
             if t < 0.50:
                 q = t / 0.50
                 rgb = tuple(mix(dark[c], mid[c], q) for c in range(3))
@@ -90,20 +92,27 @@ def build_bamboo_image(name, size=256):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(mix(mid[c], light[c], q) for c in range(3))
 
-            # Soft sun-bleached patches help the small lattice stand apart from
-            # the dark timber facade without becoming bright yellow plastic.
-            sun_field = math.sin((u * 1.20 - v * 1.45 + 0.17) * tau)
-            sun_amount = clamp((sun_field - 0.30) / 0.70) * 0.16
+            # Broad sun bleaching is the main game-camera cue. It gives the thin
+            # poles readable highlights while remaining matte and hand-painted.
+            sun_field = (
+                math.sin((u * 1.05 - v * 1.28 + 0.17) * tau) * 0.72
+                + math.sin((u * 2.10 + v * 0.62 + 0.41) * tau) * 0.22
+            )
+            sun_amount = clamp((sun_field - 0.16) / 0.70) * 0.24
             rgb = tuple(mix(rgb[c], sun[c], sun_amount) for c in range(3))
 
-            # Sparse olive age variation ties the porch bamboo to the already
-            # accepted garden bamboo while keeping the house screen slightly drier.
+            # Sparse aged areas stop the brighter bamboo from becoming a clean
+            # yellow toy surface and visually tie it to the garden bamboo pass.
             age_field = (
                 math.sin((u * 2.35 + v * 2.75 + 0.55) * tau) * 0.68
                 + math.sin((u * 4.10 - v * 1.20 + 0.12) * tau) * 0.24
             )
-            age_amount = clamp((age_field - 0.58) / 0.30) * 0.11
+            age_amount = clamp((age_field - 0.56) / 0.32) * 0.12
             rgb = tuple(mix(rgb[c], olive[c], age_amount) for c in range(3))
+
+            dry_field = math.sin((u * 3.35 - v * 3.05 + 0.64) * tau)
+            dry_amount = clamp((dry_field - 0.70) / 0.30) * 0.075
+            rgb = tuple(mix(rgb[c], dry_brown[c], dry_amount) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
             row.extend(int(round(clamp(channel) * 255.0)) for channel in encoded)
@@ -153,18 +162,18 @@ def texture_material(material, image):
     tex.extension = "REPEAT"
     links.new(tex.outputs["Color"], base_socket)
 
-    shader.inputs["Roughness"].default_value = 0.91
+    shader.inputs["Roughness"].default_value = 0.93
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.13
+        shader.inputs["Specular IOR Level"].default_value = 0.11
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.13
+        shader.inputs["Specular"].default_value = 0.11
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
         shader.inputs["Emission Strength"].default_value = 0.0
 
 
-bamboo_image = build_bamboo_image("Lembah Dry Porch Bamboo")
+bamboo_image = build_bamboo_image("Lembah Sun Dried Porch Bamboo")
 matched_materials = []
 for material in bpy.data.materials:
     if material.name.startswith("Dry Bamboo"):
