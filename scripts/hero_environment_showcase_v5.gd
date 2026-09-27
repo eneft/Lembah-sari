@@ -10,11 +10,11 @@ func _ready() -> void:
 
 func _build_environment() -> void:
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color("91b9c6")
-	sky_material.sky_horizon_color = Color("d8ddd0")
-	sky_material.ground_bottom_color = Color("8a9075")
-	sky_material.ground_horizon_color = Color("d7d5bd")
-	sky_material.sun_angle_max = 20.0
+	sky_material.sky_top_color = Color("7ea8b5")
+	sky_material.sky_horizon_color = Color("c8d5ca")
+	sky_material.ground_bottom_color = Color("566a4f")
+	sky_material.ground_horizon_color = Color("c7caa9")
+	sky_material.sun_angle_max = 18.0
 	var sky := Sky.new()
 	sky.sky_material = sky_material
 
@@ -22,28 +22,28 @@ func _build_environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_color = Color("ecd9b8")
-	env.ambient_light_energy = 0.34
+	env.ambient_light_color = Color("ead4ae")
+	env.ambient_light_energy = 0.26
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.93
-	env.adjustment_contrast = 0.96
-	env.adjustment_saturation = 1.05
+	env.adjustment_brightness = 0.88
+	env.adjustment_contrast = 1.05
+	env.adjustment_saturation = 1.10
 	env.fog_enabled = true
-	env.fog_light_color = Color("d9ddd0")
-	env.fog_light_energy = 0.62
-	env.fog_density = 0.0065
-	env.fog_sky_affect = 0.42
+	env.fog_light_color = Color("cdd7cb")
+	env.fog_light_energy = 0.45
+	env.fog_density = 0.0025
+	env.fog_sky_affect = 0.22
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
 
 	var sun := DirectionalLight3D.new()
 	sun.name = "WarmMorningSun"
-	sun.rotation_degrees = Vector3(-39.0, -36.0, 0.0)
-	sun.light_color = Color("ffe5b6")
-	sun.light_energy = 0.56
+	sun.rotation_degrees = Vector3(-38.0, -39.0, 0.0)
+	sun.light_color = Color("ffdaa4")
+	sun.light_energy = 0.64
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 58.0
 	add_child(sun)
@@ -51,8 +51,8 @@ func _build_environment() -> void:
 	var fill := DirectionalLight3D.new()
 	fill.name = "SoftSkyFill"
 	fill.rotation_degrees = Vector3(-58.0, 132.0, 0.0)
-	fill.light_color = Color("bfd5d0")
-	fill.light_energy = 0.10
+	fill.light_color = Color("b8cecb")
+	fill.light_energy = 0.075
 	fill.shadow_enabled = false
 	add_child(fill)
 
@@ -66,20 +66,22 @@ func _load_hero_scene() -> void:
 		return
 	var hero := packed.instantiate()
 	hero.name = "HeroSceneV5"
-	# A slightly less frontal angle exposes the house side wall and gives the
-	# diagonal river/paddy composition more depth.
-	hero.rotation_degrees.y = 132.0
+	# Rotate farther from a front elevation: show more house side depth and let the
+	# river climb diagonally into the farming/background mass.
+	hero.rotation_degrees.y = 124.0
 	hero.scale = Vector3.ONE * 1.035
 	add_child(hero)
 
 func _build_camera() -> void:
 	var camera := Camera3D.new()
 	camera.name = "HeroCameraV5"
-	camera.position = Vector3(15.2, 6.15, -16.1)
-	camera.fov = 34.0
+	# Lower/closer fixed 3/4 framing. It preserves the full vertical slice while
+	# reducing the detached diorama feeling of the earlier high camera.
+	camera.position = Vector3(14.7, 5.55, -15.3)
+	camera.fov = 33.0
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(-0.55, 1.28, 0.95), Vector3.UP)
+	camera.look_at(Vector3(-0.70, 1.20, 1.05), Vector3.UP)
 
 func _capture() -> void:
 	for _frame in range(14):
