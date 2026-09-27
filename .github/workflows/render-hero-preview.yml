@@ -14,7 +14,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-24.04
-    timeout-minutes: 18
+    timeout-minutes: 24
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,17 +44,40 @@ jobs:
             blender --background --python tools/blender/build_main_house.py
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
-          ls -lh assets/models/house_main_01.glb
 
-      - name: Persist generated hero asset on branch
+      - name: Fetch pinned CC0 stylized nature sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quaternius
+          BASE="https://raw.githubusercontent.com/ladybug-tools/3d-models/009902a16ca3ffed250b13b6b11f9402da119b73/quaternius/ultimate-nature-pack"
+          for ASSET in CommonTree_4 PalmTree_2 Bush_2 Grass_Short Flowers Rock_Moss_3 Wheat Lilypad Plant_3; do
+            curl -fL --retry 3 "$BASE/$ASSET.obj" -o "/tmp/quaternius/$ASSET.obj"
+            curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
+          done
+          find /tmp/quaternius -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+      - name: Build hero environment GLB in Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_01.glb" \
+          LEMBAH_CC0_DIR="/tmp/quaternius" \
+            blender --background --python tools/blender/build_hero_scene.py
+          test -s assets/models/hero_scene_01.glb
+          file assets/models/hero_scene_01.glb
+          ls -lh assets/models/house_main_01.glb assets/models/hero_scene_01.glb
+
+      - name: Persist generated hero assets on branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/house_main_01.glb
+          git add assets/models/house_main_01.glb assets/models/hero_scene_01.glb
           if ! git diff --cached --quiet; then
-            git commit -m "build(art): generate Blender main house GLB"
+            git commit -m "build(art): generate Blender hero scene GLBs"
             git push origin HEAD:visual/rebuild-vs01-v2
           fi
 
@@ -62,27 +85,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --editor --quit-after 45
+          godot --headless --path . --editor --quit-after 60
 
-      - name: Render Blender hero house in Godot
+      - name: Render full hero environment in Godot
         shell: bash
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' \
-            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroHouseShowcaseV2.tscn
-          test -s hero_house_preview.png
-          file hero_house_preview.png
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/HeroEnvironmentShowcase.tscn
+          test -s hero_environment_preview.png
+          file hero_environment_preview.png
 
-      - name: Upload hero house screenshot
+      - name: Upload hero environment screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: hero-house-preview
-          path: hero_house_preview.png
+          name: hero-environment-preview
+          path: hero_environment_preview.png
           if-no-files-found: error
 
-      - name: Upload generated GLB
+      - name: Upload generated GLBs
         uses: actions/upload-artifact@v4
         with:
-          name: main-house-glb
-          path: assets/models/house_main_01.glb
+          name: hero-scene-glbs
+          path: |
+            assets/models/house_main_01.glb
+            assets/models/hero_scene_01.glb
           if-no-files-found: error
