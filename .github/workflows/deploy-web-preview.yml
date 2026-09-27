@@ -27,12 +27,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install Blender, Godot 4.7 and Web export templates
+      - name: Install Blender, headless graphics, Godot 4.7 and Web export templates
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y blender unzip
+          sudo apt-get install -y blender unzip xvfb libegl1 libgl1 libgl1-mesa-dri mesa-utils
           blender --version
 
           curl -fL --retry 3 -o /tmp/godot.zip \
@@ -53,10 +53,13 @@ jobs:
 
       - name: Render full-material 2.5D house sprite
         shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
         run: |
           set -euo pipefail
           mkdir -p assets/2p5d
           LEMBAH_HOUSE_SPRITE_OUT="$PWD/assets/2p5d/house_main_render.png" \
+            xvfb-run -a -s "-screen 0 1280x1024x24" \
             blender --background --python tools/blender/render_main_house_sprite.py
           test -s assets/2p5d/house_main_render.png
           file assets/2p5d/house_main_render.png
