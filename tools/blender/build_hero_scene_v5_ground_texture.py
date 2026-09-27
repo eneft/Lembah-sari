@@ -50,7 +50,7 @@ def _write_rgb_png(path, width, height, rows):
     """Write an RGB8 PNG directly with stdlib so Blender cannot zero the pixels."""
     raw = bytearray()
     for row in rows:
-        raw.append(0)  # PNG filter: None
+        raw.append(0)
         raw.extend(row)
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
     payload = (
@@ -64,7 +64,7 @@ def _write_rgb_png(path, width, height, rows):
 
 
 def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
-    """Bake a subtle stylized grass albedo to a real PNG and load it into Blender."""
+    """Bake a broad, low-noise stylized grass albedo to a real PNG."""
     tau = math.pi * 2.0
     rows = []
     for py in range(size):
@@ -73,14 +73,14 @@ def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
         for px in range(size):
             u = px / float(size - 1)
             broad = (
-                math.sin((u * 1.55 + v * 0.62 + phase) * tau) * 0.25
-                + math.sin((u * 0.72 - v * 1.38 + phase * 0.7) * tau) * 0.17
-                + math.sin((u * 2.65 + v * 2.15 + 0.19 + phase) * tau) * 0.10
+                math.sin((u * 1.55 + v * 0.62 + phase) * tau) * 0.22
+                + math.sin((u * 0.72 - v * 1.38 + phase * 0.7) * tau) * 0.15
+                + math.sin((u * 2.65 + v * 2.15 + 0.19 + phase) * tau) * 0.08
             )
             fine = (
                 math.sin((u * 12.0 + v * 7.0 + phase) * tau)
                 * math.sin((u * 8.0 - v * 11.0 + 0.31) * tau)
-            ) * 0.025
+            ) * 0.020
             t = _clamp(0.50 + broad + fine)
 
             if t < 0.50:
@@ -90,9 +90,10 @@ def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(_mix(mid[c], light[c], q) for c in range(3))
 
-            dry = _clamp((math.sin((u * 3.7 - v * 2.9 + 0.41 + phase) * tau) - 0.68) / 0.32)
-            dry *= 0.035
-            dry_tint = (0.32, 0.30, 0.11)
+            # Barely-visible dry undertone keeps the surface earthy rather than neon.
+            dry = _clamp((math.sin((u * 3.7 - v * 2.9 + 0.41 + phase) * tau) - 0.72) / 0.28)
+            dry *= 0.025
+            dry_tint = (0.25, 0.245, 0.085)
             rgb = tuple(_mix(rgb[c], dry_tint[c], dry) for c in range(3))
             encoded = tuple(_linear_to_srgb(channel) for channel in rgb)
             row.extend(int(round(_clamp(channel) * 255.0)) for channel in encoded)
@@ -125,9 +126,9 @@ def _textured_material(name, image, roughness=0.93):
 
     shader.inputs["Roughness"].default_value = roughness
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.18
+        shader.inputs["Specular IOR Level"].default_value = 0.16
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.18
+        shader.inputs["Specular"].default_value = 0.16
 
     links.new(texture.outputs["Color"], shader.inputs["Base Color"])
     links.new(shader.outputs["BSDF"], output.inputs["Surface"])
@@ -164,39 +165,41 @@ def _assign(obj, material, repeats=1.0):
 def textured_ground():
     _POLISHED_GROUND()
 
-    # Medium lush tropical green: richer than the old flat lawn but still bright
-    # enough for the cozy morning palette and fixed elevated camera.
+    # Keep the ground distinctly lush, but darker and earthier than the previous
+    # mint-green review so the house, water and paddies stay the visual focus.
     grass_main = _build_grass_texture(
         "Lembah Grass Main",
-        dark=(0.145, 0.300, 0.095),
-        mid=(0.235, 0.430, 0.145),
-        light=(0.355, 0.555, 0.205),
+        dark=(0.075, 0.180, 0.050),
+        mid=(0.125, 0.285, 0.078),
+        light=(0.205, 0.395, 0.120),
         phase=0.08,
     )
     grass_deep = _build_grass_texture(
         "Lembah Grass Deep",
-        dark=(0.105, 0.245, 0.075),
-        mid=(0.175, 0.355, 0.105),
-        light=(0.275, 0.465, 0.155),
+        dark=(0.055, 0.140, 0.040),
+        mid=(0.090, 0.225, 0.060),
+        light=(0.150, 0.325, 0.085),
         phase=0.37,
     )
     grass_warm = _build_grass_texture(
         "Lembah Grass Warm",
-        dark=(0.185, 0.320, 0.095),
-        mid=(0.275, 0.445, 0.130),
-        light=(0.390, 0.565, 0.185),
+        dark=(0.095, 0.195, 0.050),
+        mid=(0.150, 0.300, 0.075),
+        light=(0.235, 0.410, 0.105),
         phase=0.61,
     )
 
-    mat_main = _textured_material("V5 Textured Tropical Ground", grass_main, 0.94)
-    mat_deep = _textured_material("V5 Textured Deep Grass", grass_deep, 0.95)
-    mat_warm = _textured_material("V5 Textured Warm Grass", grass_warm, 0.94)
+    mat_main = _textured_material("V5 Textured Tropical Ground", grass_main, 0.95)
+    mat_deep = _textured_material("V5 Textured Deep Grass", grass_deep, 0.96)
+    mat_warm = _textured_material("V5 Textured Warm Grass", grass_warm, 0.95)
 
-    _assign(bpy.data.objects.get("SculptedVillageGround"), mat_main, 1.0)
-    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 1.35)
-    _assign(bpy.data.objects.get("V5GrassPatch_0"), mat_deep, 0.80)
-    _assign(bpy.data.objects.get("V5GrassPatch_1"), mat_warm, 0.80)
-    _assign(bpy.data.objects.get("V5GrassPatch_2"), mat_deep, 0.80)
+    # Slightly tighter mapping makes the surface read textured at game scale while
+    # keeping the large-value variation broad and non-photorealistic.
+    _assign(bpy.data.objects.get("SculptedVillageGround"), mat_main, 1.65)
+    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 2.35)
+    _assign(bpy.data.objects.get("V5GrassPatch_0"), mat_deep, 1.05)
+    _assign(bpy.data.objects.get("V5GrassPatch_1"), mat_warm, 1.05)
+    _assign(bpy.data.objects.get("V5GrassPatch_2"), mat_deep, 1.05)
 
 
 base.build_ground = textured_ground
