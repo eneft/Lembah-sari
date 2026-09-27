@@ -6,6 +6,7 @@ on:
       - visual/2p5d-prototype
     paths-ignore:
       - 'assets/models/**'
+      - 'assets/2p5d/house_main_render.png'
   workflow_dispatch:
 
 concurrency:
@@ -13,23 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 jobs:
   build-web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Install Godot 4.7 and Web export templates
+      - name: Install Blender, Godot 4.7 and Web export templates
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y unzip
+          sudo apt-get install -y blender unzip
+          blender --version
 
           curl -fL --retry 3 -o /tmp/godot.zip \
             https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
@@ -46,6 +50,40 @@ jobs:
 
           godot --version
           test -f "$HOME/.local/share/godot/export_templates/4.7.stable/web_release.zip"
+
+      - name: Build hero house model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/models assets/2p5d
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/build_main_house_concept.py
+          test -s assets/models/house_main_01.glb
+
+      - name: Render full-material 2.5D house sprite
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HOUSE_SPRITE_OUT="$PWD/assets/2p5d/house_main_render.png" \
+            blender --background --python tools/blender/render_main_house_sprite.py
+          test -s assets/2p5d/house_main_render.png
+          file assets/2p5d/house_main_render.png
+          ls -lh assets/2p5d/house_main_render.png
+
+      - name: Persist rendered house sprite
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/2p5d/house_main_render.png && git ls-files --error-unmatch assets/2p5d/house_main_render.png >/dev/null 2>&1; then
+            echo "Rendered house sprite unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/2p5d/house_main_render.png
+          git commit -m "art(2.5d): bake full-material hero house sprite"
+          git push origin HEAD:visual/2p5d-prototype
 
       - name: Import project
         shell: bash
@@ -65,6 +103,14 @@ jobs:
           test -s build/web/index.wasm
           echo "Web build output:"
           find build/web -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+      - name: Upload house material preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: house-material-2p5d-preview
+          path: assets/2p5d/house_main_render.png
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload downloadable Web build
         uses: actions/upload-artifact@v4
