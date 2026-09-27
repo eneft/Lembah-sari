@@ -28,6 +28,14 @@ def _mix(a, b, t):
     return a + (b - a) * t
 
 
+def _linear_to_srgb(value):
+    """Encode a linear art-direction value into the sRGB PNG texture space."""
+    value = _clamp(value)
+    if value <= 0.0031308:
+        return value * 12.92
+    return 1.055 * (value ** (1.0 / 2.4)) - 0.055
+
+
 def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
     """Create a soft hand-painted grass texture that survives GLB export.
 
@@ -67,14 +75,15 @@ def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
 
             # Sparse warm/dry undertone, blended softly instead of hard speckles.
             dry = _clamp((math.sin((u * 3.7 - v * 2.9 + 0.41 + phase) * tau) - 0.58) / 0.42)
-            dry *= 0.065
+            dry *= 0.055
             dry_tint = (0.30, 0.31, 0.12)
             rgb = tuple(_mix(rgb[c], dry_tint[c], dry) for c in range(3))
+            encoded = tuple(_linear_to_srgb(channel) for channel in rgb)
 
             idx = (py * size + px) * 4
-            pixels[idx + 0] = _clamp(rgb[0])
-            pixels[idx + 1] = _clamp(rgb[1])
-            pixels[idx + 2] = _clamp(rgb[2])
+            pixels[idx + 0] = encoded[0]
+            pixels[idx + 1] = encoded[1]
+            pixels[idx + 2] = encoded[2]
             pixels[idx + 3] = 1.0
 
     image.pixels.foreach_set(pixels)
@@ -142,6 +151,8 @@ def _assign(obj, material, repeats=1.0):
 def textured_ground():
     _POLISHED_GROUND()
 
+    # Palette values are authored in linear space to match the existing Blender
+    # material palette, then gamma-encoded when written into the sRGB PNG.
     grass_main = _build_grass_texture(
         "Lembah Grass Main",
         dark=(0.105, 0.235, 0.080),
@@ -171,7 +182,7 @@ def textured_ground():
     # Keep one broad texture read across the hero ground. The existing V5 polygon
     # islands stay as large-value variation, now with their own surface texture.
     _assign(bpy.data.objects.get("SculptedVillageGround"), mat_main, 1.0)
-    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 1.65)
+    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 1.45)
     _assign(bpy.data.objects.get("V5GrassPatch_0"), mat_deep, 0.85)
     _assign(bpy.data.objects.get("V5GrassPatch_1"), mat_warm, 0.85)
     _assign(bpy.data.objects.get("V5GrassPatch_2"), mat_deep, 0.85)
