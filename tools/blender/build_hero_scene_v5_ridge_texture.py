@@ -159,23 +159,74 @@ def ridge_material(name, source, image):
     return material
 
 
+def make_terrain_mass(obj, base_z=-0.44):
+    """Turn the original two-row ridge strip into a closed low terrain mass.
+
+    The V5 builder's ridge contour is preserved exactly. We only add skirts down
+    to the shared horizon base so the fixed camera reads a hill silhouette instead
+    of three floating ribbons once the retired legacy hills are removed.
+    """
+    old_mesh = obj.data
+    original = [tuple(vertex.co) for vertex in old_mesh.vertices]
+    if len(original) < 6 or len(original) % 2 != 0:
+        raise RuntimeError("Unexpected ridge topology for %s: %d vertices" % (obj.name, len(original)))
+
+    count = len(original) // 2
+    verts = list(original)
+    front_base = len(verts)
+    verts.extend((x, y, base_z) for x, y, _z in original[:count])
+    back_base = len(verts)
+    verts.extend((x, y, base_z) for x, y, _z in original[count:])
+
+    faces = []
+    # Preserve the original rolling top surface.
+    for i in range(count - 1):
+        faces.append((i, i + 1, count + i + 1, count + i))
+    # Front and back skirts create readable hill masses.
+    for i in range(count - 1):
+        faces.append((i, front_base + i, front_base + i + 1, i + 1))
+        faces.append((count + i + 1, back_base + i + 1, back_base + i, count + i))
+        faces.append((front_base + i, back_base + i, back_base + i + 1, front_base + i + 1))
+    # Close both ends so lighting/normals stay stable after export.
+    faces.append((0, count, back_base, front_base))
+    faces.append((count - 1, front_base + count - 1, back_base + count - 1, 2 * count - 1))
+
+    new_mesh = bpy.data.meshes.new(old_mesh.name + "AtmosphericMass")
+    new_mesh.from_pydata(verts, [], faces)
+    new_mesh.update()
+    obj.data = new_mesh
+
+    for modifier in list(obj.modifiers):
+        obj.modifiers.remove(modifier)
+    bevel = obj.modifiers.new("Atmospheric ridge softness", "BEVEL")
+    bevel.width = 0.035
+    bevel.segments = 2
+
+    if old_mesh.users == 0:
+        bpy.data.meshes.remove(old_mesh)
+    print("Atmospheric ridge mass rebuilt: %s (%d -> %d verts, %d faces)" % (obj.name, len(original), len(verts), len(faces)))
+
+
 def planar_uv(obj):
+    # The visible surfaces are now broad hill skirts, so X/Z projection keeps the
+    # broad texture readable across width and elevation instead of collapsing it
+    # into the ridge's shallow Y depth.
     mesh = obj.data
     if not mesh.vertices:
         return
     layer = mesh.uv_layers.get("UVMap") or mesh.uv_layers.new(name="UVMap")
     min_x = min(v.co.x for v in mesh.vertices)
     max_x = max(v.co.x for v in mesh.vertices)
-    min_y = min(v.co.y for v in mesh.vertices)
-    max_y = max(v.co.y for v in mesh.vertices)
+    min_z = min(v.co.z for v in mesh.vertices)
+    max_z = max(v.co.z for v in mesh.vertices)
     span_x = max(max_x - min_x, 1e-5)
-    span_y = max(max_y - min_y, 1e-5)
+    span_z = max(max_z - min_z, 1e-5)
     for poly in mesh.polygons:
         for loop_index in poly.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
             layer.data[loop_index].uv = (
                 (vertex.co.x - min_x) / span_x,
-                (vertex.co.y - min_y) / span_y,
+                (vertex.co.z - min_z) / span_z,
             )
 
 
@@ -207,6 +258,11 @@ near = require_mesh("V5NearRidge")
 mid = require_mesh("V5MidRidge")
 far = require_mesh("V5FarRidge")
 
+# Capture the original flat material sources before replacing each ridge mesh.
+near_source = source_material(near)
+mid_source = source_material(mid)
+far_source = source_material(far)
+
 # Every farther layer becomes lighter and less saturated. The range stays broad
 # enough to avoid a flat vector fill, but never competes with house, water or rice.
 near_img = build_ridge_image(
@@ -231,10 +287,13 @@ far_img = build_ridge_image(
     phase=0.67,
 )
 
-near_mat = ridge_material("V5 Textured Ridge Near", source_material(near), near_img)
-mid_mat = ridge_material("V5 Textured Ridge Mid", source_material(mid), mid_img)
-far_mat = ridge_material("V5 Textured Ridge Far", source_material(far), far_img)
+near_mat = ridge_material("V5 Textured Ridge Near", near_source, near_img)
+mid_mat = ridge_material("V5 Textured Ridge Mid", mid_source, mid_img)
+far_mat = ridge_material("V5 Textured Ridge Far", far_source, far_img)
 
+make_terrain_mass(near, base_z=-0.46)
+make_terrain_mass(mid, base_z=-0.43)
+make_terrain_mass(far, base_z=-0.40)
 assign(near, near_mat)
 assign(mid, mid_mat)
 assign(far, far_mat)
