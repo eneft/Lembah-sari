@@ -10,16 +10,19 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-# Install every accepted texture gate through garden bamboo without exporting.
-# This gate changes only the three distant hill masses so the background can be
-# reviewed independently before any later material is allowed to move.
-import build_hero_scene as base
-_REAL_MAIN = base.main
-base.main = lambda: None
-import build_hero_scene_v5_bamboo_texture  # noqa: F401
-base.main = _REAL_MAIN
+# Build the last accepted environment pass first. That module intentionally
+# constructs and exports the full scene at import time. The live Blender scene
+# remains available afterwards, so this gate can touch only BackHillA/B/C and
+# re-export without changing any already-accepted material gate.
+import build_hero_scene_v5_bamboo_texture  # noqa: F401,E402
 
-_PREVIOUS_GROUND = base.build_ground
+OUT_PATH = os.path.abspath(
+    os.environ.get(
+        "LEMBAH_HERO_OUT",
+        os.path.join(os.getcwd(), "assets", "models", "hero_scene_v5.glb"),
+    )
+)
+os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 
 
 def clamp(value, lo=0.0, hi=1.0):
@@ -65,9 +68,9 @@ def write_rgb_png(path, width, height, rows):
 def build_hill_image(name, dark, mid, light, warm, phase=0.0, size=256):
     """Bake broad atmospheric vegetation masses for distant village hills.
 
-    Hills occupy a large silhouette but sit behind the playable scene. Variation
-    therefore stays very low-frequency and muted: broad canopy/slope masses, a
-    little sun-warmed green, and no leaf detail or photographic speckle.
+    The hills are background silhouettes, so the texture deliberately avoids
+    leaf-scale detail. Only broad slope/canopy value changes survive the fixed
+    gameplay camera and keep the background calmer than the playable foreground.
     """
     tau = math.pi * 2.0
     rows = []
@@ -83,11 +86,9 @@ def build_hill_image(name, dark, mid, light, warm, phase=0.0, size=256):
                 + math.sin((u * 1.72 - v * 1.08 + 0.31 + phase * 0.45) * tau) * 0.105
                 + math.sin((u * 2.85 + v * 1.55 + 0.67) * tau) * 0.040
             )
-
-            # Keep the lower part fractionally deeper so the silhouette retains
-            # weight while the upper areas read as softly sunlit vegetation.
             vertical = (0.5 - v) * 0.10
             t = clamp(0.50 + broad + vertical)
+
             if t < 0.50:
                 q = t / 0.50
                 rgb = tuple(mix(dark[c], mid[c], q) for c in range(3))
@@ -118,6 +119,9 @@ def build_hill_image(name, dark, mid, light, warm, phase=0.0, size=256):
 
 
 def textured_material(name, source_material, image, roughness=0.98):
+    if source_material is None:
+        raise RuntimeError("Distant hill source material is missing")
+
     material = source_material.copy()
     material.name = name
     material.use_nodes = True
@@ -152,9 +156,22 @@ def textured_material(name, source_material, image, roughness=0.98):
     return material
 
 
-def ensure_uv(obj):
+def require_object(name):
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        obj = next((candidate for candidate in bpy.data.objects if candidate.name.startswith(name)), None)
     if obj is None or obj.type != "MESH":
-        return
+        raise RuntimeError("Expected distant hill mesh was not created: %s" % name)
+    return obj
+
+
+def first_material(obj):
+    if not obj.data.materials:
+        raise RuntimeError("Distant hill mesh has no source material: %s" % obj.name)
+    return obj.data.materials[0]
+
+
+def ensure_uv(obj):
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
@@ -166,40 +183,64 @@ def ensure_uv(obj):
 
 
 def assign(obj, material):
-    if obj is None or obj.type != "MESH":
-        raise RuntimeError("Expected distant hill mesh was not created")
     ensure_uv(obj)
     obj.data.materials.clear()
     obj.data.materials.append(material)
 
 
-def textured_ground():
-    _PREVIOUS_GROUND()
+hill_a = require_object("BackHillA")
+hill_b = require_object("BackHillB")
+hill_c = require_object("BackHillC")
 
-    deep_image = build_hill_image(
-        "Lembah Distant Hill Deep",
-        dark=(0.055, 0.145, 0.070),
-        mid=(0.105, 0.235, 0.105),
-        light=(0.175, 0.330, 0.145),
-        warm=(0.245, 0.355, 0.135),
-        phase=0.13,
+deep_image = build_hill_image(
+    "Lembah Distant Hill Deep",
+    dark=(0.055, 0.145, 0.070),
+    mid=(0.105, 0.235, 0.105),
+    light=(0.175, 0.330, 0.145),
+    warm=(0.245, 0.355, 0.135),
+    phase=0.13,
+)
+light_image = build_hill_image(
+    "Lembah Distant Hill Sun",
+    dark=(0.080, 0.185, 0.080),
+    mid=(0.145, 0.285, 0.120),
+    light=(0.225, 0.385, 0.165),
+    warm=(0.305, 0.405, 0.145),
+    phase=0.49,
+)
+
+deep_mat = textured_material(
+    "V5 Textured Distant Hill",
+    first_material(hill_a),
+    deep_image,
+)
+light_mat = textured_material(
+    "V5 Textured Distant Hill Light",
+    first_material(hill_b),
+    light_image,
+)
+
+assign(hill_a, deep_mat)
+assign(hill_b, light_mat)
+assign(hill_c, deep_mat)
+
+bpy.ops.object.select_all(action="SELECT")
+bpy.ops.export_scene.gltf(
+    filepath=OUT_PATH,
+    export_format="GLB",
+    use_selection=True,
+    export_apply=True,
+    export_yup=True,
+)
+print(
+    "Distant hill texture gate exported to %s (%s -> %s; %s -> %s; %s -> %s)"
+    % (
+        OUT_PATH,
+        hill_a.name,
+        deep_mat.name,
+        hill_b.name,
+        light_mat.name,
+        hill_c.name,
+        deep_mat.name,
     )
-    light_image = build_hill_image(
-        "Lembah Distant Hill Sun",
-        dark=(0.080, 0.185, 0.080),
-        mid=(0.145, 0.285, 0.120),
-        light=(0.225, 0.385, 0.165),
-        warm=(0.305, 0.405, 0.145),
-        phase=0.49,
-    )
-
-    deep_mat = textured_material("V5 Textured Distant Hill", base.MAT_HILL, deep_image)
-    light_mat = textured_material("V5 Textured Distant Hill Light", base.MAT_HILL_LIGHT, light_image)
-
-    assign(bpy.data.objects.get("BackHillA"), deep_mat)
-    assign(bpy.data.objects.get("BackHillB"), light_mat)
-    assign(bpy.data.objects.get("BackHillC"), deep_mat)
-
-
-base.build_ground = textured_ground
-_REAL_MAIN()
+)
