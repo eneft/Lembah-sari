@@ -137,26 +137,40 @@ def ridge_material(name, source, image):
     if shader is None:
         raise RuntimeError("Ridge material has no Principled shader: %s" % material.name)
 
+    # Distant atmospheric terrain should not show hard cast-shadow bands from the
+    # other horizon layers. Keep a tiny diffuse base for stable glTF export, then
+    # drive the authored sage texture primarily through emission. This mimics
+    # aerial light fill without changing the scene's global sun or fog.
     base_socket = shader.inputs.get("Base Color")
     for link in list(links):
         if link.to_node == shader and link.to_socket == base_socket:
             links.remove(link)
+    base_socket.default_value = (0.012, 0.018, 0.011, 1.0)
 
     tex = nodes.new("ShaderNodeTexImage")
     tex.image = image
     tex.interpolation = "Linear"
     tex.extension = "REPEAT"
-    links.new(tex.outputs["Color"], base_socket)
+
+    emission_socket = shader.inputs.get("Emission Color") or shader.inputs.get("Emission")
+    if emission_socket is None:
+        raise RuntimeError("Ridge material has no emission color input: %s" % material.name)
+    for link in list(links):
+        if link.to_node == shader and link.to_socket == emission_socket:
+            links.remove(link)
+    links.new(tex.outputs["Color"], emission_socket)
+
+    strength_socket = shader.inputs.get("Emission Strength")
+    if strength_socket is not None:
+        strength_socket.default_value = 0.82
 
     shader.inputs["Roughness"].default_value = 1.0
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.03
+        shader.inputs["Specular IOR Level"].default_value = 0.02
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.03
+        shader.inputs["Specular"].default_value = 0.02
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
-    if "Emission Strength" in shader.inputs:
-        shader.inputs["Emission Strength"].default_value = 0.0
     return material
 
 
@@ -304,8 +318,8 @@ near_source = source_material(near)
 mid_source = source_material(mid)
 far_source = source_material(far)
 
-# Keep all layers in a muted sage family. Values are intentionally conservative
-# because the fixed Godot sun/fog lifts these vertical faces substantially.
+# Keep all layers in a muted sage family. These are authored for the atmospheric
+# emission fill above, not for direct sun exposure, so they stay calm and matte.
 near_img = build_ridge_image(
     "Lembah Ridge Near Haze",
     dark=(0.090, 0.160, 0.080),
