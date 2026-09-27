@@ -82,11 +82,11 @@ def build_hill_image(name, dark, mid, light, warm, phase=0.0, size=256):
             u = px / float(size - 1)
 
             broad = (
-                math.sin((u * 0.92 + v * 0.64 + phase) * tau) * 0.205
-                + math.sin((u * 1.72 - v * 1.08 + 0.31 + phase * 0.45) * tau) * 0.105
-                + math.sin((u * 2.85 + v * 1.55 + 0.67) * tau) * 0.040
+                math.sin((u * 0.92 + v * 0.64 + phase) * tau) * 0.175
+                + math.sin((u * 1.72 - v * 1.08 + 0.31 + phase * 0.45) * tau) * 0.085
+                + math.sin((u * 2.85 + v * 1.55 + 0.67) * tau) * 0.032
             )
-            vertical = (0.5 - v) * 0.10
+            vertical = (0.5 - v) * 0.075
             t = clamp(0.50 + broad + vertical)
 
             if t < 0.50:
@@ -100,7 +100,7 @@ def build_hill_image(name, dark, mid, light, warm, phase=0.0, size=256):
                 math.sin((u * 1.28 - v * 0.76 + 0.21 + phase) * tau) * 0.72
                 + math.sin((u * 2.25 + v * 1.30 + 0.56) * tau) * 0.24
             )
-            warm_amount = clamp((warm_field - 0.47) / 0.45) * 0.105
+            warm_amount = clamp((warm_field - 0.47) / 0.45) * 0.070
             rgb = tuple(mix(rgb[c], warm[c], warm_amount) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
@@ -192,20 +192,23 @@ hill_a = require_object("BackHillA")
 hill_b = require_object("BackHillB")
 hill_c = require_object("BackHillC")
 
+# Distant values deliberately sit closer to the scene haze than to the active
+# grass palette. The first version was technically correct but too dark and
+# saturated, which pulled the middle hill forward and flattened scene depth.
 deep_image = build_hill_image(
     "Lembah Distant Hill Deep",
-    dark=(0.055, 0.145, 0.070),
-    mid=(0.105, 0.235, 0.105),
-    light=(0.175, 0.330, 0.145),
-    warm=(0.245, 0.355, 0.135),
+    dark=(0.125, 0.225, 0.115),
+    mid=(0.185, 0.315, 0.155),
+    light=(0.270, 0.405, 0.205),
+    warm=(0.315, 0.395, 0.185),
     phase=0.13,
 )
 light_image = build_hill_image(
     "Lembah Distant Hill Sun",
-    dark=(0.080, 0.185, 0.080),
-    mid=(0.145, 0.285, 0.120),
-    light=(0.225, 0.385, 0.165),
-    warm=(0.305, 0.405, 0.145),
+    dark=(0.165, 0.275, 0.135),
+    mid=(0.235, 0.360, 0.180),
+    light=(0.335, 0.465, 0.245),
+    warm=(0.385, 0.460, 0.225),
     phase=0.49,
 )
 
