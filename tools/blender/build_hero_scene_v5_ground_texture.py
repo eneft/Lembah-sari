@@ -1,6 +1,8 @@
 import math
 import os
+import struct
 import sys
+import zlib
 
 import bpy
 
@@ -29,41 +31,56 @@ def _mix(a, b, t):
 
 
 def _linear_to_srgb(value):
-    """Encode a linear art-direction value into the sRGB PNG texture space."""
     value = _clamp(value)
     if value <= 0.0031308:
         return value * 12.92
     return 1.055 * (value ** (1.0 / 2.4)) - 0.055
 
 
+def _png_chunk(kind, payload):
+    return (
+        struct.pack(">I", len(payload))
+        + kind
+        + payload
+        + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+    )
+
+
+def _write_rgb_png(path, width, height, rows):
+    """Write an RGB8 PNG directly with stdlib so Blender cannot zero the pixels."""
+    raw = bytearray()
+    for row in rows:
+        raw.append(0)  # PNG filter: None
+        raw.extend(row)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    payload = (
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", ihdr)
+        + _png_chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+        + _png_chunk(b"IEND", b"")
+    )
+    with open(path, "wb") as handle:
+        handle.write(payload)
+
+
 def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
-    """Create a soft hand-painted grass texture that survives GLB export.
-
-    We intentionally bake the variation into a PNG-backed Image Texture instead
-    of relying on Blender procedural nodes, because glTF/GLB export does not
-    preserve arbitrary procedural node graphs reliably.
-    """
-    image = bpy.data.images.new(name, width=size, height=size, alpha=False)
-    pixels = [0.0] * (size * size * 4)
+    """Bake a subtle stylized grass albedo to a real PNG and load it into Blender."""
     tau = math.pi * 2.0
-
+    rows = []
     for py in range(size):
         v = py / float(size - 1)
+        row = bytearray()
         for px in range(size):
             u = px / float(size - 1)
-
-            # Broad tonal islands do most of the visual work from the game's
-            # elevated camera. Fine grain is intentionally subtle so the ground
-            # does not become noisy or photorealistic.
             broad = (
-                math.sin((u * 1.55 + v * 0.62 + phase) * tau) * 0.34
-                + math.sin((u * 0.72 - v * 1.38 + phase * 0.7) * tau) * 0.23
-                + math.sin((u * 2.65 + v * 2.15 + 0.19 + phase) * tau) * 0.14
+                math.sin((u * 1.55 + v * 0.62 + phase) * tau) * 0.25
+                + math.sin((u * 0.72 - v * 1.38 + phase * 0.7) * tau) * 0.17
+                + math.sin((u * 2.65 + v * 2.15 + 0.19 + phase) * tau) * 0.10
             )
             fine = (
                 math.sin((u * 12.0 + v * 7.0 + phase) * tau)
                 * math.sin((u * 8.0 - v * 11.0 + 0.31) * tau)
-            ) * 0.035
+            ) * 0.025
             t = _clamp(0.50 + broad + fine)
 
             if t < 0.50:
@@ -73,28 +90,22 @@ def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(_mix(mid[c], light[c], q) for c in range(3))
 
-            # Sparse warm/dry undertone, blended softly instead of hard speckles.
-            dry = _clamp((math.sin((u * 3.7 - v * 2.9 + 0.41 + phase) * tau) - 0.58) / 0.42)
-            dry *= 0.055
-            dry_tint = (0.30, 0.31, 0.12)
+            dry = _clamp((math.sin((u * 3.7 - v * 2.9 + 0.41 + phase) * tau) - 0.68) / 0.32)
+            dry *= 0.035
+            dry_tint = (0.32, 0.30, 0.11)
             rgb = tuple(_mix(rgb[c], dry_tint[c], dry) for c in range(3))
             encoded = tuple(_linear_to_srgb(channel) for channel in rgb)
+            row.extend(int(round(_clamp(channel) * 255.0)) for channel in encoded)
+        rows.append(row)
 
-            idx = (py * size + px) * 4
-            pixels[idx + 0] = encoded[0]
-            pixels[idx + 1] = encoded[1]
-            pixels[idx + 2] = encoded[2]
-            pixels[idx + 3] = 1.0
-
-    # Slice assignment + update is required here. On Blender's CI build,
-    # foreach_set() left generated images black when they were saved/exported.
-    image.pixels[:] = pixels
-    image.update()
-    image.colorspace_settings.name = "sRGB"
     texture_path = os.path.join("/tmp", name.lower().replace(" ", "_") + ".png")
-    image.filepath_raw = texture_path
-    image.file_format = "PNG"
-    image.save()
+    _write_rgb_png(texture_path, size, size, rows)
+    if os.path.getsize(texture_path) <= 1024:
+        raise RuntimeError("Generated grass PNG is suspiciously small: %s" % texture_path)
+
+    image = bpy.data.images.load(texture_path, check_existing=False)
+    image.name = name
+    image.colorspace_settings.name = "sRGB"
     return image
 
 
@@ -114,9 +125,9 @@ def _textured_material(name, image, roughness=0.93):
 
     shader.inputs["Roughness"].default_value = roughness
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.20
+        shader.inputs["Specular IOR Level"].default_value = 0.18
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.20
+        shader.inputs["Specular"].default_value = 0.18
 
     links.new(texture.outputs["Color"], shader.inputs["Base Color"])
     links.new(shader.outputs["BSDF"], output.inputs["Surface"])
@@ -134,7 +145,6 @@ def _planar_uv(obj, repeats=1.0):
     max_y = max(v.co.y for v in mesh.vertices)
     span_x = max(max_x - min_x, 1e-5)
     span_y = max(max_y - min_y, 1e-5)
-
     for poly in mesh.polygons:
         for loop_index in poly.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
@@ -154,27 +164,27 @@ def _assign(obj, material, repeats=1.0):
 def textured_ground():
     _POLISHED_GROUND()
 
-    # Palette values are authored in linear space to match the existing Blender
-    # material palette, then gamma-encoded when written into the sRGB PNG.
+    # Medium lush tropical green: richer than the old flat lawn but still bright
+    # enough for the cozy morning palette and fixed elevated camera.
     grass_main = _build_grass_texture(
         "Lembah Grass Main",
-        dark=(0.105, 0.235, 0.080),
-        mid=(0.175, 0.345, 0.105),
-        light=(0.285, 0.455, 0.145),
+        dark=(0.145, 0.300, 0.095),
+        mid=(0.235, 0.430, 0.145),
+        light=(0.355, 0.555, 0.205),
         phase=0.08,
     )
     grass_deep = _build_grass_texture(
         "Lembah Grass Deep",
-        dark=(0.075, 0.185, 0.060),
-        mid=(0.125, 0.285, 0.080),
-        light=(0.205, 0.375, 0.105),
+        dark=(0.105, 0.245, 0.075),
+        mid=(0.175, 0.355, 0.105),
+        light=(0.275, 0.465, 0.155),
         phase=0.37,
     )
     grass_warm = _build_grass_texture(
         "Lembah Grass Warm",
-        dark=(0.150, 0.265, 0.075),
-        mid=(0.235, 0.385, 0.105),
-        light=(0.340, 0.485, 0.145),
+        dark=(0.185, 0.320, 0.095),
+        mid=(0.275, 0.445, 0.130),
+        light=(0.390, 0.565, 0.185),
         phase=0.61,
     )
 
@@ -182,13 +192,11 @@ def textured_ground():
     mat_deep = _textured_material("V5 Textured Deep Grass", grass_deep, 0.95)
     mat_warm = _textured_material("V5 Textured Warm Grass", grass_warm, 0.94)
 
-    # Keep one broad texture read across the hero ground. The existing V5 polygon
-    # islands stay as large-value variation, now with their own surface texture.
     _assign(bpy.data.objects.get("SculptedVillageGround"), mat_main, 1.0)
-    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 1.45)
-    _assign(bpy.data.objects.get("V5GrassPatch_0"), mat_deep, 0.85)
-    _assign(bpy.data.objects.get("V5GrassPatch_1"), mat_warm, 0.85)
-    _assign(bpy.data.objects.get("V5GrassPatch_2"), mat_deep, 0.85)
+    _assign(bpy.data.objects.get("ExtendedVillageGround"), mat_main, 1.35)
+    _assign(bpy.data.objects.get("V5GrassPatch_0"), mat_deep, 0.80)
+    _assign(bpy.data.objects.get("V5GrassPatch_1"), mat_warm, 0.80)
+    _assign(bpy.data.objects.get("V5GrassPatch_2"), mat_deep, 0.80)
 
 
 base.build_ground = textured_ground
