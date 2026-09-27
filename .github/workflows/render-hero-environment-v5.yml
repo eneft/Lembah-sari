@@ -21,6 +21,7 @@ on:
       - 'tools/blender/texture_main_house_cloth.py'
       - 'tools/blender/texture_main_house_window.py'
       - 'tools/blender/texture_main_house_bamboo.py'
+      - 'tools/blender/texture_main_house_foundation.py'
       - 'tools/blender/build_hero_scene.py'
       - 'tools/blender/build_hero_scene_polish.py'
       - 'tools/blender/build_hero_scene_v4.py'
@@ -124,6 +125,15 @@ jobs:
           LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
             blender --background --python tools/blender/texture_main_house_bamboo.py
           test -s assets/models/house_main_01.glb
+
+      - name: Apply hero house foundation stone texture gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/texture_main_house_foundation.py
+          test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
           ls -lh assets/models/house_main_01.glb
 
@@ -138,7 +148,7 @@ jobs:
             curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
           done
 
-      - name: Build sequential V5 house bamboo review GLB
+      - name: Build sequential V5 foundation stone review GLB
         shell: bash
         run: |
           set -euo pipefail
