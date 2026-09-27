@@ -9,6 +9,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_polish.py'
       - 'tools/blender/build_hero_scene_v5_ground_texture.py'
       - 'tools/blender/build_hero_scene_v5_path_texture.py'
+      - 'tools/blender/texture_main_house_wood.py'
       - 'tools/blender/build_hero_scene.py'
       - 'tools/blender/build_hero_scene_polish.py'
       - 'tools/blender/build_hero_scene_v4.py'
@@ -58,6 +59,17 @@ jobs:
             blender --background --python tools/blender/build_main_house.py
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
+
+      - name: Apply hero house timber texture gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/texture_main_house_wood.py
+          test -s assets/models/house_main_01.glb
+          file assets/models/house_main_01.glb
+          ls -lh assets/models/house_main_01.glb
 
       - name: Fetch pinned CC0 stylized nature sources
         shell: bash
@@ -109,6 +121,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hero-environment-v5-glb
-          path: assets/models/hero_scene_v5.glb
+          path: |
+            assets/models/house_main_01.glb
+            assets/models/hero_scene_v5.glb
           if-no-files-found: error
           retention-days: 14
