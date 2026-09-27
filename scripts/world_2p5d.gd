@@ -4,7 +4,7 @@ extends Node3D
 # Gameplay remains in a real 3D world, while hero scenery is rendered as
 # illustrated Sprite3D assets facing one fixed orthographic camera.
 
-const HOUSE_TEX: Texture2D = preload("res://assets/2p5d/house_main.svg")
+const HOUSE_TEX: Texture2D = preload("res://assets/2p5d/house_main_render.png")
 const TREE_TEX: Texture2D = preload("res://assets/2p5d/tree_tropical.svg")
 const CROP_TEX: Texture2D = preload("res://assets/2p5d/crop_chili.svg")
 
@@ -61,8 +61,6 @@ func _sprite(name_value: String, texture_value: Texture2D, pos: Vector3, pixel_s
 func _build_ground() -> void:
 	_box_visual("Meadow", Vector3(0.0, -0.22, 0.0), Vector3(46.0, 0.40, 38.0), Color("7ea765"))
 	_box_collision("GroundCollision", Vector3(0.0, -0.18, 0.0), Vector3(46.0, 0.36, 38.0))
-
-	# Large, quiet color patches make the terrain read like painted 2D shapes.
 	_box_visual("MeadowShadeLeft", Vector3(-13.0, 0.015, 7.0), Vector3(14.0, 0.025, 9.0), Color("70965b"), -6.0)
 	_box_visual("MeadowShadeBack", Vector3(8.0, 0.012, -11.0), Vector3(17.0, 0.024, 8.0), Color("88ad6d"), 4.0)
 	_box_visual("HouseYard", Vector3(-6.0, 0.025, -1.0), Vector3(10.0, 0.05, 7.0), Color("8eaa68"), -3.0)
@@ -78,8 +76,6 @@ func _build_path() -> void:
 	]
 	for item: Dictionary in pieces:
 		_box_visual("DirtPath", item["p"] as Vector3, item["s"] as Vector3, path_color, float(item["r"]))
-
-	# Small stepping stones near the veranda.
 	for index: int in range(4):
 		var x_value := -4.3 + float(index) * 0.9
 		_box_visual("StepStone", Vector3(x_value, 0.09, 1.1 + float(index) * 0.18), Vector3(0.68, 0.12, 0.52), Color("9a927e"), float(index * 13 - 18))
@@ -92,7 +88,9 @@ func _build_stream() -> void:
 		_box_visual("BridgePlank", Vector3(11.7 + offset * 0.18, 0.34, 6.0 + offset), Vector3(3.7, 0.08, 0.18), Color("b47b4d"), -10.0)
 
 func _build_house() -> void:
-	_sprite("HouseMain", HOUSE_TEX, Vector3(-6.2, 3.05, -2.0), 0.0118)
+	# The hero house is now a real Blender material render baked into a single
+	# transparent sprite. Keep its gameplay footprint 3D and invisible.
+	_sprite("HouseMain", HOUSE_TEX, Vector3(-6.2, 3.22, -2.0), 0.0102)
 	_box_collision("HouseCollision", Vector3(-6.2, 1.55, -1.6), Vector3(6.3, 3.1, 3.8))
 
 func _build_trees() -> void:
@@ -111,15 +109,10 @@ func _build_trees() -> void:
 		_box_collision("TreeCollision", Vector3(pos.x, 0.9, pos.z), Vector3(1.15, 1.8, 1.15))
 
 func _build_farm_dressing() -> void:
-	# Decorative billboard crops establish the new visual language while the
-	# existing farming manager continues to own interactive crop state.
 	for row: int in range(2):
 		for col: int in range(4):
 			var p := Vector3(5.4 + float(col) * 1.55, 0.82, 7.3 + float(row) * 1.55)
 			_sprite("DecorativeChili", CROP_TEX, p, 0.0061)
-
-	# Simple wooden fence geometry stays 3D because it is cheap and gives useful
-	# parallax against the illustrated assets.
 	for index: int in range(6):
 		var x_value := 4.4 + float(index) * 1.65
 		_box_visual("FencePost", Vector3(x_value, 0.48, 10.9), Vector3(0.15, 0.96, 0.15), Color("9a6b43"))
