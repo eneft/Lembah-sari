@@ -28,12 +28,12 @@ def _build_leaf_texture(name, dark, mid, light, phase=0.0, size=192):
         row = bytearray()
         for px in range(size):
             u = px / float(size - 1)
-            # Soft mottling reads as leaf color variation without photographic
-            # noise. It is intentionally stronger at medium scale than micro scale.
+            # Keep the canopy lush but quieter than the first pass. Broad variation
+            # should read as natural leaf clusters, not lime bands or noisy facets.
             mottling = (
-                math.sin((u * 3.6 + v * 2.8 + phase) * tau) * 0.105
-                + math.sin((u * 7.3 - v * 5.5 + 0.29) * tau) * 0.045
-                + math.sin((u * 14.0 + v * 11.0 + 0.51) * tau) * 0.012
+                math.sin((u * 3.6 + v * 2.8 + phase) * tau) * 0.070
+                + math.sin((u * 7.3 - v * 5.5 + 0.29) * tau) * 0.030
+                + math.sin((u * 14.0 + v * 11.0 + 0.51) * tau) * 0.008
             )
             t = ground._clamp(0.50 + mottling)
             if t < 0.50:
@@ -43,9 +43,10 @@ def _build_leaf_texture(name, dark, mid, light, phase=0.0, size=192):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(ground._mix(mid[c], light[c], q) for c in range(3))
 
-            # Very soft warm sun flecks keep the tropical canopy from reading gray.
-            sun = ground._clamp((math.sin((u * 5.1 + v * 6.7 + 0.81 + phase) * tau) - 0.82) / 0.18) * 0.035
-            warm = (0.330, 0.510, 0.125)
+            # Tiny warm highlights stop the foliage from going gray without
+            # pushing it into neon yellow-green.
+            sun = ground._clamp((math.sin((u * 5.1 + v * 6.7 + 0.81 + phase) * tau) - 0.84) / 0.16) * 0.020
+            warm = (0.235, 0.385, 0.075)
             rgb = tuple(ground._mix(rgb[c], warm[c], sun) for c in range(3))
             encoded = tuple(ground._linear_to_srgb(channel) for channel in rgb)
             row.extend(int(round(ground._clamp(channel) * 255.0)) for channel in encoded)
@@ -64,18 +65,18 @@ def _build_leaf_texture(name, dark, mid, light, phase=0.0, size=192):
 def _build_trunk_texture(name, phase=0.0, size=192):
     tau = math.pi * 2.0
     rows = []
-    dark = (0.075, 0.032, 0.016)
-    mid = (0.155, 0.075, 0.030)
-    light = (0.270, 0.145, 0.055)
+    dark = (0.065, 0.027, 0.012)
+    mid = (0.135, 0.062, 0.025)
+    light = (0.235, 0.120, 0.045)
     for py in range(size):
         v = py / float(size - 1)
         row = bytearray()
         for px in range(size):
             u = px / float(size - 1)
             grain = (
-                math.sin((u * 13.0 + v * 1.2 + phase) * tau) * 0.055
-                + math.sin((u * 27.0 - v * 0.8 + 0.31) * tau) * 0.018
-                + math.sin((u * 4.0 + v * 3.0 + 0.62) * tau) * 0.035
+                math.sin((u * 13.0 + v * 1.2 + phase) * tau) * 0.045
+                + math.sin((u * 27.0 - v * 0.8 + 0.31) * tau) * 0.014
+                + math.sin((u * 4.0 + v * 3.0 + 0.62) * tau) * 0.028
             )
             t = ground._clamp(0.50 + grain)
             if t < 0.50:
@@ -126,16 +127,16 @@ def _apply_image_to_material(material, image, roughness, specular):
 def _texture_quaternius_materials():
     dark_leaf = _build_leaf_texture(
         "Lembah Tropical Deep Leaf",
-        dark=(0.045, 0.135, 0.035),
-        mid=(0.090, 0.245, 0.055),
-        light=(0.150, 0.345, 0.075),
+        dark=(0.030, 0.095, 0.022),
+        mid=(0.058, 0.175, 0.034),
+        light=(0.105, 0.260, 0.050),
         phase=0.14,
     )
     leaf = _build_leaf_texture(
         "Lembah Tropical Leaf",
-        dark=(0.080, 0.215, 0.050),
-        mid=(0.155, 0.355, 0.080),
-        light=(0.255, 0.485, 0.115),
+        dark=(0.050, 0.145, 0.030),
+        mid=(0.090, 0.245, 0.048),
+        light=(0.155, 0.345, 0.070),
         phase=0.42,
     )
     wood = _build_trunk_texture("Lembah Tropical Trunk", phase=0.23)
@@ -143,13 +144,13 @@ def _texture_quaternius_materials():
     matched = {"DarkGreen": 0, "Green": 0, "Wood": 0}
     for material in bpy.data.materials:
         if material.name.startswith("DarkGreen"):
-            if _apply_image_to_material(material, dark_leaf, 0.91, 0.14):
+            if _apply_image_to_material(material, dark_leaf, 0.92, 0.12):
                 matched["DarkGreen"] += 1
         elif material.name.startswith("Green"):
-            if _apply_image_to_material(material, leaf, 0.89, 0.15):
+            if _apply_image_to_material(material, leaf, 0.90, 0.13):
                 matched["Green"] += 1
         elif material.name.startswith("Wood"):
-            if _apply_image_to_material(material, wood, 0.93, 0.12):
+            if _apply_image_to_material(material, wood, 0.94, 0.10):
                 matched["Wood"] += 1
 
     missing = [key for key, count in matched.items() if count == 0]
