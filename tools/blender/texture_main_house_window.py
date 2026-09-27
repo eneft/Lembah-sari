@@ -53,19 +53,19 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_window_image(name, size=256):
-    """Bake stylized village-window color variation for the fixed hero camera.
+    """Bake a readable stylized glass surface for the fixed hero camera.
 
-    The goal is not physically transparent glass. Godot's GLB path stays more
-    predictable with an opaque pane, so the texture sells glass through cool
-    depth, a restrained sky reflection, faint vertical age streaks, and a
-    slightly dusty lower edge. Broad variation survives the gameplay camera
-    while avoiding the old flat cyan-card read.
+    This stays opaque for predictable GLB/Godot rendering. Glass is conveyed by
+    cool depth, broad hand-painted sky reflections, darker edge depth, and very
+    restrained age streaking. The contrast is intentionally large-scale so the
+    material still reads at the actual gameplay camera distance.
     """
     tau = math.pi * 2.0
-    deep = (0.075, 0.255, 0.285)
-    mid = (0.135, 0.405, 0.440)
-    sky = (0.335, 0.620, 0.635)
-    dust = (0.285, 0.360, 0.300)
+    deep = (0.030, 0.145, 0.175)
+    mid = (0.075, 0.310, 0.345)
+    sky = (0.345, 0.650, 0.670)
+    sky_bright = (0.560, 0.790, 0.785)
+    dust = (0.255, 0.315, 0.255)
     rows = []
 
     for py in range(size):
@@ -74,35 +74,45 @@ def build_window_image(name, size=256):
         for px in range(size):
             u = px / float(size - 1)
 
-            # Broad cool-depth modulation: enough structure to read as glass,
-            # but not enough frequency to become noisy from the game camera.
-            broad = (
-                math.sin((u * 1.10 + v * 0.72 + 0.17) * tau) * 0.055
-                + math.sin((u * 0.42 - v * 1.38 + 0.49) * tau) * 0.030
-            )
-            t = clamp(0.50 + broad)
+            # Stronger top-to-bottom depth plus one very broad hand-painted
+            # modulation. This gives each pane volume instead of one cyan fill.
+            vertical = clamp(0.22 + (1.0 - v) * 0.42)
+            broad = math.sin((u * 0.82 + v * 0.54 + 0.13) * tau) * 0.075
+            t = clamp(vertical + broad)
             rgb = tuple(mix(deep[c], mid[c], t) for c in range(3))
 
-            # One soft diagonal reflection band. This replaces the flat cyan
-            # billboard look without pretending to be a mirror.
-            reflection_axis = (u * 0.82 + (1.0 - v) * 0.58)
-            reflection = math.exp(-((reflection_axis - 0.78) / 0.16) ** 2) * 0.34
-            reflection *= 0.84 + math.sin((u * 1.6 + v * 0.45) * tau) * 0.08
-            rgb = tuple(mix(rgb[c], sky[c], clamp(reflection)) for c in range(3))
+            # Primary diagonal sky reflection: broad enough to survive the fixed
+            # camera, with a brighter core that still avoids a mirror-like pane.
+            axis = u * 0.88 + (1.0 - v) * 0.66
+            soft_band = math.exp(-((axis - 0.79) / 0.19) ** 2) * 0.66
+            core_band = math.exp(-((axis - 0.79) / 0.070) ** 2) * 0.42
+            rgb = tuple(mix(rgb[c], sky[c], clamp(soft_band)) for c in range(3))
+            rgb = tuple(mix(rgb[c], sky_bright[c], clamp(core_band)) for c in range(3))
 
-            # Fine, low-contrast vertical weathering; visible as richness rather
-            # than literal stripes at hero distance.
+            # A secondary faint reflection break prevents the single-band texture
+            # from looking like a painted stripe while keeping the design graphic.
+            axis_2 = u * 0.52 + v * 0.74
+            secondary = math.exp(-((axis_2 - 0.93) / 0.13) ** 2) * 0.18
+            rgb = tuple(mix(rgb[c], sky[c], secondary) for c in range(3))
+
+            # Darken the perimeter slightly. Window frames already define the
+            # silhouette; this just adds glass depth at the pane edge.
+            edge_distance = min(u, 1.0 - u, v, 1.0 - v)
+            edge_mask = 1.0 - clamp(edge_distance / 0.18)
+            rgb = tuple(mix(rgb[c], deep[c], edge_mask * 0.18) for c in range(3))
+
+            # Very low-contrast age streaks, never dominant over the broad glass
+            # read at game scale.
             streak = (
-                math.sin((u * 17.0 + 0.31) * tau) * 0.010
-                + math.sin((u * 29.0 + v * 1.3 + 0.73) * tau) * 0.006
+                math.sin((u * 11.0 + 0.23) * tau) * 0.006
+                + math.sin((u * 19.0 + v * 0.65 + 0.61) * tau) * 0.004
             )
             rgb = tuple(clamp(channel + streak) for channel in rgb)
 
-            # Slight dusty tint toward the sill anchors the pane in an inhabited
-            # tropical village instead of reading as pristine synthetic plastic.
-            lower = clamp((v - 0.72) / 0.28)
-            dust_noise = 0.50 + math.sin((u * 3.2 + 0.19) * tau) * 0.22
-            dust_amount = lower * dust_noise * 0.075
+            # Slight sill dust warms only the lowest part of the pane.
+            lower = clamp((v - 0.78) / 0.22)
+            dust_noise = 0.58 + math.sin((u * 2.4 + 0.17) * tau) * 0.18
+            dust_amount = lower * dust_noise * 0.055
             rgb = tuple(mix(rgb[c], dust[c], dust_amount) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
@@ -153,11 +163,11 @@ def texture_material(material, image):
     tex.extension = "REPEAT"
     links.new(tex.outputs["Color"], base_socket)
 
-    shader.inputs["Roughness"].default_value = 0.44
+    shader.inputs["Roughness"].default_value = 0.34
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.32
+        shader.inputs["Specular IOR Level"].default_value = 0.38
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.32
+        shader.inputs["Specular"].default_value = 0.38
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
