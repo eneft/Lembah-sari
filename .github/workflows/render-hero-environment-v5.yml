@@ -16,6 +16,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_rock_texture.py'
       - 'tools/blender/build_hero_scene_v5_bamboo_texture.py'
       - 'tools/blender/build_hero_scene_v5_hill_texture.py'
+      - 'tools/blender/build_hero_scene_v5_ridge_texture.py'
       - 'tools/blender/texture_main_house_wood.py'
       - 'tools/blender/texture_main_house_roof.py'
       - 'tools/blender/texture_main_house_clay.py'
@@ -159,14 +160,14 @@ jobs:
             curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
           done
 
-      - name: Build sequential V5 distant hill review GLB
+      - name: Build sequential V5 atmospheric ridge review GLB
         shell: bash
         run: |
           set -euo pipefail
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_v5.glb" \
           LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene_v5_hill_texture.py
+            blender --background --python tools/blender/build_hero_scene_v5_ridge_texture.py
           test -s assets/models/hero_scene_v5.glb
           file assets/models/hero_scene_v5.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
