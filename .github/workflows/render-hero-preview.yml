@@ -64,7 +64,7 @@ jobs:
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_01.glb" \
           LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene.py
+            blender --background --python tools/blender/build_hero_scene_polish.py
           test -s assets/models/hero_scene_01.glb
           file assets/models/hero_scene_01.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_01.glb
