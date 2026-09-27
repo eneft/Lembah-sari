@@ -86,7 +86,10 @@ def _build_grass_texture(name, dark, mid, light, phase=0.0, size=256):
             pixels[idx + 2] = encoded[2]
             pixels[idx + 3] = 1.0
 
-    image.pixels.foreach_set(pixels)
+    # Slice assignment + update is required here. On Blender's CI build,
+    # foreach_set() left generated images black when they were saved/exported.
+    image.pixels[:] = pixels
+    image.update()
     image.colorspace_settings.name = "sRGB"
     texture_path = os.path.join("/tmp", name.lower().replace(" ", "_") + ".png")
     image.filepath_raw = texture_path
