@@ -128,6 +128,7 @@ def ridge_material(name, source, image):
     material = source.copy()
     material.name = name
     material.use_nodes = True
+    material.use_backface_culling = False
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     shader = nodes.get("Principled BSDF") or next(
@@ -149,9 +150,9 @@ def ridge_material(name, source, image):
 
     shader.inputs["Roughness"].default_value = 1.0
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.04
+        shader.inputs["Specular IOR Level"].default_value = 0.03
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.04
+        shader.inputs["Specular"].default_value = 0.03
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
@@ -159,58 +160,76 @@ def ridge_material(name, source, image):
     return material
 
 
-def make_terrain_mass(obj, base_z=-0.44):
-    """Turn the original two-row ridge strip into a closed low terrain mass.
+def catmull_rom(p0, p1, p2, p3, t):
+    t2 = t * t
+    t3 = t2 * t
+    return 0.5 * (
+        2.0 * p1
+        + (-p0 + p2) * t
+        + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2
+        + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
+    )
 
-    The V5 builder's ridge contour is preserved exactly. We only add skirts down
-    to the shared horizon base so the fixed camera reads a hill silhouette instead
-    of three floating ribbons once the retired legacy hills are removed.
-    """
+
+def smooth_profile(points, subdivisions=5):
+    """Densify the sparse V5 control points into a gentle rolling silhouette."""
+    if len(points) < 3:
+        return points
+    result = []
+    for i in range(len(points) - 1):
+        p0 = points[max(0, i - 1)]
+        p1 = points[i]
+        p2 = points[i + 1]
+        p3 = points[min(len(points) - 1, i + 2)]
+        for step in range(subdivisions):
+            t = step / float(subdivisions)
+            x = mix(p1[0], p2[0], t)
+            z = catmull_rom(p0[2], p1[2], p2[2], p3[2], t)
+            # Damp cubic overshoot so the distant ridge never becomes spiky.
+            local_min = min(p0[2], p1[2], p2[2], p3[2]) - 0.04
+            local_max = max(p0[2], p1[2], p2[2], p3[2]) + 0.04
+            z = clamp(z, local_min, local_max)
+            result.append((x, p1[1], z))
+    result.append(points[-1])
+    return result
+
+
+def make_terrain_curtain(obj, base_z=-0.44):
+    """Replace the shallow ribbon with one calm, filled distant-hill curtain."""
     old_mesh = obj.data
     original = [tuple(vertex.co) for vertex in old_mesh.vertices]
     if len(original) < 6 or len(original) % 2 != 0:
         raise RuntimeError("Unexpected ridge topology for %s: %d vertices" % (obj.name, len(original)))
 
     count = len(original) // 2
-    verts = list(original)
-    front_base = len(verts)
-    verts.extend((x, y, base_z) for x, y, _z in original[:count])
-    back_base = len(verts)
-    verts.extend((x, y, base_z) for x, y, _z in original[count:])
+    # The first row carries the full V5 contour; average the original two-row Y
+    # positions so the replacement remains at the same atmospheric depth.
+    y_center = sum(vertex[1] for vertex in original) / float(len(original))
+    controls = [(vertex[0], y_center, vertex[2]) for vertex in original[:count]]
+    top = smooth_profile(controls, subdivisions=6)
 
+    verts = list(top)
+    base_start = len(verts)
+    verts.extend((x, y_center, base_z) for x, _y, _z in top)
     faces = []
-    # Preserve the original rolling top surface.
-    for i in range(count - 1):
-        faces.append((i, i + 1, count + i + 1, count + i))
-    # Front and back skirts create readable hill masses.
-    for i in range(count - 1):
-        faces.append((i, front_base + i, front_base + i + 1, i + 1))
-        faces.append((count + i + 1, back_base + i + 1, back_base + i, count + i))
-        faces.append((front_base + i, back_base + i, back_base + i + 1, front_base + i + 1))
-    # Close both ends so lighting/normals stay stable after export.
-    faces.append((0, count, back_base, front_base))
-    faces.append((count - 1, front_base + count - 1, back_base + count - 1, 2 * count - 1))
+    for i in range(len(top) - 1):
+        faces.append((i, base_start + i, base_start + i + 1, i + 1))
 
-    new_mesh = bpy.data.meshes.new(old_mesh.name + "AtmosphericMass")
+    new_mesh = bpy.data.meshes.new(old_mesh.name + "AtmosphericCurtain")
     new_mesh.from_pydata(verts, [], faces)
     new_mesh.update()
     obj.data = new_mesh
-
     for modifier in list(obj.modifiers):
         obj.modifiers.remove(modifier)
-    bevel = obj.modifiers.new("Atmospheric ridge softness", "BEVEL")
-    bevel.width = 0.035
-    bevel.segments = 2
-
     if old_mesh.users == 0:
         bpy.data.meshes.remove(old_mesh)
-    print("Atmospheric ridge mass rebuilt: %s (%d -> %d verts, %d faces)" % (obj.name, len(original), len(verts), len(faces)))
+    print(
+        "Atmospheric ridge curtain rebuilt: %s (%d controls -> %d profile points, %d faces)"
+        % (obj.name, count, len(top), len(faces))
+    )
 
 
 def planar_uv(obj):
-    # The visible surfaces are now broad hill skirts, so X/Z projection keeps the
-    # broad texture readable across width and elevation instead of collapsing it
-    # into the ridge's shallow Y depth.
     mesh = obj.data
     if not mesh.vertices:
         return
@@ -258,32 +277,32 @@ near = require_mesh("V5NearRidge")
 mid = require_mesh("V5MidRidge")
 far = require_mesh("V5FarRidge")
 
-# Capture the original flat material sources before replacing each ridge mesh.
 near_source = source_material(near)
 mid_source = source_material(mid)
 far_source = source_material(far)
 
-# Every farther layer becomes lighter and less saturated. The range stays broad
-# enough to avoid a flat vector fill, but never competes with house, water or rice.
+# Every farther layer becomes lighter and less saturated. The texture carries
+# only broad haze-scale changes so the horizon supports, rather than competes
+# with, the playable foreground.
 near_img = build_ridge_image(
     "Lembah Ridge Near Haze",
-    dark=(0.315, 0.415, 0.285),
-    mid=(0.385, 0.485, 0.345),
-    light=(0.455, 0.550, 0.405),
+    dark=(0.300, 0.405, 0.285),
+    mid=(0.370, 0.470, 0.340),
+    light=(0.435, 0.525, 0.395),
     phase=0.11,
 )
 mid_img = build_ridge_image(
     "Lembah Ridge Mid Haze",
-    dark=(0.395, 0.485, 0.355),
-    mid=(0.465, 0.550, 0.420),
-    light=(0.535, 0.615, 0.485),
+    dark=(0.380, 0.470, 0.355),
+    mid=(0.445, 0.530, 0.415),
+    light=(0.505, 0.585, 0.470),
     phase=0.39,
 )
 far_img = build_ridge_image(
     "Lembah Ridge Far Haze",
-    dark=(0.485, 0.555, 0.445),
-    mid=(0.555, 0.620, 0.510),
-    light=(0.625, 0.685, 0.575),
+    dark=(0.465, 0.535, 0.440),
+    mid=(0.525, 0.590, 0.500),
+    light=(0.585, 0.645, 0.555),
     phase=0.67,
 )
 
@@ -291,9 +310,9 @@ near_mat = ridge_material("V5 Textured Ridge Near", near_source, near_img)
 mid_mat = ridge_material("V5 Textured Ridge Mid", mid_source, mid_img)
 far_mat = ridge_material("V5 Textured Ridge Far", far_source, far_img)
 
-make_terrain_mass(near, base_z=-0.46)
-make_terrain_mass(mid, base_z=-0.43)
-make_terrain_mass(far, base_z=-0.40)
+make_terrain_curtain(near, base_z=-0.46)
+make_terrain_curtain(mid, base_z=-0.43)
+make_terrain_curtain(far, base_z=-0.40)
 assign(near, near_mat)
 assign(mid, mid_mat)
 assign(far, far_mat)
