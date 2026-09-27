@@ -10,6 +10,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_ground_texture.py'
       - 'tools/blender/build_hero_scene_v5_path_texture.py'
       - 'tools/blender/texture_main_house_wood.py'
+      - 'tools/blender/texture_main_house_roof.py'
       - 'tools/blender/build_hero_scene.py'
       - 'tools/blender/build_hero_scene_polish.py'
       - 'tools/blender/build_hero_scene_v4.py'
@@ -67,6 +68,15 @@ jobs:
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
             blender --background --python tools/blender/texture_main_house_wood.py
+          test -s assets/models/house_main_01.glb
+
+      - name: Apply hero house terracotta roof texture gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/texture_main_house_roof.py
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
           ls -lh assets/models/house_main_01.glb
