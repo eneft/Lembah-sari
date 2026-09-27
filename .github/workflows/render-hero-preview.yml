@@ -39,13 +39,13 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build 2.5D main house GLB in Blender
+      - name: Build concept-first 2.5D main house GLB in Blender
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p assets/models
           LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
-            blender --background --python tools/blender/build_main_house.py
+            blender --background --python tools/blender/build_main_house_concept.py
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
           ls -lh assets/models/house_main_01.glb
