@@ -1,0 +1,92 @@
+name: Deploy Godot Web Preview
+
+on:
+  push:
+    branches:
+      - visual/rebuild-vs01-v2
+    paths-ignore:
+      - 'assets/models/**'
+  workflow_dispatch:
+
+concurrency:
+  group: lembah-sari-web-preview
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.7 and Web export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y unzip
+
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_v4.7-stable_linux.x86_64
+          sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
+
+          curl -fL --retry 3 -o /tmp/godot-templates.tpz \
+            https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_export_templates.tpz
+          rm -rf /tmp/godot-templates
+          mkdir -p /tmp/godot-templates "$HOME/.local/share/godot/export_templates/4.7.stable"
+          unzip -q /tmp/godot-templates.tpz -d /tmp/godot-templates
+          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.stable/"
+
+          godot --version
+          test -f "$HOME/.local/share/godot/export_templates/4.7.stable/web_release.zip"
+
+      - name: Import project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit-after 90
+
+      - name: Export Web build
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/web
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          touch build/web/.nojekyll
+          test -s build/web/index.html
+          test -s build/web/index.wasm
+          echo "Web build output:"
+          find build/web -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+      - name: Upload downloadable Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: lembah-sari-web-preview
+          path: build/web
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
