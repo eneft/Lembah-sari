@@ -11,23 +11,23 @@ func _ready() -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("b6d4d6")
+	env.background_color = Color("bdd8d8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("dfd4bb")
-	env.ambient_light_energy = 0.28
+	env.ambient_light_color = Color("eadfc4")
+	env.ambient_light_energy = 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.84
-	env.adjustment_contrast = 1.04
-	env.adjustment_saturation = 1.04
+	env.adjustment_brightness = 0.91
+	env.adjustment_contrast = 0.99
+	env.adjustment_saturation = 1.03
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
 
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-45.0, -31.0, 0.0)
-	sun.light_color = Color("ffe5ba")
-	sun.light_energy = 0.70
+	sun.rotation_degrees = Vector3(-43.0, -30.0, 0.0)
+	sun.light_color = Color("ffe7bd")
+	sun.light_energy = 0.62
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 52.0
 	add_child(sun)
@@ -49,12 +49,13 @@ func _load_hero_scene() -> void:
 func _build_camera() -> void:
 	var camera := Camera3D.new()
 	camera.name = "HeroCamera"
-	# Lower and slightly wider than v3: reads as a village composition, not a house showcase.
-	camera.position = Vector3(16.8, 7.25, -18.4)
-	camera.fov = 38.0
+	# Slightly lower and closer: the house remains a left-hand hero while the bridge,
+	# stream and layered paddies stay readable as one village composition.
+	camera.position = Vector3(16.0, 6.80, -17.8)
+	camera.fov = 36.5
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(-0.25, 1.35, 0.65), Vector3.UP)
+	camera.look_at(Vector3(-0.35, 1.22, 0.75), Vector3.UP)
 
 func _capture() -> void:
 	for _frame in range(10):
