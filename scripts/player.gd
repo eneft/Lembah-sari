@@ -11,6 +11,7 @@ signal day_transition_requested(summary: String)
 @export var gravity: float = 18.0
 
 @onready var visual: Node3D = $Visual
+@onready var visual_sprite: Sprite3D = $Visual/BodySprite
 @onready var camera: Camera3D = $CameraRig/Camera3D
 
 var mobile_input: Vector2 = Vector2.ZERO
@@ -20,7 +21,9 @@ var input_locked: bool = false
 
 func _ready() -> void:
 	add_to_group("player")
-	camera.look_at(global_position + Vector3(0, 1.0, 0), Vector3.UP)
+	# Fixed orthographic 3/4 camera: the camera follows the player spatially but
+	# keeps one art-approved viewing angle, like a 2.5D farming game.
+	camera.look_at(global_position + Vector3(0, 0.9, 0), Vector3.UP)
 	tool_changed.emit(selected_tool)
 
 func _physics_process(delta: float) -> void:
@@ -38,7 +41,14 @@ func _physics_process(delta: float) -> void:
 	mobile_input = _read_mobile_joystick()
 	var input_vec: Vector2 = mobile_input if mobile_input.length() > 0.05 else desktop
 
-	var direction: Vector3 = Vector3(input_vec.x, 0.0, input_vec.y)
+	# Convert screen-space input into movement relative to the fixed isometric camera.
+	var camera_forward: Vector3 = -camera.global_transform.basis.z
+	camera_forward.y = 0.0
+	camera_forward = camera_forward.normalized()
+	var camera_right: Vector3 = camera.global_transform.basis.x
+	camera_right.y = 0.0
+	camera_right = camera_right.normalized()
+	var direction: Vector3 = camera_right * input_vec.x + camera_forward * -input_vec.y
 	if direction.length() > 1.0:
 		direction = direction.normalized()
 
@@ -59,7 +69,9 @@ func _physics_process(delta: float) -> void:
 
 	if direction.length() > 0.1:
 		facing = direction.normalized()
-		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), 10.0 * delta)
+		# Keep the illustrated sprite camera-facing; only mirror it for direction.
+		if absf(input_vec.x) > 0.08:
+			visual_sprite.flip_h = input_vec.x < 0.0
 
 	move_and_slide()
 
