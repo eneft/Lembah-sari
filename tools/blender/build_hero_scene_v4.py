@@ -6,17 +6,61 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 # build_hero_scene_polish historically calls base.main() at module import time.
-# Suppress that one import-side-effect here so V4 builds exactly once after all
-# composition overrides are installed. This avoids duplicated geometry/assets.
+# Suppress that import side-effect so this file builds exactly once after all
+# composition overrides are installed.
 import build_hero_scene as base
 _real_main = base.main
 base.main = lambda: None
 import build_hero_scene_polish as polish
 base.main = _real_main
 
-# V4 composition pass: add irregular paddy terraces and denser tropical framing.
+_old_ground = base.build_ground
 _old_rice = base.build_rice_fields
 _old_foliage = base.build_foliage
+
+MAT_HILL_HAZE = base.mat("Distant Haze Hill", (0.48, 0.57, 0.42), 0.98)
+MAT_HILL_MID = base.mat("Mid Haze Hill", (0.38, 0.49, 0.32), 0.98)
+
+
+def _smooth(obj):
+    if obj is not None and obj.type == 'MESH':
+        for poly in obj.data.polygons:
+            poly.use_smooth = True
+
+
+def v5_ground():
+    _old_ground()
+
+    # The previous large stretched icospheres read as giant capsules. Hide them and
+    # rebuild the horizon from overlapping smaller ridges in two atmospheric layers.
+    for name in ("BackHillA", "BackHillB", "BackHillC", "FarHillA", "FarHillB", "FarHillC"):
+        obj = base.bpy.data.objects.get(name)
+        if obj is not None:
+            obj.hide_render = True
+
+    back_ridges = [
+        (-11.5, 14.8, 1.0, 4.2, 2.9, 1.45),
+        (-6.7, 15.4, 1.3, 4.7, 3.1, 1.65),
+        (-1.5, 14.9, 1.15, 4.3, 3.0, 1.50),
+        (3.4, 15.5, 1.35, 4.8, 3.2, 1.70),
+        (8.7, 14.8, 1.10, 4.4, 2.9, 1.50),
+        (13.2, 15.2, 0.95, 3.8, 2.7, 1.35),
+    ]
+    for i, (x, y, z, sx, sy, sz) in enumerate(back_ridges):
+        hill = base.ico(f"HazeRidge_{i}", (x, y, z), (sx, sy, sz), MAT_HILL_HAZE, 3)
+        _smooth(hill)
+
+    mid_ridges = [
+        (-9.5, 11.9, 0.65, 3.2, 2.4, 1.25),
+        (-5.2, 12.2, 0.80, 3.8, 2.6, 1.45),
+        (-0.8, 11.8, 0.70, 3.5, 2.4, 1.30),
+        (3.6, 12.1, 0.82, 3.8, 2.6, 1.45),
+        (8.0, 11.6, 0.65, 3.3, 2.3, 1.25),
+        (11.8, 12.0, 0.58, 3.0, 2.2, 1.15),
+    ]
+    for i, (x, y, z, sx, sy, sz) in enumerate(mid_ridges):
+        hill = base.ico(f"MidRidge_{i}", (x, y, z), (sx, sy, sz), MAT_HILL_MID, 3)
+        _smooth(hill)
 
 
 def v4_rice(wheat_t, grass_t):
@@ -74,6 +118,7 @@ def v4_foliage(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t):
         base.place(grass_t, f"V4Grass_{i}", (x, y, 0.03), 0.48 + (i % 3) * 0.05, i * 21)
 
 
+base.build_ground = v5_ground
 base.build_rice_fields = v4_rice
 base.build_foliage = v4_foliage
 base.main()
