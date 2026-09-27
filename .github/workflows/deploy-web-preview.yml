@@ -3,7 +3,7 @@ name: Build Godot Web Preview
 on:
   push:
     branches:
-      - visual/rebuild-vs01-v2
+      - visual/2p5d-prototype
     paths-ignore:
       - 'assets/models/**'
   workflow_dispatch:
