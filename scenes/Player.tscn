@@ -15,9 +15,9 @@ position = Vector3(0, 0.78, 0)
 shape = SubResource("CapsuleShape")
 
 [node name="Visual" type="Node3D" parent="."]
-scale = Vector3(0.88, 0.88, 0.88)
+scale = Vector3(0.82, 0.82, 0.82)
 
-[node name="CharacterV29" parent="Visual" instance=ExtResource("2")]
+[node name="CharacterV30" parent="Visual" instance=ExtResource("2")]
 
 [node name="CameraRig" type="Node3D" parent="."]
 
