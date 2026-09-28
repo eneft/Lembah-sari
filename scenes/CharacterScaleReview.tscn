@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/character_scale_review.gd" id="1_review"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2_player"]
+
+[node name="CharacterScaleReview" type="Node3D"]
+script = ExtResource("1_review")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector3(2.3, 0.08, 3.7)
