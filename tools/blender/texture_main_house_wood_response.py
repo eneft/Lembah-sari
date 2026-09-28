@@ -58,7 +58,7 @@ def wood_height(u, v, phase=0.0):
     )
 
 
-def build_wood_normal(name, phase=0.0, size=256, derivative_strength=1.0):
+def build_wood_normal(name, phase=0.0, size=256, derivative_strength=1.85):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -119,8 +119,9 @@ def add_response(material, image, strength, roughness, specular):
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    # Review #57 proved the normals survived export but were visually too quiet.
-    # Increase highlight range while keeping every timber family decisively matte.
+    # Review #57/#58 proved the maps exported correctly but still read too flat
+    # from the fixed hero camera. Increase grain relief and grazing-light range
+    # while keeping every timber family clearly matte and preserving albedo.
     shader.inputs["Roughness"].default_value = roughness
     if "Specular IOR Level" in shader.inputs:
         shader.inputs["Specular IOR Level"].default_value = specular
@@ -129,10 +130,10 @@ def add_response(material, image, strength, roughness, specular):
 
 
 families = {
-    "Sun Warm Timber Panel": ("Lembah Warm Timber Grain Normal", 0.08, 0.50, 0.74, 0.20),
-    "Honey Timber Panel": ("Lembah Honey Timber Grain Normal", 0.31, 0.47, 0.72, 0.21),
-    "Deep Teak Frame": ("Lembah Deep Teak Grain Normal", 0.54, 0.42, 0.80, 0.17),
-    "Warm Teak Frame": ("Lembah Warm Teak Grain Normal", 0.73, 0.44, 0.78, 0.18),
+    "Sun Warm Timber Panel": ("Lembah Warm Timber Grain Normal", 0.08, 0.72, 0.66, 0.22),
+    "Honey Timber Panel": ("Lembah Honey Timber Grain Normal", 0.31, 0.68, 0.64, 0.23),
+    "Deep Teak Frame": ("Lembah Deep Teak Grain Normal", 0.54, 0.60, 0.74, 0.18),
+    "Warm Teak Frame": ("Lembah Warm Teak Grain Normal", 0.73, 0.63, 0.70, 0.19),
 }
 
 images = {
