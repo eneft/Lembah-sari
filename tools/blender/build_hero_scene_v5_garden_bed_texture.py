@@ -13,6 +13,9 @@ if SCRIPT_DIR not in sys.path:
 # Build the accepted scene through the young-rice gate. This pass changes only
 # KitchenGardenBed_0/1; garden plants, flowers and bamboo stay untouched.
 import build_hero_scene_v5_rice_texture  # noqa: F401,E402
+# All post-ridge passes must preserve the ridge gate's explicit export selection.
+# Importing this again is cache-only because the accepted chain already loaded it.
+import build_hero_scene_v5_ridge_texture as ridge_export  # noqa: E402
 
 OUT_PATH = os.path.abspath(
     os.environ.get(
@@ -186,9 +189,10 @@ for index, bed in enumerate(sorted(beds, key=lambda obj: obj.name)):
     bed.data.materials.clear()
     bed.data.materials.append(material)
 
-# Preserve every accepted object and transform. Only the two garden-bed material
-# slots and their UVs differ in this export.
-bpy.ops.object.select_all(action="SELECT")
+# Preserve the exact accepted ridge export set. A broad select-all here would
+# re-export retired FarHill/HazeRidge/MidRidge objects and visually restore the
+# old continuous pale horizon band.
+ridge_export.select_v5_export_set()
 bpy.ops.export_scene.gltf(
     filepath=OUT_PATH,
     export_format="GLB",
@@ -196,4 +200,4 @@ bpy.ops.export_scene.gltf(
     export_apply=True,
     export_yup=True,
 )
-print("Kitchen garden bed earth texture gate exported to %s (beds=%d)" % (OUT_PATH, len(beds)))
+print("Kitchen garden bed earth texture gate exported to %s (beds=%d; ridge selection preserved)" % (OUT_PATH, len(beds)))
