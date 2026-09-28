@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   render:
@@ -79,3 +79,18 @@ jobs:
             assets/models/player_character_v2.glb
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish validated Character V2.9 GLB
+        if: github.ref == 'refs/heads/visual/rebuild-vs01-v2'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/player_character_v2.glb
+          if git diff --cached --quiet; then
+            echo 'Character GLB already matches generated V2.9 asset.'
+            exit 0
+          fi
+          git commit -m 'feat(character): publish validated V2.9 model asset [skip ci]'
+          git push origin HEAD:visual/rebuild-vs01-v2
