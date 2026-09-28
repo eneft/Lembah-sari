@@ -10,9 +10,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-# Build the last visually accepted scene first. That pass leaves the complete
-# Blender scene alive after export; this gate changes only the three V5 horizon
-# ridges and then re-exports the same scene.
+# Build the last accepted distant-hill pass first. This gate may only change the
+# V5 atmospheric ridges and the final export selection needed to keep them visible.
 import build_hero_scene_v5_hill_texture  # noqa: F401,E402
 
 OUT_PATH = os.path.abspath(
@@ -23,12 +22,9 @@ OUT_PATH = os.path.abspath(
 )
 os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 
-# V5's ground rebuild intentionally retires the old sphere/capsule horizon. Those
-# objects are marked hide_render by build_hero_scene_v5.py, but Blender's glTF
-# exporter does not serialize hide_render as runtime visibility. If selected,
-# they therefore survive into Godot and completely occlude the V5 ridge meshes.
-# Exclude only that retired horizon family at this gate's final export; every
-# other accepted scene object remains untouched.
+# The old horizon family must not leak into Godot, but BackHillA/B/C are the
+# already-accepted Distant Hill gate and MUST remain in the final export.
+ACCEPTED_DISTANT_HILLS = ("BackHillA", "BackHillB", "BackHillC")
 LEGACY_HORIZON_PREFIXES = ("BackHill", "FarHill", "HazeRidge", "MidRidge")
 
 
@@ -73,7 +69,7 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_ridge_image(name, dark, mid, light, phase=0.0, size=256):
-    """Bake only broad haze-scale variation for a distant terrain ridge."""
+    """Bake broad, low-contrast atmospheric variation only."""
     tau = math.pi * 2.0
     rows = []
     for py in range(size):
@@ -82,11 +78,11 @@ def build_ridge_image(name, dark, mid, light, phase=0.0, size=256):
         for px in range(size):
             u = px / float(size - 1)
             broad = (
-                math.sin((u * 0.72 + v * 0.38 + phase) * tau) * 0.145
-                + math.sin((u * 1.48 - v * 0.72 + 0.31 + phase * 0.4) * tau) * 0.070
-                + math.sin((u * 2.35 + v * 1.10 + 0.63) * tau) * 0.026
+                math.sin((u * 0.72 + v * 0.38 + phase) * tau) * 0.105
+                + math.sin((u * 1.43 - v * 0.68 + 0.31 + phase * 0.4) * tau) * 0.050
+                + math.sin((u * 2.25 + v * 1.02 + 0.63) * tau) * 0.018
             )
-            vertical = (0.5 - v) * 0.045
+            vertical = (0.5 - v) * 0.025
             t = clamp(0.50 + broad + vertical)
             if t < 0.50:
                 q = t / 0.50
@@ -124,7 +120,7 @@ def source_material(obj):
     return obj.data.materials[0]
 
 
-def ridge_material(name, source, image):
+def ridge_material(name, source, image, emission_strength):
     material = source.copy()
     material.name = name
     material.use_nodes = True
@@ -137,32 +133,27 @@ def ridge_material(name, source, image):
     if shader is None:
         raise RuntimeError("Ridge material has no Principled shader: %s" % material.name)
 
-    # Distant atmospheric terrain should not show hard cast-shadow bands from the
-    # other horizon layers. Keep a tiny diffuse base for stable glTF export, then
-    # drive the authored sage texture primarily through emission. This mimics
-    # aerial light fill without changing the scene's global sun or fog.
-    base_socket = shader.inputs.get("Base Color")
-    for link in list(links):
-        if link.to_node == shader and link.to_socket == base_socket:
-            links.remove(link)
-    base_socket.default_value = (0.012, 0.018, 0.011, 1.0)
-
     tex = nodes.new("ShaderNodeTexImage")
     tex.image = image
     tex.interpolation = "Linear"
     tex.extension = "REPEAT"
 
-    emission_socket = shader.inputs.get("Emission Color") or shader.inputs.get("Emission")
-    if emission_socket is None:
-        raise RuntimeError("Ridge material has no emission color input: %s" % material.name)
+    base_socket = shader.inputs.get("Base Color")
     for link in list(links):
-        if link.to_node == shader and link.to_socket == emission_socket:
+        if link.to_node == shader and link.to_socket == base_socket:
             links.remove(link)
-    links.new(tex.outputs["Color"], emission_socket)
+    links.new(tex.outputs["Color"], base_socket)
+
+    emission_socket = shader.inputs.get("Emission Color") or shader.inputs.get("Emission")
+    if emission_socket is not None:
+        for link in list(links):
+            if link.to_node == shader and link.to_socket == emission_socket:
+                links.remove(link)
+        links.new(tex.outputs["Color"], emission_socket)
 
     strength_socket = shader.inputs.get("Emission Strength")
     if strength_socket is not None:
-        strength_socket.default_value = 0.82
+        strength_socket.default_value = emission_strength
 
     shader.inputs["Roughness"].default_value = 1.0
     if "Specular IOR Level" in shader.inputs:
@@ -185,8 +176,16 @@ def catmull_rom(p0, p1, p2, p3, t):
     )
 
 
-def smooth_profile(points, subdivisions=6, phase=0.0, wave_a=0.0, wave_b=0.0, z_offset=0.0, x_shift=0.0):
-    """Densify sparse controls while giving each layer an independent skyline."""
+def smooth_profile(
+    points,
+    subdivisions=6,
+    phase=0.0,
+    wave_a=0.0,
+    wave_b=0.0,
+    z_offset=0.0,
+    x_shift=0.0,
+):
+    """Create a calm independent skyline without vertically stacking layers."""
     if len(points) < 3:
         return points
     tau = math.pi * 2.0
@@ -194,6 +193,7 @@ def smooth_profile(points, subdivisions=6, phase=0.0, wave_a=0.0, wave_b=0.0, z_
     max_x = points[-1][0]
     span_x = max(max_x - min_x, 1e-5)
     result = []
+
     for i in range(len(points) - 1):
         p0 = points[max(0, i - 1)]
         p1 = points[i]
@@ -210,27 +210,34 @@ def smooth_profile(points, subdivisions=6, phase=0.0, wave_a=0.0, wave_b=0.0, z_
             z += math.sin((u + phase) * tau) * wave_a
             z += math.sin((u * 0.52 + phase * 1.73) * tau) * wave_b
             result.append((x + x_shift, p1[1], z + z_offset))
+
     last = points[-1]
     u = 1.0
-    last_z = last[2] + math.sin((u + phase) * tau) * wave_a + math.sin((u * 0.52 + phase * 1.73) * tau) * wave_b
+    last_z = (
+        last[2]
+        + math.sin((u + phase) * tau) * wave_a
+        + math.sin((u * 0.52 + phase * 1.73) * tau) * wave_b
+    )
     result.append((last[0] + x_shift, last[1], last_z + z_offset))
     return result
 
 
 def make_terrain_curtain(
     obj,
-    base_z=-0.44,
+    base_z=-0.54,
     phase=0.0,
     wave_a=0.0,
     wave_b=0.0,
     z_offset=0.0,
     x_shift=0.0,
 ):
-    """Replace the shallow ribbon with one calm, filled distant-hill curtain."""
+    """Fill each ridge downward; only its skyline should remain visible."""
     old_mesh = obj.data
     original = [tuple(vertex.co) for vertex in old_mesh.vertices]
     if len(original) < 6 or len(original) % 2 != 0:
-        raise RuntimeError("Unexpected ridge topology for %s: %d vertices" % (obj.name, len(original)))
+        raise RuntimeError(
+            "Unexpected ridge topology for %s: %d vertices" % (obj.name, len(original))
+        )
 
     count = len(original) // 2
     y_center = sum(vertex[1] for vertex in original) / float(len(original))
@@ -248,9 +255,10 @@ def make_terrain_curtain(
     verts = list(top)
     base_start = len(verts)
     verts.extend((x, y_center, base_z) for x, _y, _z in top)
-    faces = []
-    for i in range(len(top) - 1):
-        faces.append((i, base_start + i, base_start + i + 1, i + 1))
+    faces = [
+        (i, base_start + i, base_start + i + 1, i + 1)
+        for i in range(len(top) - 1)
+    ]
 
     new_mesh = bpy.data.meshes.new(old_mesh.name + "AtmosphericCurtain")
     new_mesh.from_pydata(verts, [], faces)
@@ -260,6 +268,7 @@ def make_terrain_curtain(
         obj.modifiers.remove(modifier)
     if old_mesh.users == 0:
         bpy.data.meshes.remove(old_mesh)
+
     print(
         "Atmospheric ridge curtain rebuilt: %s (%d controls -> %d profile points, %d faces)"
         % (obj.name, count, len(top), len(faces))
@@ -292,21 +301,43 @@ def assign(obj, material):
     obj.data.materials.append(material)
 
 
+def is_retired_horizon(obj):
+    if any(obj.name.startswith(name) for name in ACCEPTED_DISTANT_HILLS):
+        return False
+    if obj.name.startswith(("V5NearRidge", "V5MidRidge", "V5FarRidge")):
+        return False
+    return any(obj.name.startswith(prefix) for prefix in LEGACY_HORIZON_PREFIXES)
+
+
 def select_v5_export_set():
     bpy.ops.object.select_all(action="DESELECT")
     omitted = []
     selected = 0
+    kept_hills = []
+
     for obj in bpy.context.scene.objects:
-        if any(obj.name.startswith(prefix) for prefix in LEGACY_HORIZON_PREFIXES):
+        if is_retired_horizon(obj):
             omitted.append(obj.name)
             continue
         obj.select_set(True)
         selected += 1
+        if any(obj.name.startswith(name) for name in ACCEPTED_DISTANT_HILLS):
+            kept_hills.append(obj.name)
+
     if selected == 0:
         raise RuntimeError("Atmospheric ridge export selection is empty")
-    if not all(any(name.startswith(prefix) for name in omitted) for prefix in ("BackHill", "HazeRidge", "MidRidge")):
-        raise RuntimeError("Expected retired legacy horizon objects were not found: %s" % omitted)
-    print("Atmospheric ridge final export excludes retired horizon: %s" % ", ".join(sorted(omitted)))
+    if len(kept_hills) < 3:
+        raise RuntimeError(
+            "Accepted distant hills must remain in ridge export; found: %s" % kept_hills
+        )
+    if not any(
+        name.startswith(("HazeRidge", "MidRidge", "FarHill", "BackHill"))
+        for name in omitted
+    ):
+        raise RuntimeError("Expected retired horizon objects were not found")
+
+    print("Atmospheric ridge export excludes retired horizon: %s" % ", ".join(sorted(omitted)))
+    print("Atmospheric ridge export preserves accepted hills: %s" % ", ".join(sorted(kept_hills)))
     print("Atmospheric ridge final export keeps %d scene objects" % selected)
 
 
@@ -318,63 +349,71 @@ near_source = source_material(near)
 mid_source = source_material(mid)
 far_source = source_material(far)
 
-# Keep all layers in a muted sage family. These are authored for the atmospheric
-# emission fill above, not for direct sun exposure, so they stay calm and matte.
+# Muted family with a much smaller value jump between layers. Atmospheric depth
+# now comes mostly from overlap, not from three bright stacked stripes.
 near_img = build_ridge_image(
     "Lembah Ridge Near Haze",
-    dark=(0.090, 0.160, 0.080),
-    mid=(0.130, 0.220, 0.120),
-    light=(0.180, 0.280, 0.160),
+    dark=(0.090, 0.145, 0.075),
+    mid=(0.120, 0.185, 0.105),
+    light=(0.155, 0.225, 0.135),
     phase=0.11,
 )
 mid_img = build_ridge_image(
     "Lembah Ridge Mid Haze",
-    dark=(0.130, 0.210, 0.120),
-    mid=(0.180, 0.270, 0.170),
-    light=(0.240, 0.330, 0.220),
+    dark=(0.115, 0.165, 0.100),
+    mid=(0.145, 0.205, 0.130),
+    light=(0.180, 0.245, 0.160),
     phase=0.39,
 )
 far_img = build_ridge_image(
     "Lembah Ridge Far Haze",
-    dark=(0.190, 0.260, 0.180),
-    mid=(0.240, 0.310, 0.230),
-    light=(0.300, 0.370, 0.280),
+    dark=(0.145, 0.190, 0.130),
+    mid=(0.175, 0.225, 0.155),
+    light=(0.210, 0.260, 0.185),
     phase=0.67,
 )
 
-near_mat = ridge_material("V5 Textured Ridge Near", near_source, near_img)
-mid_mat = ridge_material("V5 Textured Ridge Mid", mid_source, mid_img)
-far_mat = ridge_material("V5 Textured Ridge Far", far_source, far_img)
+near_mat = ridge_material(
+    "V5 Textured Ridge Near", near_source, near_img, emission_strength=0.30
+)
+mid_mat = ridge_material(
+    "V5 Textured Ridge Mid", mid_source, mid_img, emission_strength=0.34
+)
+far_mat = ridge_material(
+    "V5 Textured Ridge Far", far_source, far_img, emission_strength=0.38
+)
 
-# Each layer gets a deliberately different low-frequency silhouette so the
-# horizon reads as overlapping hills, not parallel contour lines.
+# Critical fix: remove the previous vertical ladder (-0.10 / +0.04 / +0.18).
+# All three layers now occupy nearly the same horizon band; depth comes from
+# occlusion and different local peaks, so mid/far appear only where they crest.
 make_terrain_curtain(
     near,
-    base_z=-0.46,
+    base_z=-0.58,
     phase=0.06,
-    wave_a=0.080,
-    wave_b=0.040,
-    z_offset=-0.10,
-    x_shift=0.65,
+    wave_a=0.075,
+    wave_b=0.032,
+    z_offset=-0.015,
+    x_shift=0.55,
 )
 make_terrain_curtain(
     mid,
-    base_z=-0.43,
+    base_z=-0.58,
     phase=0.34,
     wave_a=0.105,
-    wave_b=0.050,
-    z_offset=0.04,
-    x_shift=-0.45,
+    wave_b=0.044,
+    z_offset=-0.025,
+    x_shift=-0.55,
 )
 make_terrain_curtain(
     far,
-    base_z=-0.40,
+    base_z=-0.58,
     phase=0.63,
     wave_a=0.135,
-    wave_b=0.065,
-    z_offset=0.18,
+    wave_b=0.055,
+    z_offset=-0.035,
     x_shift=0.10,
 )
+
 assign(near, near_mat)
 assign(mid, mid_mat)
 assign(far, far_mat)
