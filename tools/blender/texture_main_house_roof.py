@@ -1,5 +1,6 @@
 import math
 import os
+import runpy
 import struct
 import zlib
 
@@ -11,6 +12,13 @@ os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 
 if not os.path.exists(IN_PATH):
     raise RuntimeError("Missing house GLB for roof pass: %s" % IN_PATH)
+
+# Geometry gate first: convert the legacy gable roof to a four-plane Javanese
+# limasan while preserving the material families this texture pass targets.
+LIMASAN_GATE = os.path.join(os.path.dirname(__file__), "reshape_main_house_limasan.py")
+if not os.path.exists(LIMASAN_GATE):
+    raise RuntimeError("Missing limasan roof geometry gate: %s" % LIMASAN_GATE)
+runpy.run_path(LIMASAN_GATE, run_name="__main__")
 
 bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
