@@ -65,13 +65,13 @@ def write_rgb_png(path, width, height, rows):
 
 
 def build_bank_image(name, phase=0.0, size=256):
-    """Bake broad damp-earth variation for the river bank only."""
+    """Bake readable damp-earth and moss breakup for the river bank only."""
     tau = math.pi * 2.0
-    dark = (0.075, 0.042, 0.018)
-    mid = (0.165, 0.092, 0.036)
-    light = (0.285, 0.180, 0.072)
-    moss = (0.075, 0.165, 0.050)
-    dry = (0.350, 0.245, 0.120)
+    dark = (0.085, 0.047, 0.018)
+    mid = (0.195, 0.112, 0.042)
+    light = (0.340, 0.225, 0.095)
+    moss = (0.085, 0.225, 0.055)
+    dry = (0.420, 0.305, 0.145)
     rows = []
 
     for py in range(size):
@@ -80,12 +80,14 @@ def build_bank_image(name, phase=0.0, size=256):
         for px in range(size):
             u = px / float(size - 1)
 
+            # Larger patches survive the fixed gameplay camera; the prior pass
+            # averaged into one dark strip at this distance.
             broad = (
-                math.sin((u * 1.55 + v * 1.05 + phase) * tau) * 0.125
-                + math.sin((u * 3.15 - v * 2.25 + 0.27) * tau) * 0.060
-                + math.sin((u * 7.2 + v * 5.4 + 0.61) * tau) * 0.020
+                math.sin((u * 1.35 + v * 0.85 + phase) * tau) * 0.165
+                + math.sin((u * 2.65 - v * 1.80 + 0.27) * tau) * 0.085
+                + math.sin((u * 5.4 + v * 3.6 + 0.61) * tau) * 0.028
             )
-            t = clamp(0.47 + broad)
+            t = clamp(0.50 + broad)
             if t < 0.50:
                 q = t / 0.50
                 rgb = tuple(mix(dark[c], mid[c], q) for c in range(3))
@@ -93,20 +95,19 @@ def build_bank_image(name, phase=0.0, size=256):
                 q = (t - 0.50) / 0.50
                 rgb = tuple(mix(mid[c], light[c], q) for c in range(3))
 
-            # Soft green moisture islands break the old continuous tan strip but
-            # remain subordinate to the foliage along the stream.
+            # Moist moss islands are deliberately broad and asymmetric. They
+            # interrupt the continuous brown ribbon without turning the bank green.
             moss_field = (
-                math.sin((u * 2.0 - v * 1.45 + 0.34 + phase) * tau) * 0.68
-                + math.sin((u * 4.2 + v * 3.1 + 0.73) * tau) * 0.25
+                math.sin((u * 1.45 - v * 1.05 + 0.34 + phase) * tau) * 0.70
+                + math.sin((u * 2.75 + v * 2.10 + 0.73) * tau) * 0.28
             )
-            moss_amount = clamp((moss_field - 0.48) / 0.42)
-            moss_amount = moss_amount * moss_amount * 0.24
+            moss_amount = clamp((moss_field - 0.30) / 0.52)
+            moss_amount = moss_amount * moss_amount * 0.42
             rgb = tuple(mix(rgb[c], moss[c], moss_amount) for c in range(3))
 
-            # Sparse warmer patches suggest exposed, drier soil without turning
-            # the bank back into a bright cartoon outline.
-            dry_field = clamp((math.sin((u * 2.8 + v * 3.6 + 0.17) * tau) - 0.76) / 0.24)
-            rgb = tuple(mix(rgb[c], dry[c], dry_field * 0.08) for c in range(3))
+            # Warmer exposed soil gives a second large-scale break in value.
+            dry_field = clamp((math.sin((u * 2.1 + v * 2.8 + 0.17) * tau) - 0.62) / 0.38)
+            rgb = tuple(mix(rgb[c], dry[c], dry_field * 0.14) for c in range(3))
 
             encoded = tuple(linear_to_srgb(channel) for channel in rgb)
             row.extend(int(round(clamp(channel) * 255.0)) for channel in encoded)
@@ -156,7 +157,7 @@ def bank_material(name, source, image):
     return material
 
 
-def world_planar_uv(obj, world_scale=2.35):
+def world_planar_uv(obj, world_scale=3.80):
     mesh = obj.data
     if not mesh.vertices:
         raise RuntimeError("V5StreamBank has no vertices")
@@ -176,7 +177,7 @@ if not bank.data.materials:
 
 image = build_bank_image("Lembah Damp Stream Bank", phase=0.23)
 material = bank_material("V5 Textured Damp Stream Bank", bank.data.materials[0], image)
-world_planar_uv(bank, world_scale=2.35)
+world_planar_uv(bank, world_scale=3.80)
 bank.data.materials.clear()
 bank.data.materials.append(material)
 
