@@ -62,7 +62,7 @@ def stone_height(u, v):
     return broad + mineral + grain
 
 
-def build_stone_normal(name, size=256, derivative_strength=1.75):
+def build_stone_normal(name, size=256, derivative_strength=2.35):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -120,17 +120,17 @@ def add_response(material, image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "Foundation Stone Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.48
+    normal.inputs["Strength"].default_value = 0.70
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    # Keep the footing dry and very matte; response exists to break the long
-    # flat strip under the house, not to make the stone polished.
-    shader.inputs["Roughness"].default_value = 0.93
+    # #71 exported correctly but the thin footing still read almost flat from
+    # the fixed hero camera. Open grazing response while keeping dry stone matte.
+    shader.inputs["Roughness"].default_value = 0.88
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.09
+        shader.inputs["Specular IOR Level"].default_value = 0.12
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.09
+        shader.inputs["Specular"].default_value = 0.12
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
 
@@ -154,6 +154,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "House foundation stone surface response exported to %s (materials=%d; stone relief only)"
+    "House foundation stone surface response exported to %s (materials=%d; readable stone relief only)"
     % (OUT_PATH, len(matched))
 )
