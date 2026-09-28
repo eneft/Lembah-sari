@@ -7,6 +7,7 @@ on:
     paths:
       - 'tools/blender/build_player_character_v2.py'
       - 'tools/blender/build_player_character_v26.py'
+      - 'tools/blender/build_player_character_v27.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
       - '.github/workflows/render-character-v2.yml'
@@ -47,7 +48,7 @@ jobs:
           set -euo pipefail
           mkdir -p assets/models
           LEMBAH_CHARACTER_OUT="$PWD/assets/models/player_character_v2.glb" \
-            blender --background --python tools/blender/build_player_character_v26.py
+            blender --background --python tools/blender/build_player_character_v27.py
           test -s assets/models/player_character_v2.glb
           file assets/models/player_character_v2.glb
           ls -lh assets/models/player_character_v2.glb
