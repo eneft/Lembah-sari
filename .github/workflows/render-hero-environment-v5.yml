@@ -27,6 +27,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_bridge_response.py'
       - 'tools/blender/texture_main_house_wood.py'
       - 'tools/blender/texture_main_house_roof.py'
+      - 'tools/blender/texture_main_house_roof_response.py'
       - 'tools/blender/texture_main_house_clay.py'
       - 'tools/blender/texture_main_house_cloth.py'
       - 'tools/blender/texture_main_house_window.py'
@@ -156,6 +157,16 @@ jobs:
           test -s assets/models/house_main_01.glb
           file assets/models/house_main_01.glb
           ls -lh assets/models/house_main_01.glb
+
+      - name: Apply hero house terracotta roof surface response gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
+          LEMBAH_HOUSE_OUT="$PWD/assets/models/house_main_01.glb" \
+            blender --background --python tools/blender/texture_main_house_roof_response.py
+          test -s assets/models/house_main_01.glb
+          file assets/models/house_main_01.glb
 
       - name: Fetch pinned CC0 stylized nature sources
         shell: bash
