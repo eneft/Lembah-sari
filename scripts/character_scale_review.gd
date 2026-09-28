@@ -7,6 +7,10 @@ const HERO_SCALE: float = 1.035
 @onready var player: CharacterBody3D = $Player
 
 func _ready() -> void:
+	# Review-only scene: freeze character movement/gravity so the captured frame
+	# measures silhouette and environment scale from the authored spawn position.
+	player.set_physics_process(false)
+	player.velocity = Vector3.ZERO
 	_build_environment()
 	_load_hero_scene()
 	_configure_review_camera()
