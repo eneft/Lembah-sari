@@ -74,7 +74,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Trigger Pages deployment on main
+      - name: Trigger current V5 Pages deployment on main
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
