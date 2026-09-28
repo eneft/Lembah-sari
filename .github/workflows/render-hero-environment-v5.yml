@@ -52,6 +52,11 @@ on:
       - 'tools/blender/build_main_house.py'
       - 'scripts/hero_environment_showcase_v5.gd'
       - 'scenes/HeroEnvironmentShowcaseV5.tscn'
+      - 'scenes/Player.tscn'
+      - 'scripts/player.gd'
+      - 'scripts/playable_v5_test.gd'
+      - 'scripts/character_scale_review.gd'
+      - 'scenes/CharacterScaleReview.tscn'
       - '.github/workflows/render-hero-environment-v5.yml'
   workflow_dispatch:
 
@@ -245,11 +250,28 @@ jobs:
           test -s hero_environment_v5_preview.png
           file hero_environment_v5_preview.png
 
+      - name: Render reworked character scale review
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/CharacterScaleReview.tscn
+          test -s character_scale_review.png
+          file character_scale_review.png
+
       - name: Upload V5 screenshot
         uses: actions/upload-artifact@v4
         with:
           name: hero-environment-v5-preview
           path: hero_environment_v5_preview.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload character scale review
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-scale-review
+          path: character_scale_review.png
           if-no-files-found: error
           retention-days: 14
 
