@@ -9,7 +9,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 # Continue from the accepted paddy-response gate. This pass changes only the
-# bridge timber normals; accepted bridge albedo, UVs, geometry and roughness stay locked.
+# bridge timber surface response; accepted bridge albedo, UVs and geometry stay locked.
 import build_hero_scene_v5_paddy_response  # noqa: F401,E402
 import build_hero_scene_v5_ridge_texture as ridge_export  # noqa: E402
 import build_hero_scene_v5_ground_texture as ground  # noqa: E402
@@ -37,7 +37,7 @@ def height_field(u, v, phase=0.0):
 
 
 def build_wood_normal(name, phase=0.0, size=256, strength=0.80):
-    """Bake restrained wood-grain relief that survives glTF as a normal map."""
+    """Bake stylized wood-grain relief that survives glTF as a normal map."""
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -75,7 +75,7 @@ def build_wood_normal(name, phase=0.0, size=256, strength=0.80):
     return image
 
 
-def add_normal_response(source, normal_image, name, strength):
+def add_surface_response(source, normal_image, name, normal_strength, roughness, specular):
     material = source.copy()
     material.name = name
     material.use_nodes = True
@@ -96,9 +96,18 @@ def add_normal_response(source, normal_image, name, strength):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = name + " Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = strength
+    normal.inputs["Strength"].default_value = normal_strength
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
+
+    # Review #54 proved the normal survived glTF but was effectively invisible at
+    # the fixed gameplay camera. Keep the wood matte, yet give highlights enough
+    # range to reveal the grain without turning the bridge varnished/plastic.
+    shader.inputs["Roughness"].default_value = roughness
+    if "Specular IOR Level" in shader.inputs:
+        shader.inputs["Specular IOR Level"].default_value = specular
+    elif "Specular" in shader.inputs:
+        shader.inputs["Specular"].default_value = specular
     return material
 
 
@@ -131,19 +140,23 @@ if not honey_source.name.startswith("V5 Textured Bridge Honey Wood"):
 if not dark_source.name.startswith("V5 Textured Bridge Dark Wood"):
     raise RuntimeError("Unexpected bridge dark material: %s" % dark_source.name)
 
-honey_normal = build_wood_normal("Lembah Bridge Honey Grain Normal", phase=0.13, strength=0.78)
-dark_normal = build_wood_normal("Lembah Bridge Dark Grain Normal", phase=0.39, strength=0.72)
-honey = add_normal_response(
+honey_normal = build_wood_normal("Lembah Bridge Honey Grain Normal", phase=0.13, strength=0.92)
+dark_normal = build_wood_normal("Lembah Bridge Dark Grain Normal", phase=0.39, strength=0.84)
+honey = add_surface_response(
     honey_source,
     honey_normal,
     "V5 Bridge Honey Wood Surface Response",
-    0.24,
+    normal_strength=0.44,
+    roughness=0.80,
+    specular=0.18,
 )
-dark = add_normal_response(
+dark = add_surface_response(
     dark_source,
     dark_normal,
     "V5 Bridge Dark Wood Surface Response",
-    0.20,
+    normal_strength=0.36,
+    roughness=0.84,
+    specular=0.16,
 )
 
 for obj in planks:
@@ -162,6 +175,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "Bridge wood response gate exported to %s (planks=%d posts=%d rails=%d; normal relief only)"
+    "Bridge wood response gate exported to %s (planks=%d posts=%d rails=%d; readable grain response)"
     % (OUT_PATH, len(planks), len(posts), len(rails))
 )
