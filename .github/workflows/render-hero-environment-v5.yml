@@ -18,6 +18,7 @@ on:
       - 'tools/blender/build_hero_scene_v5_hill_texture.py'
       - 'tools/blender/build_hero_scene_v5_ridge_texture.py'
       - 'tools/blender/build_hero_scene_v5_bank_texture.py'
+      - 'tools/blender/build_hero_scene_v5_bank_response.py'
       - 'tools/blender/build_hero_scene_v5_flower_texture.py'
       - 'tools/blender/build_hero_scene_v5_lilypad_texture.py'
       - 'tools/blender/build_hero_scene_v5_rice_texture.py'
@@ -216,14 +217,14 @@ jobs:
             curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
           done
 
-      - name: Build sequential V5 palm bark surface response review GLB
+      - name: Build sequential V5 damp stream bank surface response review GLB
         shell: bash
         run: |
           set -euo pipefail
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_v5.glb" \
           LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene_v5_palm_bark_response.py
+            blender --background --python tools/blender/build_hero_scene_v5_bank_response.py
           test -s assets/models/hero_scene_v5.glb
           file assets/models/hero_scene_v5.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
