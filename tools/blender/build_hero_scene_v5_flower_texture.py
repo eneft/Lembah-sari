@@ -132,11 +132,13 @@ def petal_material(source, name, image):
     tex.extension = "REPEAT"
     links.new(tex.outputs["Color"], base_socket)
 
-    shader.inputs["Roughness"].default_value = 0.90
+    # At hero-camera scale the original glossy cyan slots read as bright pins.
+    # Push the petals matte so the authored teal/gold values remain quiet accents.
+    shader.inputs["Roughness"].default_value = 0.95
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.12
+        shader.inputs["Specular IOR Level"].default_value = 0.07
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.12
+        shader.inputs["Specular"].default_value = 0.07
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     if "Emission Strength" in shader.inputs:
@@ -150,20 +152,24 @@ if flower is None or flower.type != "MESH":
 if not flower.data.materials:
     raise RuntimeError("Template_Flowers has no material slots")
 
+# Muted blue-green petals: visibly distinct from foliage, but no longer neon cyan
+# pinpoints at game distance.
 cyan_image = build_petal_image(
     "Lembah Flower Teal Petal",
-    dark=(0.020, 0.135, 0.145),
-    mid=(0.035, 0.245, 0.255),
-    light=(0.090, 0.370, 0.365),
-    warm=(0.135, 0.345, 0.300),
+    dark=(0.012, 0.065, 0.060),
+    mid=(0.028, 0.135, 0.120),
+    light=(0.070, 0.230, 0.190),
+    warm=(0.095, 0.235, 0.150),
     phase=0.17,
 )
+# Keep the second petal family warm and readable without drifting into saturated
+# lemon yellow that competes with the house and rice-field highlights.
 yellow_image = build_petal_image(
     "Lembah Flower Gold Petal",
-    dark=(0.245, 0.155, 0.030),
-    mid=(0.430, 0.300, 0.060),
-    light=(0.620, 0.465, 0.115),
-    warm=(0.650, 0.345, 0.075),
+    dark=(0.165, 0.085, 0.014),
+    mid=(0.305, 0.180, 0.035),
+    light=(0.505, 0.340, 0.070),
+    warm=(0.555, 0.265, 0.045),
     phase=0.49,
 )
 
