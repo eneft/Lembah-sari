@@ -38,7 +38,7 @@ def bamboo_height(u, v, phase=0.23):
     )
 
 
-def build_bamboo_normal(name, size=256, derivative_strength=1.30):
+def build_bamboo_normal(name, size=256, derivative_strength=2.00):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -97,15 +97,18 @@ def response_material(source, normal_image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "Lembah Aged Bamboo Fibre Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.34
+    normal.inputs["Strength"].default_value = 0.55
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    shader.inputs["Roughness"].default_value = 0.88
+    # #63 exported correctly but was visually indistinguishable from the fixed
+    # hero camera. Open the grazing-light response enough to reveal fibre while
+    # keeping the bamboo clearly dry/matte rather than lacquered.
+    shader.inputs["Roughness"].default_value = 0.80
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.12
+        shader.inputs["Specular IOR Level"].default_value = 0.15
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.12
+        shader.inputs["Specular"].default_value = 0.15
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     return material
@@ -146,6 +149,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "Aged bamboo response gate exported to %s (material slots=%d; fibre relief only)"
+    "Aged bamboo response gate exported to %s (material slots=%d; readable fibre relief only)"
     % (OUT_PATH, len(users))
 )
