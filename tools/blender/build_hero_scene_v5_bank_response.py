@@ -43,7 +43,7 @@ def bank_height(u, v, phase=0.23):
     return broad + clumps + grain
 
 
-def build_bank_normal(name, size=256, derivative_strength=2.10):
+def build_bank_normal(name, size=256, derivative_strength=3.80):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -102,15 +102,17 @@ def response_material(source, normal_image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "V5 Damp Stream Bank Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.46
+    normal.inputs["Strength"].default_value = 0.72
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    shader.inputs["Roughness"].default_value = 0.93
+    # The bank is a long, low strip seen at a shallow angle in the hero camera.
+    # Use broad readable relief while keeping damp earth soft and mostly matte.
+    shader.inputs["Roughness"].default_value = 0.90
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.10
+        shader.inputs["Specular IOR Level"].default_value = 0.12
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.10
+        shader.inputs["Specular"].default_value = 0.12
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     return material
