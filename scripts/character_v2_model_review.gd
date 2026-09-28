@@ -50,13 +50,13 @@ func _build_studio() -> void:
 	add_child(ground)
 
 	var camera: Camera3D = Camera3D.new()
-	camera.position = Vector3(0.0, 1.38, 5.4)
+	camera.position = Vector3(0.0, 1.48, 5.55)
 	camera.fov = 31.0
 	camera.near = 0.1
 	camera.far = 30.0
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(0.0, 0.89, 0.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 0.97, 0.0), Vector3.UP)
 
 func _load_views() -> void:
 	if not ResourceLoader.exists(CHARACTER_SCENE):
