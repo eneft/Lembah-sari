@@ -45,7 +45,7 @@ def dirt_height(u, v, phase=0.17):
     return broad + travel + grit
 
 
-def build_dirt_normal(name, size=256, derivative_strength=1.30):
+def build_dirt_normal(name, size=256, derivative_strength=1.70):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -104,17 +104,17 @@ def response_material(source, normal_image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "V5 Village Dirt Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.30
+    normal.inputs["Strength"].default_value = 0.42
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    # Compacted village soil stays dry and very matte; the response only breaks
-    # up broad grazing light so the path no longer reads as a flat painted strip.
-    shader.inputs["Roughness"].default_value = 0.91
+    # #65 was technically correct but too flat from the fixed hero camera.
+    # Open the response one controlled step while keeping compacted soil matte.
+    shader.inputs["Roughness"].default_value = 0.88
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.11
+        shader.inputs["Specular IOR Level"].default_value = 0.12
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.11
+        shader.inputs["Specular"].default_value = 0.12
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
     return material
@@ -149,6 +149,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "Village dirt response gate exported to %s (objects=%d; compacted-earth relief only)"
+    "Village dirt response gate exported to %s (objects=%d; readable compacted-earth relief only)"
     % (OUT_PATH, len(objects))
 )
