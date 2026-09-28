@@ -62,7 +62,7 @@ def stone_height(u, v):
     return broad + mineral + grain
 
 
-def build_stone_normal(name, size=256, derivative_strength=3.15):
+def build_stone_normal(name, size=256, derivative_strength=4.80):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -120,18 +120,18 @@ def add_response(material, image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "Foundation Stone Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.86
+    normal.inputs["Strength"].default_value = 1.15
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
     # The footing occupies a thin screen-space strip in the fixed hero view.
-    # Strengthen broad relief and grazing response enough to read at game scale,
-    # while preserving a dry, non-metallic, non-glossy warm stone character.
-    shader.inputs["Roughness"].default_value = 0.85
+    # Use a stronger broad normal response so relief survives game-scale viewing,
+    # while retaining the dry, rough, non-metallic look of weathered foundation stone.
+    shader.inputs["Roughness"].default_value = 0.83
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.15
+        shader.inputs["Specular IOR Level"].default_value = 0.18
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.15
+        shader.inputs["Specular"].default_value = 0.18
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
 
