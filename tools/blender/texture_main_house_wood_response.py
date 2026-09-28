@@ -58,7 +58,7 @@ def wood_height(u, v, phase=0.0):
     )
 
 
-def build_wood_normal(name, phase=0.0, size=256, derivative_strength=0.82):
+def build_wood_normal(name, phase=0.0, size=256, derivative_strength=1.0):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -119,6 +119,8 @@ def add_response(material, image, strength, roughness, specular):
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
+    # Review #57 proved the normals survived export but were visually too quiet.
+    # Increase highlight range while keeping every timber family decisively matte.
     shader.inputs["Roughness"].default_value = roughness
     if "Specular IOR Level" in shader.inputs:
         shader.inputs["Specular IOR Level"].default_value = specular
@@ -127,10 +129,10 @@ def add_response(material, image, strength, roughness, specular):
 
 
 families = {
-    "Sun Warm Timber Panel": ("Lembah Warm Timber Grain Normal", 0.08, 0.34, 0.82, 0.17),
-    "Honey Timber Panel": ("Lembah Honey Timber Grain Normal", 0.31, 0.32, 0.80, 0.18),
-    "Deep Teak Frame": ("Lembah Deep Teak Grain Normal", 0.54, 0.29, 0.85, 0.15),
-    "Warm Teak Frame": ("Lembah Warm Teak Grain Normal", 0.73, 0.31, 0.83, 0.16),
+    "Sun Warm Timber Panel": ("Lembah Warm Timber Grain Normal", 0.08, 0.50, 0.74, 0.20),
+    "Honey Timber Panel": ("Lembah Honey Timber Grain Normal", 0.31, 0.47, 0.72, 0.21),
+    "Deep Teak Frame": ("Lembah Deep Teak Grain Normal", 0.54, 0.42, 0.80, 0.17),
+    "Warm Teak Frame": ("Lembah Warm Teak Grain Normal", 0.73, 0.44, 0.78, 0.18),
 }
 
 images = {
@@ -158,6 +160,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "House timber surface response exported to %s (families=%d; albedo/geometry preserved)"
+    "House timber surface response exported to %s (families=%d; readable grain response)"
     % (OUT_PATH, len(matched))
 )
