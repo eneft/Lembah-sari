@@ -122,12 +122,12 @@ func _configure_player_camera() -> void:
 		push_warning("Playable V5 test could not find the player camera")
 		return
 
-	# Slightly closer than the prototype camera so the V5 material/detail work can
-	# be judged while moving without losing the farming-game overview.
+	# Keep the reworked compact/chibi player centered below the scene midpoint so
+	# the environment stays dominant while the silhouette remains readable.
 	camera.position = Vector3(8.2, 9.4, 8.2)
 	camera.fov = 37.0
 	camera.far = 160.0
-	camera.look_at(player.global_position + Vector3(0.0, 0.95, 0.0), Vector3.UP)
+	camera.look_at(player.global_position + Vector3(0.0, 0.82, 0.0), Vector3.UP)
 
 
 func _build_test_hud() -> void:
