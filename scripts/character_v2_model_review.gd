@@ -10,15 +10,15 @@ func _ready() -> void:
 func _build_studio() -> void:
 	var env: Environment = Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("e8dfcc")
+	env.background_color = Color("eee5d3")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("fff1d4")
-	env.ambient_light_energy = 0.58
+	env.ambient_light_color = Color("f3e4c8")
+	env.ambient_light_energy = 0.34
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 1.02
-	env.adjustment_contrast = 1.04
-	env.adjustment_saturation = 1.04
+	env.adjustment_brightness = 0.86
+	env.adjustment_contrast = 1.06
+	env.adjustment_saturation = 1.10
 
 	var world: WorldEnvironment = WorldEnvironment.new()
 	world.environment = env
@@ -26,22 +26,22 @@ func _build_studio() -> void:
 
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, -34.0, 0.0)
-	sun.light_color = Color("ffd9a0")
-	sun.light_energy = 1.05
+	sun.light_color = Color("f6d3a3")
+	sun.light_energy = 0.62
 	sun.shadow_enabled = true
 	add_child(sun)
 
 	var fill: DirectionalLight3D = DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-28.0, 145.0, 0.0)
-	fill.light_color = Color("bcd5d0")
-	fill.light_energy = 0.30
+	fill.light_color = Color("b9cfca")
+	fill.light_energy = 0.12
 	fill.shadow_enabled = false
 	add_child(fill)
 
 	var ground_mesh: PlaneMesh = PlaneMesh.new()
-	ground_mesh.size = Vector2(5.2, 2.5)
+	ground_mesh.size = Vector2(5.2, 2.6)
 	var ground_mat: StandardMaterial3D = StandardMaterial3D.new()
-	ground_mat.albedo_color = Color("d8cdb6")
+	ground_mat.albedo_color = Color("cfc3aa")
 	ground_mat.roughness = 1.0
 	ground_mesh.material = ground_mat
 	var ground: MeshInstance3D = MeshInstance3D.new()
@@ -50,13 +50,13 @@ func _build_studio() -> void:
 	add_child(ground)
 
 	var camera: Camera3D = Camera3D.new()
-	camera.position = Vector3(0.0, 1.33, 5.4)
+	camera.position = Vector3(0.0, 1.38, 5.4)
 	camera.fov = 31.0
 	camera.near = 0.1
 	camera.far = 30.0
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(0.0, 0.86, 0.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 0.89, 0.0), Vector3.UP)
 
 func _load_views() -> void:
 	if not ResourceLoader.exists(CHARACTER_SCENE):
