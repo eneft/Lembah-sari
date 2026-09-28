@@ -20,7 +20,7 @@ var input_locked: bool = false
 
 func _ready() -> void:
 	add_to_group("player")
-	camera.look_at(global_position + Vector3(0, 1.0, 0), Vector3.UP)
+	camera.look_at(global_position + Vector3(0, 0.82, 0), Vector3.UP)
 	tool_changed.emit(selected_tool)
 
 func _physics_process(delta: float) -> void:
