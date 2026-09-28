@@ -61,7 +61,7 @@ def bamboo_height(u, v):
     return broad + fibre
 
 
-def build_bamboo_normal(name, size=256, derivative_strength=1.85):
+def build_bamboo_normal(name, size=256, derivative_strength=2.35):
     rows = []
     step = 1.0 / float(size)
     for py in range(size):
@@ -119,17 +119,18 @@ def add_response(material, image):
     normal = nodes.new("ShaderNodeNormalMap")
     normal.name = "Dry Bamboo Fibre Normal"
     normal.space = "TANGENT"
-    normal.inputs["Strength"].default_value = 0.50
+    normal.inputs["Strength"].default_value = 0.70
     links.new(tex.outputs["Color"], normal.inputs["Color"])
     links.new(normal.outputs["Normal"], shader.inputs["Normal"])
 
-    # The lattice is small in the fixed hero camera, so response is stronger
-    # than the albedo-only pass while remaining clearly dry and matte.
-    shader.inputs["Roughness"].default_value = 0.82
+    # #67 exported correctly but was still almost indistinguishable from the
+    # fixed hero camera. Increase fibre/grazing response while keeping the
+    # sun-dried bamboo matte and preserving the accepted albedo.
+    shader.inputs["Roughness"].default_value = 0.78
     if "Specular IOR Level" in shader.inputs:
-        shader.inputs["Specular IOR Level"].default_value = 0.14
+        shader.inputs["Specular IOR Level"].default_value = 0.16
     elif "Specular" in shader.inputs:
-        shader.inputs["Specular"].default_value = 0.14
+        shader.inputs["Specular"].default_value = 0.16
     if "Metallic" in shader.inputs:
         shader.inputs["Metallic"].default_value = 0.0
 
@@ -153,6 +154,6 @@ bpy.ops.export_scene.gltf(
     export_yup=True,
 )
 print(
-    "House bamboo lattice surface response exported to %s (materials=%d; dry fibre relief)"
+    "House bamboo lattice surface response exported to %s (materials=%d; readable dry fibre relief)"
     % (OUT_PATH, len(matched))
 )
