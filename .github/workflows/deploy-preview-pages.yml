@@ -20,10 +20,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout latest 2.5D prototype branch
+      - name: Checkout latest V5 rebuild branch
         uses: actions/checkout@v4
         with:
-          ref: visual/2p5d-prototype
+          ref: visual/rebuild-vs01-v2
 
       - name: Install Godot 4.7 and Web export templates
         shell: bash
