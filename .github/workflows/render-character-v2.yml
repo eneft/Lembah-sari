@@ -19,7 +19,7 @@ on:
       - 'tools/blender/build_player_character_v36.py'
       - 'tools/blender/build_player_character_v37.py'
       - 'tools/blender/build_player_character_v38.py'
-      - 'tools/blender/build_player_character_v40.py'
+      - 'tools/blender/build_player_character_v39.py'
       - 'tools/blender/build_player_character_v40.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
