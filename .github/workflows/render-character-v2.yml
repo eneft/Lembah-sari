@@ -39,6 +39,8 @@ on:
       - 'tools/blender/build_player_character_v64.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
+      - 'scripts/character_candidate_scale_review.gd'
+      - 'scenes/CharacterCandidateScaleReview.tscn'
       - '.github/workflows/render-character-v2.yml'
   workflow_dispatch:
 
@@ -99,6 +101,15 @@ jobs:
           file character_v2_model_review.png
           file character_v2_detail_review.png
 
+      - name: Render V6.4 gameplay-scale comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/CharacterCandidateScaleReview.tscn
+          test -s character_candidate_scale_review.png
+          file character_candidate_scale_review.png
+
       - name: Upload Character V6.4 candidate review
         uses: actions/upload-artifact@v4
         with:
@@ -106,6 +117,7 @@ jobs:
           path: |
             character_v2_model_review.png
             character_v2_detail_review.png
+            character_candidate_scale_review.png
             assets/review/player_character_candidate.glb
           if-no-files-found: error
           retention-days: 14
