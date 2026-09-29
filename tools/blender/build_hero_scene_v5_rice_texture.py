@@ -10,9 +10,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-# Build every accepted gate through the lilypad blossom first. This pass is
-# intentionally narrow: it textures only the three V5 young-rice materials.
-import build_hero_scene_v5_lilypad_texture  # noqa: F401,E402
+# Build only through the accepted tropical-foliage response gate. Rice is the
+# next isolated gate; Flower, Lilypad and Garden Bed must remain untouched.
+import build_hero_scene_v5_foliage_response  # noqa: F401,E402
 
 OUT_PATH = os.path.abspath(
     os.environ.get(
