@@ -7,8 +7,9 @@ const GAMEPLAY_SCALE: float = 0.82
 func _ready() -> void:
 	_build_environment()
 	_add_ground()
-	_add_character(APPROVED_SCENE, Vector3(-0.95, 0.0, 0.0), -8.0)
-	_add_character(CANDIDATE_SCENE, Vector3(0.95, 0.0, 0.0), 8.0)
+	# Symmetric placement and zero yaw make the height/width comparison unbiased.
+	_add_character(APPROVED_SCENE, Vector3(-0.78, 0.0, 0.0))
+	_add_character(CANDIDATE_SCENE, Vector3(0.78, 0.0, 0.0))
 	_add_camera()
 	await _capture()
 
@@ -45,17 +46,16 @@ func _build_environment() -> void:
 
 func _add_ground() -> void:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(7.0, 5.0)
+	mesh.size = Vector2(5.0, 3.0)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color("d8c99a")
 	mat.roughness = 1.0
 	mesh.material = mat
 	var ground := MeshInstance3D.new()
 	ground.mesh = mesh
-	ground.position = Vector3(0.0, 0.0, 0.0)
 	add_child(ground)
 
-func _add_character(path: String, position_: Vector3, yaw: float) -> void:
+func _add_character(path: String, position_: Vector3) -> void:
 	if not ResourceLoader.exists(path):
 		push_error("Missing scale-review character: %s" % path)
 		return
@@ -68,17 +68,19 @@ func _add_character(path: String, position_: Vector3, yaw: float) -> void:
 		push_error("Character root is not Node3D: %s" % path)
 		return
 	character.position = position_
-	character.rotation_degrees.y = yaw
+	character.rotation_degrees.y = 0.0
 	character.scale = Vector3.ONE * GAMEPLAY_SCALE
 	add_child(character)
 
 func _add_camera() -> void:
 	var camera := Camera3D.new()
-	camera.position = Vector3(4.8, 3.1, 6.8)
-	camera.fov = 34.0
+	# Orthographic projection removes distance/perspective bias between left/right.
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 2.35
+	camera.position = Vector3(0.0, 1.18, 5.0)
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(0.0, 0.82, 0.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 0.90, 0.0), Vector3.UP)
 
 func _capture() -> void:
 	for _frame in range(20):
