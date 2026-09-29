@@ -84,8 +84,6 @@ def build_rice_image(name, dark, mid, tip, warm, phase=0.0, size=192):
                 q = (t - 0.58) / 0.42
                 rgb = tuple(mix(mid[c], tip[c], q) for c in range(3))
 
-            # A very small warm lift near some tips keeps the paddy lively without
-            # turning young rice into mature yellow wheat.
             upper = clamp((v - 0.68) / 0.32)
             sun_field = clamp(
                 (math.sin((u * 3.4 + v * 2.3 + 0.47 + phase) * tau) - 0.66)
@@ -109,7 +107,6 @@ def build_rice_image(name, dark, mid, tip, warm, phase=0.0, size=192):
 
 def rice_height(u, v, phase=0.0):
     tau = math.pi * 2.0
-    # Broad vertical blade response only: intentionally low-noise at gameplay scale.
     return (
         math.sin((u * 1.8 + v * 0.55 + phase) * tau) * 0.26
         + math.sin((u * 3.1 - v * 0.80 + 0.23) * tau) * 0.08
@@ -229,6 +226,118 @@ def build_variant_material(source, name, palette, normal_image):
     return material
 
 
+def named_rice_objects(include_hidden=False):
+    result = []
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+        if not (obj.name.startswith("V5Rice_") or obj.name.startswith("V5RiceDense_")):
+            continue
+        if not include_hidden and obj.hide_render:
+            continue
+        result.append(obj)
+    return sorted(result, key=lambda obj: obj.name)
+
+
+def find_wheat_template():
+    preferred = ["WheatTemplate", "Wheat_A", "Wheat"]
+    for name in preferred:
+        obj = bpy.data.objects.get(name)
+        if obj is not None and obj.type == "MESH":
+            return obj
+
+    candidates = []
+    for obj in bpy.data.objects:
+        if obj.type != "MESH" or getattr(obj, "data", None) is None:
+            continue
+        material_names = [m.name for m in obj.data.materials if m is not None]
+        if "wheat" in obj.name.lower() or any(name == "Yellow" for name in material_names):
+            candidates.append(obj)
+    candidates.sort(key=lambda obj: (0 if obj.hide_render else 1, obj.name))
+    return candidates[0] if candidates else None
+
+
+def place_recovered(template, name, location, scale, rot_x, yaw):
+    obj = template.copy()
+    obj.data = template.data
+    obj.name = name
+    obj.parent = None
+    obj.location = location
+    obj.scale = (scale, scale, scale)
+    obj.rotation_euler = (rot_x, 0.0, yaw)
+    obj.hide_render = False
+    obj.hide_viewport = False
+    bpy.context.collection.objects.link(obj)
+    try:
+        obj.hide_set(False)
+    except RuntimeError:
+        pass
+    return obj
+
+
+def recover_v5_rice_if_needed():
+    existing = named_rice_objects(include_hidden=True)
+    if existing:
+        for obj in existing:
+            obj.hide_render = False
+            obj.hide_viewport = False
+            try:
+                obj.hide_set(False)
+            except RuntimeError:
+                pass
+        print("RICE_RECOVERY reused named V5 rice objects: %d" % len(existing))
+        return named_rice_objects()
+
+    template = find_wheat_template()
+    if template is None:
+        diagnostics = []
+        for obj in bpy.data.objects:
+            if obj.type != "MESH":
+                continue
+            material_names = [m.name for m in obj.data.materials if m is not None]
+            if "rice" in obj.name.lower() or "wheat" in obj.name.lower() or "Yellow" in material_names:
+                diagnostics.append((obj.name, obj.type, obj.hide_render, material_names))
+        raise RuntimeError("Cannot recover V5 rice: no Wheat template/source mesh. diagnostics=%s" % diagnostics)
+
+    rows = [
+        (-4.8, 1.0, [1.3, 3.4, 5.5, 7.6, 9.7]),
+        (-3.7, 0.86, [2.2, 4.3, 6.4, 8.5]),
+        (-2.6, 0.72, [1.8, 3.9, 6.0, 8.1, 10.2]),
+    ]
+    created = []
+    for row_idx, (z, scale_mul, x_positions) in enumerate(rows):
+        for index, x in enumerate(x_positions):
+            y = 4.95 + ((index + row_idx) % 2) * 0.18
+            created.append(
+                place_recovered(
+                    template,
+                    "V5Rice_%d_%d" % (row_idx, index),
+                    (x, y, z),
+                    0.55 * scale_mul,
+                    math.radians(-90.0),
+                    math.radians((index * 37 + row_idx * 19) % 360),
+                )
+            )
+
+    for index, x in enumerate([2.7, 5.6, 8.5]):
+        created.append(
+            place_recovered(
+                template,
+                "V5RiceDense_%d" % index,
+                (x, 4.95, 5.1),
+                0.68,
+                math.radians(-90.0),
+                math.radians(index * 43),
+            )
+        )
+
+    print(
+        "RICE_RECOVERY rebuilt %d V5 rice clumps from %s"
+        % (len(created), template.name)
+    )
+    return sorted(created, key=lambda obj: obj.name)
+
+
 palettes = [
     (
         "V5 Young Rice Deep",
@@ -262,18 +371,11 @@ palettes = [
     ),
 ]
 
-rice_objects = sorted(
-    [
-        obj
-        for obj in bpy.context.scene.objects
-        if obj.type == "MESH"
-        and not obj.hide_render
-        and (obj.name.startswith("V5Rice_") or obj.name.startswith("V5RiceDense_"))
-    ],
-    key=lambda obj: obj.name,
-)
+rice_objects = named_rice_objects()
 if not rice_objects:
-    raise RuntimeError("No visible V5 rice objects found for young-rice surface gate")
+    rice_objects = recover_v5_rice_if_needed()
+if not rice_objects:
+    raise RuntimeError("No visible V5 rice objects found after recovery")
 
 source_mesh = rice_objects[0].data
 source_material = next((material for material in source_mesh.materials if material is not None), None)
@@ -297,8 +399,6 @@ for variant_index, (material_name, palette) in enumerate(palettes):
     variant_counts.append(0)
 
 for index, obj in enumerate(rice_objects):
-    # Alternate neighboring clumps softly. The distribution is deterministic and
-    # changes neither placement nor transform, only the isolated rice mesh/material.
     variant = (index * 7 + index // 5) % len(variant_meshes)
     obj.data = variant_meshes[variant]
     variant_counts[variant] += 1
@@ -306,8 +406,6 @@ for index, obj in enumerate(rice_objects):
 if any(count == 0 for count in variant_counts):
     raise RuntimeError("Rice palette distribution did not use every variant: %s" % variant_counts)
 
-# Export only the same V5 accepted export set used by the foliage response gate;
-# hidden source templates and unrelated scene objects remain excluded.
 foliage_gate.ridge_export.select_v5_export_set()
 bpy.ops.export_scene.gltf(
     filepath=OUT_PATH,
