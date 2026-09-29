@@ -50,6 +50,7 @@ func _build_studio() -> void:
 	add_child(ground)
 
 	var camera: Camera3D = Camera3D.new()
+	camera.name = "ReviewCamera"
 	camera.position = Vector3(0.0, 1.48, 5.55)
 	camera.fov = 31.0
 	camera.near = 0.1
@@ -89,4 +90,22 @@ func _capture_review() -> void:
 	var result: Error = image.save_png("character_v2_model_review.png")
 	if result != OK:
 		push_error("Failed to save Character V2 model review: %s" % result)
+
+	# Second acceptance image: isolate the 3/4 model and frame head through hands.
+	var front: Node3D = get_node_or_null("Front") as Node3D
+	var side: Node3D = get_node_or_null("Side") as Node3D
+	if front != null:
+		front.visible = false
+	if side != null:
+		side.visible = false
+	var camera: Camera3D = get_node("ReviewCamera") as Camera3D
+	camera.position = Vector3(0.0, 1.38, 3.50)
+	camera.fov = 28.0
+	camera.look_at(Vector3(0.0, 1.30, 0.0), Vector3.UP)
+	for _frame in range(10):
+		await get_tree().process_frame
+	var detail: Image = get_viewport().get_texture().get_image()
+	var detail_result: Error = detail.save_png("character_v2_detail_review.png")
+	if detail_result != OK:
+		push_error("Failed to save Character V2 detail review: %s" % detail_result)
 	get_tree().quit()
