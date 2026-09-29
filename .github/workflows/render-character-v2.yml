@@ -32,7 +32,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   render:
@@ -56,24 +56,24 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build concept-matched Character V4.1 GLB
+      - name: Build Character V4.1 candidate GLB
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p assets/models
-          LEMBAH_CHARACTER_OUT="$PWD/assets/models/player_character_v2.glb" \
+          mkdir -p assets/review
+          LEMBAH_CHARACTER_OUT="$PWD/assets/review/player_character_candidate.glb" \
             blender --background --python tools/blender/build_player_character_v41.py
-          test -s assets/models/player_character_v2.glb
-          file assets/models/player_character_v2.glb
-          ls -lh assets/models/player_character_v2.glb
+          test -s assets/review/player_character_candidate.glb
+          file assets/review/player_character_candidate.glb
+          ls -lh assets/review/player_character_candidate.glb
 
-      - name: Import and validate Character V4.1
+      - name: Import and validate Character V4.1 candidate
         shell: bash
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit-after 60
 
-      - name: Render Character V4.1 studio review
+      - name: Render Character V4.1 candidate studio review
         shell: bash
         run: |
           set -euo pipefail
@@ -84,28 +84,13 @@ jobs:
           file character_v2_model_review.png
           file character_v2_detail_review.png
 
-      - name: Upload Character V4.1 review
+      - name: Upload Character V4.1 candidate review
         uses: actions/upload-artifact@v4
         with:
-          name: character-v2-review
+          name: character-candidate-review
           path: |
             character_v2_model_review.png
             character_v2_detail_review.png
-            assets/models/player_character_v2.glb
+            assets/review/player_character_candidate.glb
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish validated Character V4.1 GLB
-        if: github.ref == 'refs/heads/visual/rebuild-vs01-v2'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/models/player_character_v2.glb
-          if git diff --cached --quiet; then
-            echo 'Character GLB already matches generated V4.1 asset.'
-            exit 0
-          fi
-          git commit -m 'feat(character): publish validated V4.1 model asset [skip ci]'
-          git push origin HEAD:visual/rebuild-vs01-v2
