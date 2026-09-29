@@ -1,0 +1,60 @@
+name: Promote Character V6.4 Once
+
+on:
+  push:
+    branches:
+      - visual/rebuild-vs01-v2
+    paths:
+      - '.github/workflows/promote-character-v64-once.yml'
+
+concurrency:
+  group: lembah-sari-character-v64-promotion
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout approved branch state
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y blender python3-numpy
+          blender --version
+
+      - name: Build approved V6.4 gameplay GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lembah-v64
+          LEMBAH_CHARACTER_OUT="/tmp/lembah-v64/player_character_v64.glb" \
+            blender --background --python tools/blender/build_player_character_v64.py
+          test -s /tmp/lembah-v64/player_character_v64.glb
+          file /tmp/lembah-v64/player_character_v64.glb
+          sha256sum /tmp/lembah-v64/player_character_v64.glb
+
+      - name: Promote approved GLB to gameplay path
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/lembah-v64/player_character_v64.glb assets/models/player_character_v2.glb
+          test -s assets/models/player_character_v2.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/player_character_v2.glb
+          if git diff --cached --quiet; then
+            echo "Gameplay asset already matches approved V6.4."
+            exit 0
+          fi
+          git commit -m "feat(character): promote approved V6.4 gameplay asset"
+          git push origin HEAD:${GITHUB_REF_NAME}
