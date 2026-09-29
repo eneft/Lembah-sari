@@ -30,6 +30,7 @@ on:
       - 'tools/blender/build_player_character_v55.py'
       - 'tools/blender/build_player_character_v56.py'
       - 'tools/blender/build_player_character_v57.py'
+      - 'tools/blender/build_player_character_v58.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
       - '.github/workflows/render-character-v2.yml'
@@ -64,24 +65,24 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build Character V5.7 concept-turnaround candidate GLB
+      - name: Build Character V5.8 rounded convergence candidate GLB
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p assets/review
           LEMBAH_CHARACTER_OUT="$PWD/assets/review/player_character_candidate.glb" \
-            blender --background --python tools/blender/build_player_character_v57.py
+            blender --background --python tools/blender/build_player_character_v58.py
           test -s assets/review/player_character_candidate.glb
           file assets/review/player_character_candidate.glb
           ls -lh assets/review/player_character_candidate.glb
 
-      - name: Import and validate Character V5.7 candidate
+      - name: Import and validate Character V5.8 candidate
         shell: bash
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit-after 60
 
-      - name: Render Character V5.7 candidate studio review
+      - name: Render Character V5.8 candidate studio review
         shell: bash
         run: |
           set -euo pipefail
@@ -92,7 +93,7 @@ jobs:
           file character_v2_model_review.png
           file character_v2_detail_review.png
 
-      - name: Upload Character V5.7 candidate review
+      - name: Upload Character V5.8 candidate review
         uses: actions/upload-artifact@v4
         with:
           name: character-v5-candidate-review
