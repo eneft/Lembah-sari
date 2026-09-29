@@ -19,7 +19,8 @@ on:
       - 'tools/blender/build_player_character_v36.py'
       - 'tools/blender/build_player_character_v37.py'
       - 'tools/blender/build_player_character_v38.py'
-      - 'tools/blender/build_player_character_v39.py'
+      - 'tools/blender/build_player_character_v40.py'
+      - 'tools/blender/build_player_character_v40.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
       - '.github/workflows/render-character-v2.yml'
@@ -54,24 +55,24 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build concept-matched Character V3.9 GLB
+      - name: Build concept-matched Character V4.0 GLB
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p assets/models
           LEMBAH_CHARACTER_OUT="$PWD/assets/models/player_character_v2.glb" \
-            blender --background --python tools/blender/build_player_character_v39.py
+            blender --background --python tools/blender/build_player_character_v40.py
           test -s assets/models/player_character_v2.glb
           file assets/models/player_character_v2.glb
           ls -lh assets/models/player_character_v2.glb
 
-      - name: Import and validate Character V3.9
+      - name: Import and validate Character V4.0
         shell: bash
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit-after 60
 
-      - name: Render Character V3.9 studio review
+      - name: Render Character V4.0 studio review
         shell: bash
         run: |
           set -euo pipefail
@@ -82,7 +83,7 @@ jobs:
           file character_v2_model_review.png
           file character_v2_detail_review.png
 
-      - name: Upload Character V3.9 review
+      - name: Upload Character V4.0 review
         uses: actions/upload-artifact@v4
         with:
           name: character-v2-review
@@ -93,7 +94,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish validated Character V3.9 GLB
+      - name: Publish validated Character V4.0 GLB
         if: github.ref == 'refs/heads/visual/rebuild-vs01-v2'
         shell: bash
         run: |
@@ -102,8 +103,8 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add assets/models/player_character_v2.glb
           if git diff --cached --quiet; then
-            echo 'Character GLB already matches generated V3.9 asset.'
+            echo 'Character GLB already matches generated V4.0 asset.'
             exit 0
           fi
-          git commit -m 'feat(character): publish validated V3.9 model asset [skip ci]'
+          git commit -m 'feat(character): publish validated V4.0 model asset [skip ci]'
           git push origin HEAD:visual/rebuild-vs01-v2
