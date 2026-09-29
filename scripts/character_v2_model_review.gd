@@ -1,6 +1,6 @@
 extends Node3D
 
-const CHARACTER_SCENE: String = "res://assets/models/player_character_v2.glb"
+const CHARACTER_SCENE: String = "res://assets/review/player_character_candidate.glb"
 
 func _ready() -> void:
 	_build_studio()
@@ -61,11 +61,11 @@ func _build_studio() -> void:
 
 func _load_views() -> void:
 	if not ResourceLoader.exists(CHARACTER_SCENE):
-		push_error("Character V2 review is missing player_character_v2.glb")
+		push_error("Character candidate review is missing player_character_candidate.glb")
 		return
 	var packed: PackedScene = load(CHARACTER_SCENE) as PackedScene
 	if packed == null:
-		push_error("Character V2 review could not load GLB")
+		push_error("Character candidate review could not load GLB")
 		return
 
 	var view_specs: Array[Dictionary] = [
@@ -76,7 +76,7 @@ func _load_views() -> void:
 	for spec in view_specs:
 		var instance: Node3D = packed.instantiate() as Node3D
 		if instance == null:
-			push_error("Character V2 GLB root is not Node3D")
+			push_error("Character candidate GLB root is not Node3D")
 			continue
 		instance.name = str(spec["name"])
 		instance.position = Vector3(float(spec["x"]), 0.0, 0.0)
@@ -89,7 +89,7 @@ func _capture_review() -> void:
 	var image: Image = get_viewport().get_texture().get_image()
 	var result: Error = image.save_png("character_v2_model_review.png")
 	if result != OK:
-		push_error("Failed to save Character V2 model review: %s" % result)
+		push_error("Failed to save character candidate model review: %s" % result)
 
 	# Second acceptance image: isolate the 3/4 model and frame head through hands.
 	var front: Node3D = get_node_or_null("Front") as Node3D
@@ -107,5 +107,5 @@ func _capture_review() -> void:
 	var detail: Image = get_viewport().get_texture().get_image()
 	var detail_result: Error = detail.save_png("character_v2_detail_review.png")
 	if detail_result != OK:
-		push_error("Failed to save Character V2 detail review: %s" % detail_result)
+		push_error("Failed to save character candidate detail review: %s" % detail_result)
 	get_tree().quit()
