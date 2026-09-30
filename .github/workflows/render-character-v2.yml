@@ -38,6 +38,7 @@ on:
       - 'tools/blender/build_player_character_v63.py'
       - 'tools/blender/build_player_character_v64.py'
       - 'tools/blender/build_player_character_v65.py'
+      - 'tools/blender/build_player_character_v66.py'
       - 'scripts/character_v2_model_review.gd'
       - 'scenes/CharacterV2ModelReview.tscn'
       - 'scripts/character_candidate_scale_review.gd'
@@ -74,24 +75,24 @@ jobs:
           sudo ln -sf /tmp/godot/Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
           godot --version
 
-      - name: Build Character V6.5 silhouette continuity candidate GLB
+      - name: Build Character V6.6 silhouette polish candidate GLB
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p assets/review
           LEMBAH_CHARACTER_OUT="$PWD/assets/review/player_character_candidate.glb" \
-            blender --background --python tools/blender/build_player_character_v65.py
+            blender --background --python tools/blender/build_player_character_v66.py
           test -s assets/review/player_character_candidate.glb
           file assets/review/player_character_candidate.glb
           ls -lh assets/review/player_character_candidate.glb
 
-      - name: Import and validate Character V6.5 candidate
+      - name: Import and validate Character V6.6 candidate
         shell: bash
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit-after 60
 
-      - name: Render Character V6.5 candidate studio review
+      - name: Render Character V6.6 candidate studio review
         shell: bash
         run: |
           set -euo pipefail
@@ -102,7 +103,7 @@ jobs:
           file character_v2_model_review.png
           file character_v2_detail_review.png
 
-      - name: Render V6.5 gameplay-scale comparison
+      - name: Render V6.6 gameplay-scale comparison
         shell: bash
         run: |
           set -euo pipefail
@@ -111,10 +112,10 @@ jobs:
           test -s character_candidate_scale_review.png
           file character_candidate_scale_review.png
 
-      - name: Upload Character V6.5 candidate review
+      - name: Upload Character V6.6 candidate review
         uses: actions/upload-artifact@v4
         with:
-          name: character-v65-candidate-review
+          name: character-v66-candidate-review
           path: |
             character_v2_model_review.png
             character_v2_detail_review.png
