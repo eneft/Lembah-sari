@@ -91,7 +91,8 @@ func _capture_review() -> void:
 	if result != OK:
 		push_error("Failed to save character candidate model review: %s" % result)
 
-	# Second acceptance image: isolate the 3/4 model and frame head through hands.
+	# Second acceptance image: true face close-up on the 3/4 model. This is the
+	# visual gate for eyes, brows, nose, smile, ears, cheek volume and hair framing.
 	var front: Node3D = get_node_or_null("Front") as Node3D
 	var side: Node3D = get_node_or_null("Side") as Node3D
 	if front != null:
@@ -99,9 +100,9 @@ func _capture_review() -> void:
 	if side != null:
 		side.visible = false
 	var camera: Camera3D = get_node("ReviewCamera") as Camera3D
-	camera.position = Vector3(0.0, 1.38, 3.50)
-	camera.fov = 28.0
-	camera.look_at(Vector3(0.0, 1.30, 0.0), Vector3.UP)
+	camera.position = Vector3(0.0, 1.72, 2.05)
+	camera.fov = 22.0
+	camera.look_at(Vector3(0.0, 1.72, 0.0), Vector3.UP)
 	for _frame in range(10):
 		await get_tree().process_frame
 	var detail: Image = get_viewport().get_texture().get_image()
