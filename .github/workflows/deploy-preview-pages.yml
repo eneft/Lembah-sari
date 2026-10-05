@@ -54,6 +54,13 @@ jobs:
           echo "Restored V5 GLB from render run ${RUN_ID}, artifact ${ARTIFACT_ID}"
           ls -lh assets/models/hero_scene_v5.glb
 
+      - name: Assemble new animated player GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/assemble_player_character.sh
+          test -s assets/models/player_character_lembah_sari.glb
+
       - name: Install Godot 4.7 and Web export templates
         shell: bash
         run: |
@@ -79,6 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s assets/models/hero_scene_v5.glb
+          test -s assets/models/player_character_lembah_sari.glb
           godot --headless --path . --editor --quit-after 90
 
       - name: Export Web build
@@ -86,6 +94,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s assets/models/hero_scene_v5.glb
+          test -s assets/models/player_character_lembah_sari.glb
           rm -rf build/web
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html
