@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1"]
-[ext_resource type="PackedScene" path="res://assets/models/player_character_v2.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/player_character_lembah_sari.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape"]
 radius = 0.28
@@ -15,9 +15,9 @@ position = Vector3(0, 0.78, 0)
 shape = SubResource("CapsuleShape")
 
 [node name="Visual" type="Node3D" parent="."]
-scale = Vector3(0.82, 0.82, 0.82)
+scale = Vector3(1.55, 1.55, 1.55)
 
-[node name="CharacterGameplayApproved" parent="Visual" instance=ExtResource("2")]
+[node name="CharacterLembahSari" parent="Visual" instance=ExtResource("2")]
 
 [node name="CameraRig" type="Node3D" parent="."]
 

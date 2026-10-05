@@ -12,16 +12,22 @@ signal day_transition_requested(summary: String)
 
 @onready var visual: Node3D = $Visual
 @onready var camera: Camera3D = $CameraRig/Camera3D
+@onready var character_model: Node = $Visual/CharacterLembahSari
 
 var mobile_input: Vector2 = Vector2.ZERO
 var facing: Vector3 = Vector3(0, 0, 1)
 var selected_tool: String = "hoe"
 var input_locked: bool = false
 
+var character_animation_player: AnimationPlayer
+var current_locomotion_animation: StringName = &""
+
 func _ready() -> void:
 	add_to_group("player")
 	camera.look_at(global_position + Vector3(0, 0.82, 0), Vector3.UP)
 	tool_changed.emit(selected_tool)
+	_setup_character_animations()
+	_play_locomotion_animation(&"Idle")
 
 func _physics_process(delta: float) -> void:
 	if input_locked:
@@ -32,6 +38,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			velocity.y = 0.0
 		move_and_slide()
+		_update_character_animation(false, 0.0)
 		return
 
 	var desktop: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -62,9 +69,51 @@ func _physics_process(delta: float) -> void:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), 10.0 * delta)
 
 	move_and_slide()
+	_update_character_animation(running, direction.length())
 
 	if Input.is_action_just_pressed("interact"):
 		_do_interact()
+
+func _setup_character_animations() -> void:
+	character_animation_player = _find_animation_player(character_model)
+	if character_animation_player == null:
+		push_warning("[LembahSari] AnimationPlayer tidak ditemukan pada player_character_lembah_sari.glb")
+		return
+
+	for animation_name: StringName in [&"Idle", &"Walk", &"Run"]:
+		if not character_animation_player.has_animation(animation_name):
+			push_warning("[LembahSari] Animation clip tidak ditemukan: %s" % animation_name)
+			continue
+		var animation: Animation = character_animation_player.get_animation(animation_name)
+		if animation != null:
+			animation.loop_mode = Animation.LOOP_LINEAR
+
+func _find_animation_player(root: Node) -> AnimationPlayer:
+	if root is AnimationPlayer:
+		return root as AnimationPlayer
+	for child: Node in root.get_children():
+		var found: AnimationPlayer = _find_animation_player(child)
+		if found != null:
+			return found
+	return null
+
+func _update_character_animation(running: bool, movement_amount: float) -> void:
+	if movement_amount <= 0.1:
+		_play_locomotion_animation(&"Idle")
+	elif running:
+		_play_locomotion_animation(&"Run")
+	else:
+		_play_locomotion_animation(&"Walk")
+
+func _play_locomotion_animation(animation_name: StringName) -> void:
+	if character_animation_player == null:
+		return
+	if current_locomotion_animation == animation_name:
+		return
+	if not character_animation_player.has_animation(animation_name):
+		return
+	character_animation_player.play(animation_name, 0.16)
+	current_locomotion_animation = animation_name
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey:
@@ -97,6 +146,8 @@ func get_selected_tool() -> String:
 
 func set_input_locked(locked: bool) -> void:
 	input_locked = locked
+	if locked:
+		_play_locomotion_animation(&"Idle")
 
 func _do_interact() -> void:
 	var activity_managers: Array[Node] = get_tree().get_nodes_in_group("activity_manager")

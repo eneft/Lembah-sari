@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/player_character_lembah_sari.glb" id="1"]
+[ext_resource type="Script" path="res://scripts/character_animation_test.gd" id="2"]
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 1
+background_color = Color(0.84, 0.88, 0.82, 1)
+ambient_light_source = 3
+ambient_light_energy = 0.8
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_test"]
+size = Vector2(8, 8)
+
+[node name="CharacterLembahSariAnimationTest" type="Node3D"]
+script = ExtResource("2")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_test")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-45, -35, 0)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_test")
+
+[node name="Character" parent="." instance=ExtResource("1")]
+scale = Vector3(1.55, 1.55, 1.55)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(2.7, 1.75, 3.8)
+rotation_degrees = Vector3(-8, 35, 0)
+current = true
+fov = 34.0
