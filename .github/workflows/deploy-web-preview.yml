@@ -78,13 +78,23 @@ jobs:
         run: |
           set -euo pipefail
           test -s assets/models/hero_scene_v5.glb
+          test -s assets/models/player_house_repaired_v3.glb
           godot --headless --path . --editor --quit-after 90
+
+      - name: Smoke test repaired player house
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 25s godot --headless --path . --quit-after 3 2>&1 | tee /tmp/lembah-house-smoke.log
+          grep -q 'PLAYABLE_HOUSE_V3_ACTIVE' /tmp/lembah-house-smoke.log
+          echo 'Repaired player house runtime replacement verified.'
 
       - name: Export Web build
         shell: bash
         run: |
           set -euo pipefail
           test -s assets/models/hero_scene_v5.glb
+          test -s assets/models/player_house_repaired_v3.glb
           rm -rf build/web
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html
