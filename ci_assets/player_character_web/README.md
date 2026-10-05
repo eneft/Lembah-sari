@@ -1,0 +1,1 @@
+Player character asset chunks used by CI to reconstruct the compact animated GLB.
