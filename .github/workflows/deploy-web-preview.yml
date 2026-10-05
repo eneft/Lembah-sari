@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - visual/rebuild-vs01-v2
-    paths-ignore:
-      - 'assets/models/**'
   workflow_dispatch:
 
 concurrency:
