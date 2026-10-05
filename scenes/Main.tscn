@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/world_builder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/concept_composition_v2.gd" id="12"]
 [ext_resource type="Script" path="res://scripts/presentation_manager.gd" id="13"]
 [ext_resource type="Script" path="res://scripts/vertical_slice_visual.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/player_house_replacement.gd" id="15"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -45,6 +46,9 @@ script = ExtResource("12")
 
 [node name="VerticalSliceVisual" type="Node3D" parent="."]
 script = ExtResource("14")
+
+[node name="PlayerHouseReplacement" type="Node3D" parent="."]
+script = ExtResource("15")
 
 [node name="InventoryManager" type="Node" parent="."]
 script = ExtResource("7")
