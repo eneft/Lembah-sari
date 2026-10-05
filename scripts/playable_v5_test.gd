@@ -1,8 +1,13 @@
 extends Node3D
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
+const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_repaired_v3.glb"
 const HERO_ROTATION_Y: float = 124.0
 const HERO_SCALE: float = 1.035
+# HeroHouseRoot is authored in Blender at (-3, 2, 0). After the Blender->glTF
+# Z-up to Y-up conversion that becomes (-3, 0, -2) in Godot local space.
+const PLAYER_HOUSE_LOCAL_POSITION: Vector3 = Vector3(-3.0, 0.0, -2.0)
+const PLAYER_HOUSE_LOCAL_ROTATION_Y: float = 180.0
 
 @onready var player: CharacterBody3D = $Player
 
@@ -86,6 +91,55 @@ func _load_hero_scene() -> void:
 	hero.rotation_degrees.y = HERO_ROTATION_Y
 	hero.scale = Vector3.ONE * HERO_SCALE
 	add_child(hero)
+	_replace_embedded_player_house(hero)
+
+
+func _replace_embedded_player_house(hero: Node3D) -> void:
+	# V5's exported environment still contains the earlier authored house under
+	# HeroHouseRoot. Hide/remove that branch before adding the repaired game asset.
+	var legacy_house: Node = _find_node_with_prefix(hero, "HeroHouseRoot")
+	if legacy_house != null:
+		_set_node3d_visibility_recursive(legacy_house, false)
+		legacy_house.queue_free()
+	else:
+		push_warning("[LembahSari] Embedded HeroHouseRoot was not found in V5 hero scene.")
+
+	if not ResourceLoader.exists(PLAYER_HOUSE_SCENE):
+		push_error("[LembahSari] Repaired player house is missing: %s" % PLAYER_HOUSE_SCENE)
+		return
+
+	var house_packed: PackedScene = load(PLAYER_HOUSE_SCENE) as PackedScene
+	if house_packed == null:
+		push_error("[LembahSari] Repaired player house could not be loaded as PackedScene.")
+		return
+
+	var repaired_house: Node3D = house_packed.instantiate() as Node3D
+	if repaired_house == null:
+		push_error("[LembahSari] Repaired player house GLB root is not Node3D.")
+		return
+
+	repaired_house.name = "PlayerHouseRepairedV3"
+	repaired_house.position = PLAYER_HOUSE_LOCAL_POSITION
+	repaired_house.rotation_degrees.y = PLAYER_HOUSE_LOCAL_ROTATION_Y
+	hero.add_child(repaired_house)
+	print("[LembahSari] PLAYABLE_HOUSE_V3_ACTIVE")
+
+
+func _find_node_with_prefix(root: Node, prefix: String) -> Node:
+	if String(root.name).begins_with(prefix):
+		return root
+	for child: Node in root.get_children():
+		var found: Node = _find_node_with_prefix(child, prefix)
+		if found != null:
+			return found
+	return null
+
+
+func _set_node3d_visibility_recursive(root: Node, visible_value: bool) -> void:
+	if root is Node3D:
+		(root as Node3D).visible = visible_value
+	for child: Node in root.get_children():
+		_set_node3d_visibility_recursive(child, visible_value)
 
 
 func _build_test_collision() -> void:
@@ -138,7 +192,7 @@ func _build_test_hud() -> void:
 	var label: Label = Label.new()
 	label.name = "TestBadge"
 	label.position = Vector2(18.0, 14.0)
-	label.text = "V5 PLAYABLE TEST  •  WASD / joystick  •  Shift: lari"
+	label.text = "V5 PLAYABLE TEST  •  HOUSE V3  •  WASD / joystick  •  Shift: lari"
 	label.add_theme_font_size_override("font_size", 16)
 	label.modulate = Color(1.0, 1.0, 1.0, 0.88)
 	layer.add_child(label)
