@@ -15,3 +15,7 @@ Run `godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_
 ## Riverbank polish
 
 The foreground river keeps the approved route but now uses three visual layers: dry bank, a narrow damp shoreline margin, and calmer water. Bank widths vary along the curve so the shoreline no longer reads as parallel ribbons. Rocks are placed as irregular anchor clusters with smaller companion stones, while reeds concentrate around those clusters and inside quiet bends with open gaps between them. The Web water shader uses broad low-frequency color drift and restrained ripples/specular response to avoid a flat plastic pool look.
+
+## Rice terrace polish
+
+The right-side farm keeps four readable paddies but no longer uses board-like slabs or a stamped planting grid. Each terrace has an earthen shelf that reaches toward the base terrain, a slightly inset shallow-water polygon, and a bund with locally varied width. Elevation increases across the terrace group so the stepped structure reads clearly from the fixed camera. Rice clumps use deterministic position, scale and rotation jitter with sparse gaps, while selected grass clusters soften terrace corners without outlining every field. Runtime paddy water uses a dedicated calm shallow-water shader rather than the river response.
