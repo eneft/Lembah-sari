@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import shutil
+import hashlib
 from pathlib import Path
 
 
@@ -18,9 +19,15 @@ def prepare(directory: Path, revision: str) -> None:
     config = json.loads(match.group(1))
     executable = config["executable"]
     pack = executable + ".pck"
-    versioned_pack = pack + "?v=" + revision
+    versioned_pack = pack + "?v=" + hashlib.sha256((directory / pack).read_bytes()).hexdigest()[:20]
     # Immutable engine URLs avoid mixing a cached runtime with a new game pack.
-    engine_name = executable + "-" + revision
+    engine_digest = hashlib.sha256()
+    for suffix in [".js", ".wasm", ".audio.worklet.js", ".audio.position.worklet.js"]:
+        path = directory / (executable + suffix)
+        if path.exists():
+            engine_digest.update(suffix.encode())
+            engine_digest.update(path.read_bytes())
+    engine_name = executable + "-runtime-" + engine_digest.hexdigest()[:20]
     engine_files = {}
     for suffix in [".js", ".wasm", ".audio.worklet.js", ".audio.position.worklet.js"]:
         original = executable + suffix
@@ -63,6 +70,12 @@ const reportRuntimeError = (...parts) => {
 """)
     html = html.replace("console.error('Error while registering service worker:', err);", "console.error('Error while registering service worker:', err); displayFailureNotice('Browser belum mendukung fitur Godot: ' + missing.join(', '));")
     html = html.replace("engine.startGame({", "engine.startGame({\n onPrintError: reportRuntimeError,")
+    html = html.replace('<progress id="status-progress"></progress>', '<progress id="status-progress"></progress><div id="loading-detail" role="status">Memuat Lembah Sari…</div>')
+    html = html.replace('</style>', '#loading-detail {position:absolute;bottom:15%;left:12px;right:12px;text-align:center;color:#f4eed9;font:16px Arial,sans-serif;z-index:2}\n</style>')
+    html = html.replace("statusProgress.max = total;", """statusProgress.max = total;
+ const percent = Math.min(100, Math.floor(current / total * 100));
+ document.getElementById('loading-detail').textContent = percent >= 100 ? 'Menyiapkan desa…' : 'Mengunduh game: ' + percent + '%';""")
+    html = html.replace("statusOverlay.style.visibility = 'visible';", "statusOverlay.style.visibility = 'visible';\n document.getElementById('loading-detail').style.display = mode === 'notice' ? 'none' : 'block';")
     html_path.write_text(html)
     # A new entry point bypasses HTML cached by older installed workers.
     (directory / "play.html").write_text(html)
@@ -71,6 +84,8 @@ const reportRuntimeError = (...parts) => {
     worker = re.sub(r"const CACHE_VERSION = '[^']+';", "const CACHE_VERSION = '" + revision + "';", worker)
     for original, renamed in engine_files.items():
         worker = worker.replace('"' + original + '"', '"' + renamed + '"')
+    worker = worker.replace("const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;", "const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;\nconst ENGINE_CACHE = " + json.dumps("Lembah Sari-engine-" + engine_digest.hexdigest()[:20]) + ";\nconst ENGINE_FILES = " + json.dumps(list(engine_files.values())) + ";")
+    worker = worker.replace("const cache = await caches.open(CACHE_NAME);", "const cache = await caches.open(ENGINE_FILES.includes(local) ? ENGINE_CACHE : CACHE_NAME);")
     worker = worker.replace('"' + pack + '"', '"' + versioned_pack + '"')
     worker = worker.replace("cache.addAll(CACHED_FILES)", "cache.addAll(CACHED_FILES.map((file) => new Request(new URL(file, self.location.href), {cache: 'reload'}))).then(() => self.skipWaiting())")
     activate_marker = "// Enable navigation preload if available."

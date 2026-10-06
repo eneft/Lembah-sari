@@ -2,7 +2,7 @@ const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:a
 const html = fs.readFileSync('build/web/play.html','utf8');
 const config=JSON.parse(html.match(/const GODOT_CONFIG = (\{[^\n]+\});/)[1]);
 const revision=JSON.parse(fs.readFileSync('build/web/preview-version.json','utf8')).revision;
-assert.equal(config.executable,'index-'+revision);
+assert.match(config.executable,/^index-runtime-[0-9a-f]{20}$/);
 assert(html.includes('src="'+config.executable+'.js"'));
 assert(fs.existsSync('build/web/'+config.executable+'.wasm'));
 const source = html.match(/<script>\s*(const GODOT_CONFIG[\s\S]*?)<\/script>/)[1];
@@ -13,7 +13,7 @@ async function check(missing) {
   Object.defineProperty(node,'lastChild',{get(){return this.children.at(-1);}});
   return node;
  }
- ['status','status-progress','status-notice'].forEach(id=>nodes.set(id,element(id)));
+ ['status','status-progress','status-notice','loading-detail'].forEach(id=>nodes.set(id,element(id)));
  const document = {getElementById:id=>nodes.get(id),createElement:()=>element(''),createTextNode:text=>({textContent:text}),body:{appendChild(node){nodes.set(node.id,node);}}};
  let options;
  function Engine() {this.startGame = input=>{options=input;return Promise.resolve();};}
@@ -25,6 +25,10 @@ async function check(missing) {
   assert(text.includes('WebGL2'), 'Missing graphics support must produce a visible notice');
  } else {
   assert(options && typeof options.onPrintError==='function');
+  options.onProgress(50,100);
+  assert(nodes.get('loading-detail').textContent.includes('50%'));
+  options.onProgress(100,100);
+  assert(nodes.get('loading-detail').textContent.includes('Menyiapkan'));
   options.onPrintError('SCRIPT ERROR: Failed loading image environment');
   assert(nodes.get('runtime-error').textContent.includes('Failed loading image environment'));
  }
