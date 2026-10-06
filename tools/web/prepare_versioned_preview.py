@@ -36,7 +36,7 @@ def prepare(directory: Path, revision: str) -> None:
     worker = worker_path.read_text()
     worker = re.sub(r"const CACHE_VERSION = '[^']+';", "const CACHE_VERSION = '" + revision + "';", worker)
     worker = worker.replace('"' + pack + '"', '"' + versioned_pack + '"')
-    worker = worker.replace("cache.addAll(CACHED_FILES)", "cache.addAll(CACHED_FILES).then(() => self.skipWaiting())")
+    worker = worker.replace("cache.addAll(CACHED_FILES)", "cache.addAll(CACHED_FILES.map((file) => new Request(new URL(file, self.location.href), {cache: 'reload'}))).then(() => self.skipWaiting())")
     activate_marker = "// Enable navigation preload if available."
     if activate_marker not in worker or "self.skipWaiting()" not in worker:
         raise ValueError("Unexpected exported Godot worker format")
