@@ -5,8 +5,8 @@ signal farming_feedback(text: String)
 signal dialogue_requested(speaker: String, text: String)
 signal day_transition_requested(summary: String)
 
-@export var walk_speed: float = 4.2
-@export var run_speed: float = 6.4
+@export var walk_speed: float = 1.25
+@export var run_speed: float = 3.2
 @export var acceleration: float = 18.0
 @export var gravity: float = 18.0
 
@@ -21,6 +21,11 @@ var input_locked: bool = false
 
 var character_animation_player: AnimationPlayer
 var current_locomotion_animation: StringName = &""
+
+# Distance covered by one complete in-place cycle, in the GLB's model units.
+# Keep these aligned with tools/animation/refine_player_locomotion.py.
+const WALK_CYCLE_DISTANCE: float = 0.34 / 0.62
+const RUN_CYCLE_DISTANCE: float = 0.42 / 0.36
 
 func _ready() -> void:
 	add_to_group("player")
@@ -38,7 +43,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			velocity.y = 0.0
 		move_and_slide()
-		_update_character_animation(false, 0.0)
+		_update_character_animation()
 		return
 
 	var desktop: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -69,7 +74,7 @@ func _physics_process(delta: float) -> void:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), 10.0 * delta)
 
 	move_and_slide()
-	_update_character_animation(running, direction.length())
+	_update_character_animation()
 
 	if Input.is_action_just_pressed("interact"):
 		_do_interact()
@@ -97,13 +102,24 @@ func _find_animation_player(root: Node) -> AnimationPlayer:
 			return found
 	return null
 
-func _update_character_animation(running: bool, movement_amount: float) -> void:
-	if movement_amount <= 0.1:
+func _update_character_animation() -> void:
+	if character_animation_player == null:
+		return
+	# Actual displacement includes acceleration, braking, and collisions. A held
+	# direction against a wall must not keep the feet walking on the spot.
+	var real_velocity: Vector3 = get_real_velocity()
+	var speed: float = Vector2(real_velocity.x, real_velocity.z).length()
+	if speed < 0.08:
 		_play_locomotion_animation(&"Idle")
-	elif running:
-		_play_locomotion_animation(&"Run")
-	else:
-		_play_locomotion_animation(&"Walk")
+		character_animation_player.speed_scale = 1.0
+		return
+	var running: bool = speed > walk_speed + 0.20
+	var animation_name: StringName = &"Run" if running else &"Walk"
+	_play_locomotion_animation(animation_name)
+	var cycle_distance: float = RUN_CYCLE_DISTANCE if running else WALK_CYCLE_DISTANCE
+	var model_scale: float = absf(visual.global_basis.get_scale().y)
+	var clip: Animation = character_animation_player.get_animation(animation_name)
+	character_animation_player.speed_scale = clampf(speed * clip.length / (cycle_distance * maxf(model_scale, 0.001)), 0.1, 2.5)
 
 func _play_locomotion_animation(animation_name: StringName) -> void:
 	if character_animation_player == null:
@@ -112,7 +128,13 @@ func _play_locomotion_animation(animation_name: StringName) -> void:
 		return
 	if not character_animation_player.has_animation(animation_name):
 		return
+	var phase: float = 0.0
+	var preserve_phase: bool = current_locomotion_animation in [&"Walk", &"Run"] and animation_name in [&"Walk", &"Run"]
+	if preserve_phase and character_animation_player.current_animation_length > 0.0:
+		phase = fposmod(character_animation_player.current_animation_position / character_animation_player.current_animation_length, 1.0)
 	character_animation_player.play(animation_name, 0.16)
+	if preserve_phase:
+		character_animation_player.seek(phase * character_animation_player.get_animation(animation_name).length)
 	current_locomotion_animation = animation_name
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -146,8 +168,6 @@ func get_selected_tool() -> String:
 
 func set_input_locked(locked: bool) -> void:
 	input_locked = locked
-	if locked:
-		_play_locomotion_animation(&"Idle")
 
 func _do_interact() -> void:
 	var activity_managers: Array[Node] = get_tree().get_nodes_in_group("activity_manager")

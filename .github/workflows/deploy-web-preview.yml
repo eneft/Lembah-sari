@@ -89,6 +89,12 @@ jobs:
           grep -q 'PLAYABLE_HOUSE_V3_ACTIVE' /tmp/lembah-house-smoke.log
           echo 'Repaired player house runtime replacement verified.'
 
+      - name: Verify player locomotion and input
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_player_locomotion.gd
+
       - name: Export Web build
         shell: bash
         run: |
