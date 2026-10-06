@@ -99,6 +99,25 @@ func _run() -> void:
  _check(int(layer.get_meta("midground_cards",0)) == midground_cards,"Midground card metadata must match runtime cards")
  _check(flipped_cards > 0 and unflipped_cards > 0,"Foliage cards must use mirrored and unmirrored variants")
 
+ var world_env: WorldEnvironment = world.get_node_or_null("V5WorldEnvironment") as WorldEnvironment
+ var sun: DirectionalLight3D = world.get_node_or_null("WarmMorningSun") as DirectionalLight3D
+ var fill: DirectionalLight3D = world.get_node_or_null("SoftSkyFill") as DirectionalLight3D
+ _check(world_env != null and world_env.environment != null,"Lighting polish requires the V5 world environment")
+ _check(sun != null and fill != null,"Lighting polish requires warm sun and sky fill")
+ if world_env != null and world_env.environment != null:
+  var env := world_env.environment
+  _check(env.ambient_light_energy >= 0.30,"Morning polish must lift ambient shadow readability")
+  _check(env.adjustment_brightness >= 0.92 and env.adjustment_contrast <= 1.03,"Morning grade should avoid crushed block shadows")
+ if sun != null:
+  _check(sun.shadow_enabled,"Warm morning sun must still cast gameplay shadows")
+  _check(sun.shadow_opacity < 0.82 and sun.shadow_opacity > 0.60,"House shadows must remain present but softened")
+  _check(sun.shadow_blur >= 1.15,"Sun shadow filtering must soften hard block edges")
+  _check(sun.directional_shadow_blend_splits,"Directional shadow splits should blend for smoother fixed-camera shadows")
+ if fill != null:
+  _check(fill.light_energy >= 0.10 and not fill.shadow_enabled,"Sky fill must lift character/porch readability without a second shadow")
+
+ _check(background.modulate.r < 0.98 and background.modulate.g >= background.modulate.r,"Backdrop should remain slightly quieter than the playable foreground")
+
  var player: CharacterBody3D = world.get_node("Player")
  var camera: Camera3D = player.get_node("CameraRig/Camera3D")
  var camera_start := camera.global_transform
