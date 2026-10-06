@@ -99,6 +99,24 @@ func _run() -> void:
  _check(int(layer.get_meta("midground_cards",0)) == midground_cards,"Midground card metadata must match runtime cards")
  _check(flipped_cards > 0 and unflipped_cards > 0,"Foliage cards must use mirrored and unmirrored variants")
 
+ var yard_apron: MeshInstance3D = hero.find_child("V5YardApron",true,false) as MeshInstance3D
+ var yard_jar: MeshInstance3D = hero.find_child("V5YardJarBody",true,false) as MeshInstance3D
+ var tool_rack: MeshInstance3D = hero.find_child("V5YardToolRackRail",true,false) as MeshInstance3D
+ var crate: MeshInstance3D = hero.find_child("V5YardCrateBase",true,false) as MeshInstance3D
+ var firewood: Array[Node] = hero.find_children("V5YardFirewood_*","MeshInstance3D",true,false)
+ var steps: Array[Node] = hero.find_children("V5YardStep_*","MeshInstance3D",true,false)
+ _check(yard_apron != null and yard_jar != null and tool_rack != null and crate != null,"House-yard polish needs apron jar tool rack and produce crate")
+ _check(firewood.size() >= 5 and steps.size() >= 3,"House-yard polish needs compact firewood and stepping-stone groups")
+ if yard_apron != null:
+  var yard_mat: ShaderMaterial = yard_apron.get_surface_override_material(0) as ShaderMaterial
+  _check(yard_mat != null,"Packed house yard must receive its dedicated hybrid material")
+
+ var yard_cards := 0
+ for child in layer.get_children():
+  if child is Sprite3D and (String(child.name).begins_with("Card_V5YardGrass_") or String(child.name).begins_with("Card_V5YardBushFlower_")):
+   yard_cards += 1
+ _check(yard_cards >= 7,"House-yard edges need lightweight grass and flower accents")
+
  var world_env: WorldEnvironment = world.get_node_or_null("V5WorldEnvironment") as WorldEnvironment
  var sun: DirectionalLight3D = world.get_node_or_null("WarmMorningSun") as DirectionalLight3D
  var fill: DirectionalLight3D = world.get_node_or_null("SoftSkyFill") as DirectionalLight3D
