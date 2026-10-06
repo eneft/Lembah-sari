@@ -81,6 +81,24 @@ func _run() -> void:
    rice_cards += 1
  _check(rice_cards >= 35,"Rice terrace polish needs enough irregular rice clumps")
 
+ var midground_cards := 0
+ var flipped_cards := 0
+ var unflipped_cards := 0
+ for child in layer.get_children():
+  if child is Sprite3D:
+   var sprite := child as Sprite3D
+   if String(sprite.name).begins_with("Card_V5Mid"):
+    midground_cards += 1
+    _check(sprite.modulate.g >= sprite.modulate.r,"Midground foliage needs a subtle atmospheric green falloff")
+   if String(sprite.name).begins_with("Card_V5") and ("Tree" in String(sprite.name) or "Bush" in String(sprite.name) or "Palm" in String(sprite.name)):
+    if sprite.flip_h:
+     flipped_cards += 1
+    else:
+     unflipped_cards += 1
+ _check(midground_cards >= 24,"Foliage polish needs a broken midground vegetation belt")
+ _check(int(layer.get_meta("midground_cards",0)) == midground_cards,"Midground card metadata must match runtime cards")
+ _check(flipped_cards > 0 and unflipped_cards > 0,"Foliage cards must use mirrored and unmirrored variants")
+
  var player: CharacterBody3D = world.get_node("Player")
  var camera: Camera3D = player.get_node("CameraRig/Camera3D")
  var camera_start := camera.global_transform
