@@ -25,10 +25,13 @@ func apply(hero: Node3D, view: Camera3D) -> void:
   tex.region = rect
   tex.filter_clip = true
   regions.append(tex)
- mats["ground"] = _material("435034","8b9460",24)
- mats["path"] = _material("765b40","c3ab7b",30)
- mats["soil"] = _material("493421","887049",30)
- mats["wood"] = _material("76593b","b19a68",15,2)
+ mats["ground"] = _material("35452f","8b9460","65724a",24,0,0.15,0.26)
+ mats["ground_deep"] = _material("263d25","667a46","3b5c31",26,0,0.19,0.30)
+ mats["ground_warm"] = _material("56613f","9c9a61","7c7148",24,0,0.14,0.27)
+ mats["path"] = _material("765b40","c3ab7b","92734e",30,1,0.21,0.20)
+ mats["soil"] = _material("493421","887049","5d4930",30,1,0.18,0.22)
+ mats["wear"] = _material("3d3024","77634b","514232",34,1,0.24,0.18)
+ mats["wood"] = _material("76593b","b19a68","62462f",15,2,0.15,0.12)
  var water := ShaderMaterial.new()
  water.shader = WATER
  mats["water"] = water
@@ -79,27 +82,45 @@ func _card(base: Vector3,height: float,kind: int,label: String) -> void:
  sprite.global_position = base+camera.global_basis.y.normalized()*height*0.48
  count_cards += 1
 
-func _material(a: String,b: String,grain: float,kind: float = 0) -> ShaderMaterial:
+func _material(a: String,b: String,accent: String,grain: float,kind: float = 0,macro_scale: float = 0.16,macro_strength: float = 0.24) -> ShaderMaterial:
  var mat := ShaderMaterial.new()
  mat.shader = SURFACE
  mat.set_shader_parameter("low_color",Color(a))
  mat.set_shader_parameter("high_color",Color(b))
+ mat.set_shader_parameter("accent_color",Color(accent))
  mat.set_shader_parameter("grain_scale",grain)
  mat.set_shader_parameter("surface_kind",kind)
+ mat.set_shader_parameter("macro_scale",macro_scale)
+ mat.set_shader_parameter("macro_strength",macro_strength)
  return mat
 
 func _surface(m: MeshInstance3D) -> void:
+ var mesh_label := String(m.name).to_lower()
  for i: int in range(m.mesh.get_surface_count()):
   var mat: Material = m.get_active_material(i)
   if mat == null: continue
   var label := mat.resource_name.to_lower()
   var key := ""
-  if "ground" in label or "grass" in label: key = "ground"
-  elif "dirt" in label: key = "path"
-  elif "earth" in label or "bund" in label or "bank" in label: key = "soil"
-  elif "water" in label: key = "water"
-  elif "wood" in label or "bamboo" in label: key = "wood"
-  if key != "": m.set_surface_override_material(i,mats[key])
+
+  # Preserve the authored ground islands instead of flattening every grass
+  # material back to one identical override.
+  if mesh_label.begins_with("v5grasspatch_"):
+   key = "ground_warm" if mesh_label.ends_with("_1") else "ground_deep"
+  elif mesh_label.begins_with("v5housewear"):
+   key = "wear"
+  elif "ground" in label or "grass" in label:
+   key = "ground"
+  elif "dirt" in label:
+   key = "path"
+  elif "earth" in label or "bund" in label or "bank" in label:
+   key = "soil"
+  elif "water" in label:
+   key = "water"
+  elif "wood" in label or "bamboo" in label:
+   key = "wood"
+
+  if key != "":
+   m.set_surface_override_material(i,mats[key])
 
 func _backdrop(hero: Node3D) -> void:
  var sprite := Sprite3D.new()
