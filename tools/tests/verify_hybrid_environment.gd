@@ -38,6 +38,24 @@ func _run() -> void:
   _check(deep_mat != null and warm_mat != null,"Ground polish patches need hybrid shader overrides")
   if deep_mat != null and warm_mat != null:
    _check(deep_mat.get_shader_parameter("low_color") != warm_mat.get_shader_parameter("low_color"),"Deep and warm grass patches must retain distinct palettes")
+ var wet_bank: MeshInstance3D = hero.find_child("V5WetBank",true,false) as MeshInstance3D
+ var stream_bank: MeshInstance3D = hero.find_child("V5StreamBank",true,false) as MeshInstance3D
+ var stream_water: MeshInstance3D = hero.find_child("V5StreamWater",true,false) as MeshInstance3D
+ _check(wet_bank != null and stream_bank != null and stream_water != null,"Riverbank polish geometry must remain in the V5 composition")
+ if wet_bank != null and stream_bank != null and stream_water != null:
+  var wet_mat: ShaderMaterial = wet_bank.get_surface_override_material(0) as ShaderMaterial
+  var dry_mat: ShaderMaterial = stream_bank.get_surface_override_material(0) as ShaderMaterial
+  var water_mat: ShaderMaterial = stream_water.get_surface_override_material(0) as ShaderMaterial
+  _check(wet_mat != null and dry_mat != null and water_mat != null,"Riverbank polish needs wet, dry and water materials")
+  if wet_mat != null and dry_mat != null:
+   _check(wet_mat.get_shader_parameter("low_color") != dry_mat.get_shader_parameter("low_color"),"Wet shoreline must remain visually distinct from dry bank soil")
+
+ var bank_cards := 0
+ for child in layer.get_children():
+  if child is Sprite3D and String(child.name).begins_with("Card_V5BankGrass_"):
+   bank_cards += 1
+ _check(bank_cards >= 20,"Riverbank polish needs clustered reed/grass cards")
+
  var player: CharacterBody3D = world.get_node("Player")
  var camera: Camera3D = player.get_node("CameraRig/Camera3D")
  var camera_start := camera.global_transform
