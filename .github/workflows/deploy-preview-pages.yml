@@ -98,6 +98,8 @@ jobs:
           rm -rf build/web
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html
+          python3 tools/web/prepare_versioned_preview.py build/web "$(git rev-parse HEAD)"
+          node tools/tests/verify_preview_updates.cjs
           touch build/web/.nojekyll
           test -s build/web/index.html
           test -s build/web/index.wasm
