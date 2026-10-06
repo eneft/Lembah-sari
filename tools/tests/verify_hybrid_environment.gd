@@ -3,6 +3,11 @@ var failed := false
 func _initialize() -> void:
  _run.call_deferred()
 func _run() -> void:
+ for path: String in ["res://assets/textures/hybrid/vegetation_atlas.webp", "res://assets/textures/hybrid/valley_backdrop.webp", "res://assets/shaders/village_surface.gdshader", "res://assets/shaders/village_water.gdshader"]:
+  _check(ResourceLoader.exists(path), "Missing exported environment asset: " + path)
+ if failed:
+  quit(1)
+  return
  var world: Node = load("res://scenes/PlayableV5Test.tscn").instantiate()
  root.add_child(world)
  current_scene = world

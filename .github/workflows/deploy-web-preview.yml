@@ -125,10 +125,7 @@ jobs:
           echo "Preview game data: ${PACK_BYTES} bytes (budget: 20 MiB)"
           test "${PACK_BYTES}" -lt 20971520
           test -s build/web/index.service.worker.js
-          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_house.gd
-          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_locomotion.gd
-
-          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_hybrid_environment.gd
+          bash tools/tests/verify_exported_pack.sh build/web/index.pck
 
       - name: Upload downloadable Web build
         uses: actions/upload-artifact@v4
