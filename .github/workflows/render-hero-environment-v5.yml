@@ -223,14 +223,18 @@ jobs:
             curl -fL --retry 3 "$BASE/$ASSET.mtl" -o "/tmp/quaternius/$ASSET.mtl"
           done
 
-      - name: Build sequential V5 rice foliage review GLB
+      - name: Build V5 hybrid composition GLB
         shell: bash
         run: |
           set -euo pipefail
+          # The playable branch now uses fixed-camera 2.5D cards for decorative
+          # vegetation. Build the authoritative geometry/composition directly;
+          # the old sequential texture-wrapper chain is intentionally bypassed
+          # because its rice/garden-bed modules form a circular import.
           LEMBAH_HOUSE_IN="$PWD/assets/models/house_main_01.glb" \
           LEMBAH_HERO_OUT="$PWD/assets/models/hero_scene_v5.glb" \
           LEMBAH_CC0_DIR="/tmp/quaternius" \
-            blender --background --python tools/blender/build_hero_scene_v5_rice_texture.py
+            blender --background --python tools/blender/build_hero_scene_v5.py
           test -s assets/models/hero_scene_v5.glb
           file assets/models/hero_scene_v5.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
