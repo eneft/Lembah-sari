@@ -1,5 +1,10 @@
 const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:assert/strict');
 const html = fs.readFileSync('build/web/play.html','utf8');
+const config=JSON.parse(html.match(/const GODOT_CONFIG = (\{[^\n]+\});/)[1]);
+const revision=JSON.parse(fs.readFileSync('build/web/preview-version.json','utf8')).revision;
+assert.equal(config.executable,'index-'+revision);
+assert(html.includes('src="'+config.executable+'.js"'));
+assert(fs.existsSync('build/web/'+config.executable+'.wasm'));
 const source = html.match(/<script>\s*(const GODOT_CONFIG[\s\S]*?)<\/script>/)[1];
 async function check(missing) {
  const nodes = new Map();

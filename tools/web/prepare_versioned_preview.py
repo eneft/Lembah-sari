@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import shutil
 from pathlib import Path
 
 
@@ -18,9 +19,22 @@ def prepare(directory: Path, revision: str) -> None:
     executable = config["executable"]
     pack = executable + ".pck"
     versioned_pack = pack + "?v=" + revision
+    # Immutable engine URLs avoid mixing a cached runtime with a new game pack.
+    engine_name = executable + "-" + revision
+    engine_files = {}
+    for suffix in [".js", ".wasm", ".audio.worklet.js", ".audio.position.worklet.js"]:
+        original = executable + suffix
+        if (directory / original).exists():
+            renamed = engine_name + suffix
+            shutil.copyfile(directory / original, directory / renamed)
+            engine_files[original] = renamed
+    config["executable"] = engine_name
     config["mainPack"] = versioned_pack
     sizes = config["fileSizes"]
     sizes[versioned_pack] = sizes.pop(pack)
+    for original, renamed in engine_files.items():
+        if original in sizes:
+            sizes[renamed] = sizes.pop(original)
     html = html[:match.start(1)] + json.dumps(config, separators=(",", ":")) + html[match.end(1):]
     html = html.replace("const engine = new Engine(GODOT_CONFIG);", "const engine = new Engine(GODOT_CONFIG);\n"
         "// Fetch a fresh worker without delaying game startup.\n"
@@ -29,6 +43,7 @@ def prepare(directory: Path, revision: str) -> None:
         "  if (registration) return registration.update();\n"
         " }).catch(() => {});\n"
         "}\n")
+    html = html.replace('src="' + executable + '.js"', 'src="' + engine_name + '.js"')
     # Show engine script/resource errors, including failures after startGame resolves.
     html = html.replace("const engine = new Engine(GODOT_CONFIG);", """const engine = new Engine(GODOT_CONFIG);
 const reportRuntimeError = (...parts) => {
@@ -54,6 +69,8 @@ const reportRuntimeError = (...parts) => {
     worker_path = directory / (executable + ".service.worker.js")
     worker = worker_path.read_text()
     worker = re.sub(r"const CACHE_VERSION = '[^']+';", "const CACHE_VERSION = '" + revision + "';", worker)
+    for original, renamed in engine_files.items():
+        worker = worker.replace('"' + original + '"', '"' + renamed + '"')
     worker = worker.replace('"' + pack + '"', '"' + versioned_pack + '"')
     worker = worker.replace("cache.addAll(CACHED_FILES)", "cache.addAll(CACHED_FILES.map((file) => new Request(new URL(file, self.location.href), {cache: 'reload'}))).then(() => self.skipWaiting())")
     activate_marker = "// Enable navigation preload if available."
