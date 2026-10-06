@@ -23,3 +23,7 @@ The right-side farm keeps four readable paddies but no longer uses board-like sl
 ## Foliage distribution and midground polish
 
 Vegetation now uses three readable depth bands rather than a repeated front-row scatter. The playable foreground keeps loose orchard, shrub and flower islands with deliberate gaps around the character route. A discontinuous midground belt of smaller trees, palms and bushes occupies the outer left/right horizon and selected spaces behind the house/farm, while the roof peak and main path remain visually open. Runtime image cards use deterministic horizontal mirroring, subtle per-card tone variation and a mild atmospheric green falloff for `V5Mid*` vegetation, reducing visible copy repetition without adding new texture downloads. The midground belt is counted and validated in CI so later passes cannot accidentally remove the ground-to-backdrop transition.
+
+## House yard and prop polish
+
+The house frontage now has a small packed-earth apron that blends into the existing path instead of ending directly on uniform grass. Practical porch-side props are grouped outside the main player route: a terracotta water jar and basin, a compact timber tool rack with hoe and broom, a small firewood stack, a produce crate, and three side stepping stones. Lightweight grass and flower cards soften selected yard edges. These objects are intentionally visual-only and stay outside the central navigation corridor, so the pass adds domestic detail without introducing new gameplay collision or large texture assets.
