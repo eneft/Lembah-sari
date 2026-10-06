@@ -182,12 +182,13 @@ func _configure_player_camera() -> void:
 		push_warning("Playable V5 test could not find the player camera")
 		return
 
-	# Keep the reworked compact/chibi player centered below the scene midpoint so
-	# the environment stays dominant while the silhouette remains readable.
-	camera.position = Vector3(8.2, 9.4, 8.2)
-	camera.fov = 37.0
+	# Low view from the village approach: see the front porch instead of looking
+	# down onto the roof. Follow the player with enough room to see the path.
+	camera.position = Vector3(9.0, 4.8, -7.0)
+	camera.fov = 43.0
 	camera.far = 160.0
 	camera.look_at(player.global_position + Vector3(0.0, 0.82, 0.0), Vector3.UP)
+	player.set("camera_relative_movement", true)
 
 
 func _build_test_hud() -> void:

@@ -61,6 +61,12 @@ func _run() -> void:
 	Input.action_press(&"move_right")
 	await _frames(30)
 	var walked: float = player.global_position.distance_to(start)
+	var walk_direction: Vector3 = (player.global_position - start).normalized()
+	if bool(player.get("camera_relative_movement")):
+		var camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
+		var screen_right: Vector3 = camera.global_basis.x
+		screen_right.y = 0.0
+		_check(walk_direction.dot(screen_right.normalized()) > .98, "Right input must move toward screen right with the rotated camera.")
 	_check(animator.current_animation == &"Walk" and walked > 0.4, "Walking input must move the player and play Walk.")
 	var walking_rate: float = animator.speed_scale
 	Input.action_release(&"move_right")
@@ -91,7 +97,10 @@ func _run() -> void:
 	collision.shape = shape
 	wall.add_child(collision)
 	world.add_child(wall)
-	wall.global_position = player.global_position + Vector3(0.65, 1.0, 0.0)
+	walk_direction.y = 0.0
+	walk_direction = walk_direction.normalized()
+	wall.global_position = player.global_position + walk_direction * 0.65 + Vector3.UP
+	wall.rotation.y = atan2(-walk_direction.z, walk_direction.x)
 	Input.action_press(&"move_right")
 	await _frames(60)
 	_check(animator.current_animation == &"Idle", "Holding input against a wall must stop the walking animation.")

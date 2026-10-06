@@ -9,6 +9,7 @@ signal day_transition_requested(summary: String)
 @export var run_speed: float = 3.2
 @export var acceleration: float = 18.0
 @export var gravity: float = 18.0
+@export var camera_relative_movement: bool = false
 
 @onready var visual: Node3D = $Visual
 @onready var camera: Camera3D = $CameraRig/Camera3D
@@ -51,6 +52,12 @@ func _physics_process(delta: float) -> void:
 	var input_vec: Vector2 = mobile_input if mobile_input.length() > 0.05 else desktop
 
 	var direction: Vector3 = Vector3(input_vec.x, 0.0, input_vec.y)
+	if camera_relative_movement:
+		var right: Vector3 = camera.global_basis.x
+		var back: Vector3 = camera.global_basis.z
+		right.y = 0.0
+		back.y = 0.0
+		direction = right.normalized() * input_vec.x + back.normalized() * input_vec.y
 	if direction.length() > 1.0:
 		direction = direction.normalized()
 
