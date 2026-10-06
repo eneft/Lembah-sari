@@ -109,6 +109,10 @@ func _surface(m: MeshInstance3D) -> void:
    key = "ground_warm" if mesh_label.ends_with("_1") else "ground_deep"
   elif mesh_label.begins_with("v5wetbank"):
    key = "bank_wet"
+  elif mesh_label.begins_with("v5streambank"):
+   key = "soil"
+  elif mesh_label.begins_with("v5streamwater"):
+   key = "water"
   elif mesh_label.begins_with("v5housewear"):
    key = "wear"
   elif "ground" in label or "grass" in label:
