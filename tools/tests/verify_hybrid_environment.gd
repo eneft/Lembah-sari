@@ -28,6 +28,16 @@ func _run() -> void:
  _check(trunks > 0,"Trees need simple trunk collision")
  var old_tree: MeshInstance3D = hero.find_child("*Tree*",true,false) as MeshInstance3D
  _check(old_tree != null and not old_tree.visible,"Original decorative tree geometry must be hidden")
+
+ var deep_patch: MeshInstance3D = hero.find_child("V5GrassPatch_0",true,false) as MeshInstance3D
+ var warm_patch: MeshInstance3D = hero.find_child("V5GrassPatch_1",true,false) as MeshInstance3D
+ _check(deep_patch != null and warm_patch != null,"Ground polish patches must remain in the V5 composition")
+ if deep_patch != null and warm_patch != null:
+  var deep_mat: ShaderMaterial = deep_patch.get_surface_override_material(0) as ShaderMaterial
+  var warm_mat: ShaderMaterial = warm_patch.get_surface_override_material(0) as ShaderMaterial
+  _check(deep_mat != null and warm_mat != null,"Ground polish patches need hybrid shader overrides")
+  if deep_mat != null and warm_mat != null:
+   _check(deep_mat.get_shader_parameter("low_color") != warm_mat.get_shader_parameter("low_color"),"Deep and warm grass patches must retain distinct palettes")
  var player: CharacterBody3D = world.get_node("Player")
  var camera: Camera3D = player.get_node("CameraRig/Camera3D")
  var camera_start := camera.global_transform
