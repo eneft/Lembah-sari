@@ -19,3 +19,7 @@ The foreground river keeps the approved route but now uses three visual layers: 
 ## Rice terrace polish
 
 The right-side farm keeps four readable paddies but no longer uses board-like slabs or a stamped planting grid. Each terrace has an earthen shelf that reaches toward the base terrain, a slightly inset shallow-water polygon, and a bund with locally varied width. Elevation increases across the terrace group so the stepped structure reads clearly from the fixed camera. Rice clumps use deterministic position, scale and rotation jitter with sparse gaps, while selected grass clusters soften terrace corners without outlining every field. Runtime paddy water uses a dedicated calm shallow-water shader rather than the river response.
+
+## Foliage distribution and midground polish
+
+Vegetation now uses three readable depth bands rather than a repeated front-row scatter. The playable foreground keeps loose orchard, shrub and flower islands with deliberate gaps around the character route. A discontinuous midground belt of smaller trees, palms and bushes occupies the outer left/right horizon and selected spaces behind the house/farm, while the roof peak and main path remain visually open. Runtime image cards use deterministic horizontal mirroring, subtle per-card tone variation and a mild atmospheric green falloff for `V5Mid*` vegetation, reducing visible copy repetition without adding new texture downloads. The midground belt is counted and validated in CI so later passes cannot accidentally remove the ground-to-backdrop transition.
