@@ -4,6 +4,7 @@ const ATLAS = preload("res://assets/textures/hybrid/vegetation_atlas.webp")
 const BACKDROP = preload("res://assets/textures/hybrid/valley_backdrop.webp")
 const SURFACE = preload("res://assets/shaders/village_surface.gdshader")
 const WATER = preload("res://assets/shaders/village_water.gdshader")
+const PADDY_WATER = preload("res://assets/shaders/village_paddy_water.gdshader")
 var regions: Array[AtlasTexture] = []
 var camera: Camera3D
 var layer: Node3D
@@ -30,12 +31,16 @@ func apply(hero: Node3D, view: Camera3D) -> void:
  mats["ground_warm"] = _material("56613f","9c9a61","7c7148",24,0,0.14,0.27)
  mats["path"] = _material("765b40","c3ab7b","92734e",30,1,0.21,0.20)
  mats["soil"] = _material("493421","887049","5d4930",30,1,0.18,0.22)
+ mats["paddy_bund"] = _material("4f412b","88724b","667044",31,1,0.20,0.24)
  mats["bank_wet"] = _material("26372f","59634b","35483c",34,1,0.22,0.28)
  mats["wear"] = _material("3d3024","77634b","514232",34,1,0.24,0.18)
  mats["wood"] = _material("76593b","b19a68","62462f",15,2,0.15,0.12)
  var water := ShaderMaterial.new()
  water.shader = WATER
  mats["water"] = water
+ var paddy_water := ShaderMaterial.new()
+ paddy_water.shader = PADDY_WATER
+ mats["paddy_water"] = paddy_water
  for node: Node in hero.find_children("*","MeshInstance3D",true,false):
   var m := node as MeshInstance3D
   if _house(m,hero) or not m.is_visible_in_tree(): continue
@@ -53,7 +58,11 @@ func apply(hero: Node3D, view: Camera3D) -> void:
   elif "Hill" in label or "Ridge" in label or "Landform" in label:
    m.hide()
   elif "Rice" in label or label.begins_with("GardenPlant") or ("Grass" in label and not "Patch" in label):
-   var card_height: float = 0.38 if "Rice" in label else (0.34 if "Grass" in label else 0.48)
+   var card_height: float = 0.48
+   if "Rice" in label:
+    card_height = 0.34 + float(abs(label.hash()) % 7) * 0.012
+   elif "Grass" in label:
+    card_height = 0.34
    _card(m.global_position,card_height,3,label)
    m.hide()
   else: _surface(m)
@@ -113,6 +122,10 @@ func _surface(m: MeshInstance3D) -> void:
    key = "soil"
   elif mesh_label.begins_with("v5streamwater"):
    key = "water"
+  elif mesh_label.begins_with("v5paddywater_"):
+   key = "paddy_water"
+  elif mesh_label.begins_with("v5paddybund_"):
+   key = "paddy_bund"
   elif mesh_label.begins_with("v5housewear"):
    key = "wear"
   elif "ground" in label or "grass" in label:
