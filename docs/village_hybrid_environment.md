@@ -11,3 +11,7 @@ The traditional playable house keeps its repaired clay roof. At runtime the prev
 Source images were generated for this project and encoded as WebP game assets. Vegetation shares an atlas; ground and water retain the existing surface shaders. The camera rig is detached from player translation while preserving camera-relative controls and Idle/Walk/Run.
 
 Run `godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_hybrid_environment.gd` to verify images, replacement meshes and camera stability during movement. CI also runs this check against the exported pack.
+
+## Riverbank polish
+
+The foreground river keeps the approved route but now uses three visual layers: dry bank, a narrow damp shoreline margin, and calmer water. Bank widths vary along the curve so the shoreline no longer reads as parallel ribbons. Rocks are placed as irregular anchor clusters with smaller companion stones, while reeds concentrate around those clusters and inside quiet bends with open gaps between them. The Web water shader uses broad low-frequency color drift and restrained ripples/specular response to avoid a flat plastic pool look.
