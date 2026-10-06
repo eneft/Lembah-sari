@@ -20,6 +20,7 @@ import build_hero_scene_v4  # noqa: F401
 base.main = _REAL_MAIN
 
 _V4_GROUND = base.build_ground
+_V4_GARDEN = base.build_garden
 _V4_RICE = base.build_rice_fields
 _V4_FOLIAGE = base.build_foliage
 
@@ -29,6 +30,10 @@ MAT_RIDGE_NEAR = base.mat("V5 Ridge Near", (0.255, 0.390, 0.245), 0.99)
 MAT_RIDGE_MID = base.mat("V5 Ridge Mid", (0.350, 0.475, 0.330), 0.99)
 MAT_RIDGE_FAR = base.mat("V5 Ridge Far", (0.465, 0.565, 0.435), 1.0)
 MAT_MUD = base.mat("V5 Wet Earth", (0.235, 0.145, 0.070), 0.97)
+MAT_YARD_EARTH = base.mat("V5 Packed Yard Earth", (0.355, 0.255, 0.145), 0.96)
+MAT_TERRACOTTA = base.mat("V5 Yard Terracotta", (0.455, 0.225, 0.115), 0.90)
+MAT_DARK_WOOD = base.mat("V5 Yard Dark Wood", (0.205, 0.120, 0.060), 0.91)
+MAT_DRY_WOOD = base.mat("V5 Yard Dry Wood", (0.405, 0.255, 0.120), 0.94)
 
 
 def _hide_named_prefixes(prefixes):
@@ -161,6 +166,89 @@ def v5_ground():
 
     wear = [(-5.0, 1.45), (-4.1, 0.55), (-3.35, -0.50), (-2.15, -1.65)]
     base.ribbon("V5HouseWear", wear, [0.50, 0.64, 0.72, 0.66], MAT_MUD, -0.02, 0.08)
+
+
+def v5_garden(plant_t, flower_t, grass_t):
+    _V4_GARDEN(plant_t, flower_t, grass_t)
+
+    # House-yard polish: practical props live along the porch edges while the
+    # center path remains intentionally clear for the player.
+    apron = [
+        (-5.72, 0.82), (-5.12, 0.28), (-4.08, 0.05), (-2.92, 0.02),
+        (-1.75, 0.28), (-0.92, 0.78), (-0.82, 1.42), (-1.38, 1.72),
+        (-2.55, 1.44), (-3.72, 1.38), (-4.82, 1.58), (-5.55, 1.35),
+    ]
+    _polygon_surface("V5YardApron", apron, -0.018, MAT_YARD_EARTH, 0.035, 0.12)
+
+    # Water jar and wash basin to the porch-right side.
+    base.cylinder("V5YardJarBody", (-1.12, 1.18, 0.245), 0.245, 0.46, MAT_TERRACOTTA, vertices=14, bevel=0.045)
+    base.cylinder("V5YardJarShoulder", (-1.12, 1.18, 0.500), 0.180, 0.16, MAT_TERRACOTTA, vertices=14, bevel=0.035)
+    base.cylinder("V5YardJarNeck", (-1.12, 1.18, 0.600), 0.115, 0.12, MAT_TERRACOTTA, vertices=14, bevel=0.020)
+    base.cylinder("V5YardBasin", (-1.55, 0.92, 0.105), 0.245, 0.14, MAT_TERRACOTTA, vertices=14, bevel=0.035)
+
+    # Compact timber tool rack. Leaning tools are visual-only and kept outside
+    # the path corridor so collision changes are unnecessary.
+    for idx, x in enumerate((-0.72, -0.46)):
+        base.cylinder(f"V5YardToolRackPost_{idx}", (x, 1.92, 0.47), 0.035, 0.92, MAT_DARK_WOOD, vertices=8, bevel=0.010)
+    base.box("V5YardToolRackRail", (-0.59, 1.92, 0.72), (0.38, 0.07, 0.07), MAT_DARK_WOOD, bevel=0.018)
+    base.cylinder(
+        "V5YardHoeHandle", (-0.83, 1.78, 0.53), 0.027, 1.08, MAT_DRY_WOOD,
+        rot=(0.0, math.radians(-19.0), math.radians(8.0)), vertices=8, bevel=0.008,
+    )
+    base.box(
+        "V5YardHoeBlade", (-0.66, 1.76, 0.090), (0.29, 0.07, 0.12),
+        base.MAT_STONE, rot=(0.0, math.radians(-8.0), math.radians(7.0)), bevel=0.020,
+    )
+    base.cylinder(
+        "V5YardBroomHandle", (-0.37, 1.77, 0.52), 0.022, 1.02, MAT_DRY_WOOD,
+        rot=(math.radians(4.0), math.radians(16.0), math.radians(-7.0)), vertices=8, bevel=0.006,
+    )
+    base.box(
+        "V5YardBroomHead", (-0.52, 1.75, 0.105), (0.26, 0.12, 0.10),
+        base.MAT_BAMBOO, rot=(0.0, 0.0, math.radians(-8.0)), bevel=0.025,
+    )
+
+    # Small firewood pile at the house-side edge, not across the player route.
+    log_positions = [
+        (-0.98, 2.62, 0.115, -8), (-0.66, 2.64, 0.115, 7), (-0.35, 2.60, 0.115, -5),
+        (-0.82, 2.62, 0.285, 6), (-0.50, 2.63, 0.285, -7),
+    ]
+    for idx, (x, y, z, rot_z) in enumerate(log_positions):
+        base.cylinder(
+            f"V5YardFirewood_{idx}", (x, y, z), 0.075, 0.52, MAT_DRY_WOOD,
+            rot=(0.0, math.radians(90.0), math.radians(rot_z)), vertices=9, bevel=0.012,
+        )
+
+    # A simple produce crate balances the opposite side of the porch.
+    base.box("V5YardCrateBase", (-5.55, 1.82, 0.16), (0.62, 0.42, 0.10), MAT_DRY_WOOD, bevel=0.025)
+    for idx, z in enumerate((0.22, 0.38)):
+        base.box(f"V5YardCrateSlatL_{idx}", (-5.82, 1.82, z), (0.07, 0.42, 0.16), MAT_DRY_WOOD, bevel=0.015)
+        base.box(f"V5YardCrateSlatR_{idx}", (-5.28, 1.82, z), (0.07, 0.42, 0.16), MAT_DRY_WOOD, bevel=0.015)
+    base.box("V5YardCrateBack", (-5.55, 2.00, 0.30), (0.55, 0.07, 0.30), MAT_DRY_WOOD, bevel=0.015)
+
+    # Side stepping stones and small planting accents break the lawn-to-porch cut.
+    steps = [
+        (-5.85, 0.55, 0.24, 12), (-6.18, 0.92, 0.20, -18), (-6.34, 1.34, 0.22, 8),
+    ]
+    for idx, (x, y, scale, rot_z) in enumerate(steps):
+        base.cylinder(
+            f"V5YardStep_{idx}", (x, y, 0.015), scale, 0.07, base.MAT_STONE_LIGHT,
+            rot=(0.0, 0.0, math.radians(rot_z)), vertices=9, bevel=0.035,
+        )
+
+    yard_grass = [
+        (-5.92, 2.28, 0.40, -12), (-4.95, 2.58, 0.34, 18),
+        (-1.82, 2.48, 0.38, -16), (-0.82, 2.96, 0.34, 13),
+    ]
+    for idx, (x, y, s, r) in enumerate(yard_grass):
+        base.place(grass_t, f"V5YardGrass_{idx}", (x, y, 0.025), s, r)
+
+    yard_flowers = [
+        (-5.92, 1.28, 0.32, 8), (-5.10, 2.20, 0.34, -17),
+        (-1.72, 0.72, 0.30, 14),
+    ]
+    for idx, (x, y, s, r) in enumerate(yard_flowers):
+        base.place(flower_t, f"V5YardBushFlower_{idx}", (x, y, 0.03), s, r)
 
 
 def v5_path_stream_bridge(rock_t, grass_t, lilypad_t):
@@ -434,6 +522,7 @@ def v5_foliage(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t):
 
 
 base.build_ground = v5_ground
+base.build_garden = v5_garden
 base.build_path_stream_bridge = v5_path_stream_bridge
 base.build_rice_fields = v5_rice_fields
 base.build_foliage = v5_foliage
