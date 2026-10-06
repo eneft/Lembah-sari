@@ -65,8 +65,10 @@ func _run() -> void:
  var paddy_max_y := -INF
  for node: Node in paddy_water_nodes:
   var paddy := node as MeshInstance3D
-  paddy_min_y = minf(paddy_min_y,paddy.global_position.y)
-  paddy_max_y = maxf(paddy_max_y,paddy.global_position.y)
+  var paddy_bounds: AABB = paddy.global_transform * paddy.get_aabb()
+  var paddy_height := paddy_bounds.get_center().y
+  paddy_min_y = minf(paddy_min_y,paddy_height)
+  paddy_max_y = maxf(paddy_max_y,paddy_height)
   var paddy_mat: ShaderMaterial = paddy.get_surface_override_material(0) as ShaderMaterial
   _check(paddy_mat != null and paddy_mat.shader != null,"Each paddy needs its dedicated shallow-water shader")
   if paddy_mat != null and paddy_mat.shader != null:
