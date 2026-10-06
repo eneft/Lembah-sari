@@ -170,6 +170,9 @@ func _backdrop(hero: Node3D) -> void:
  texture.filter_clip = true
  sprite.texture = texture
  sprite.pixel_size = 80.0/size.x
+ # Slightly quieter background values keep the playable ground/house in front
+ # while retaining the lush valley color from the source image.
+ sprite.modulate = Color(0.94,0.97,0.93,1.0)
  sprite.shaded = false
  sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
  hero.add_child(sprite)
