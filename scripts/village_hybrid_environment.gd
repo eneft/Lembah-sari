@@ -35,6 +35,7 @@ func apply(hero: Node3D, view: Camera3D) -> void:
  mats["paddy_bund"] = _material("4f412b","88724b","667044",31,1,0.20,0.24)
  mats["bank_wet"] = _material("26372f","59634b","35483c",34,1,0.22,0.28)
  mats["wear"] = _material("3d3024","77634b","514232",34,1,0.24,0.18)
+ mats["yard"] = _material("56432f","9b8057","756246",33,1,0.19,0.20)
  mats["wood"] = _material("76593b","b19a68","62462f",15,2,0.15,0.12)
  var water := ShaderMaterial.new()
  water.shader = WATER
@@ -146,6 +147,8 @@ func _surface(m: MeshInstance3D) -> void:
    key = "paddy_bund"
   elif mesh_label.begins_with("v5housewear"):
    key = "wear"
+  elif mesh_label.begins_with("v5yardapron"):
+   key = "yard"
   elif "ground" in label or "grass" in label:
    key = "ground"
   elif "dirt" in label:
