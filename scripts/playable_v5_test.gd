@@ -1,13 +1,15 @@
 extends Node3D
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
-const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_repaired_v3.glb"
+const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
 const HERO_ROTATION_Y: float = 124.0
 const HERO_SCALE: float = 1.035
-# HeroHouseRoot is authored in Blender at (-3, 2, 0). After the Blender->glTF
-# Z-up to Y-up conversion that becomes (-3, 0, -2) in Godot local space.
-const PLAYER_HOUSE_LOCAL_POSITION: Vector3 = Vector3(-3.0, 0.0, -2.0)
-const PLAYER_HOUSE_LOCAL_ROTATION_Y: float = 180.0
+# Preserve the embedded house's actual site position when replacing it. This
+# fallback matches the currently deployed V5 environment artifact.
+const PLAYER_HOUSE_LOCAL_POSITION: Vector3 = Vector3(-4.25, 0.02, -2.85)
+# The supplied traditional house faces +Z, as does the original V5 porch.
+const PLAYER_HOUSE_LOCAL_ROTATION_Y: float = 0.0
+const PLAYER_HOUSE_SCALE: float = 6.6
 
 @onready var player: CharacterBody3D = $Player
 
@@ -98,7 +100,10 @@ func _replace_embedded_player_house(hero: Node3D) -> void:
 	# V5's exported environment still contains the earlier authored house under
 	# HeroHouseRoot. Hide/remove that branch before adding the repaired game asset.
 	var legacy_house: Node = _find_node_with_prefix(hero, "HeroHouseRoot")
+	var house_position: Vector3 = PLAYER_HOUSE_LOCAL_POSITION
 	if legacy_house != null:
+		if legacy_house is Node3D:
+			house_position = hero.to_local((legacy_house as Node3D).global_position)
 		_set_node3d_visibility_recursive(legacy_house, false)
 		legacy_house.queue_free()
 	else:
@@ -118,11 +123,12 @@ func _replace_embedded_player_house(hero: Node3D) -> void:
 		push_error("[LembahSari] Repaired player house GLB root is not Node3D.")
 		return
 
-	repaired_house.name = "PlayerHouseRepairedV3"
-	repaired_house.position = PLAYER_HOUSE_LOCAL_POSITION
+	repaired_house.name = "PlayerHouseTraditionalV4"
+	repaired_house.position = house_position
 	repaired_house.rotation_degrees.y = PLAYER_HOUSE_LOCAL_ROTATION_Y
+	repaired_house.scale = Vector3.ONE * PLAYER_HOUSE_SCALE
 	hero.add_child(repaired_house)
-	print("[LembahSari] PLAYABLE_HOUSE_V3_ACTIVE")
+	print("[LembahSari] PLAYABLE_HOUSE_V4_ACTIVE")
 
 
 func _find_node_with_prefix(root: Node, prefix: String) -> Node:
@@ -192,7 +198,7 @@ func _build_test_hud() -> void:
 	var label: Label = Label.new()
 	label.name = "TestBadge"
 	label.position = Vector2(18.0, 14.0)
-	label.text = "V5 PLAYABLE TEST  •  HOUSE V3  •  WASD / joystick  •  Shift: lari"
+	label.text = "V5 PLAYABLE TEST  •  HOUSE V4  •  WASD / joystick  •  Shift: lari"
 	label.add_theme_font_size_override("font_size", 16)
 	label.modulate = Color(1.0, 1.0, 1.0, 0.88)
 	layer.add_child(label)
