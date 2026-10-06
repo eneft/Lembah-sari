@@ -13,6 +13,12 @@ const PLAYER_HOUSE_LOCAL_POSITION: Vector3 = Vector3(-4.25, 0.02, -2.85)
 const PLAYER_HOUSE_LOCAL_ROTATION_Y: float = 0.0
 const PLAYER_HOUSE_SCALE: float = 6.6
 
+# Final fixed-camera composition is independent from player spawn/movement.
+# These values preserve the approved framing from the previous passes.
+const CAMERA_WORLD_POSITION: Vector3 = Vector3(12.3, 4.88, -3.9)
+const CAMERA_WORLD_TARGET: Vector3 = Vector3(3.3, 0.90, 3.1)
+const CAMERA_FOV: float = 43.0
+
 @onready var player: CharacterBody3D = $Player
 
 
@@ -21,8 +27,8 @@ func _ready() -> void:
 	_load_hero_scene()
 	_build_test_collision()
 	_configure_player_camera()
+	_build_player_readability()
 	_apply_hybrid_environment()
-	_build_test_hud()
 
 
 func _build_environment() -> void:
@@ -293,44 +299,55 @@ func _add_box_collider(collider_name: String, center: Vector3, size: Vector3) ->
 
 
 func _configure_player_camera() -> void:
+	var rig: Node3D = player.get_node_or_null("CameraRig") as Node3D
 	var camera: Camera3D = player.get_node_or_null("CameraRig/Camera3D") as Camera3D
-	if camera == null:
-		push_warning("Playable V5 test could not find the player camera")
+	if rig == null or camera == null:
+		push_warning("Playable V5 test could not find the fixed camera rig")
 		return
 
-	# Low view from the village approach: see the front porch instead of looking
-	# down onto the roof. Follow the player with enough room to see the path.
-	camera.position = Vector3(9.0, 4.8, -7.0)
-	camera.fov = 43.0
+	# Detach once, then author the camera in world space. Player spawn changes can
+	# no longer nudge the whole composition or move the house away from its frame.
+	rig.set_as_top_level(true)
+	rig.global_transform = Transform3D.IDENTITY
+	camera.position = CAMERA_WORLD_POSITION
+	camera.fov = CAMERA_FOV
+	camera.near = 0.10
 	camera.far = 160.0
-	camera.look_at(player.global_position + Vector3(0.0, 0.82, 0.0), Vector3.UP)
+	camera.look_at(CAMERA_WORLD_TARGET, Vector3.UP)
 	player.set("camera_relative_movement", true)
+
+
+func _build_player_readability() -> void:
+	# A restrained contact ellipse keeps the stylized character grounded/readable
+	# across grass, dirt and shallow-water values without adding an outline shader.
+	var shadow := MeshInstance3D.new()
+	shadow.name = "PlayerContactShadow"
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.34
+	disc.bottom_radius = 0.34
+	disc.height = 0.012
+	disc.radial_segments = 28
+	shadow.mesh = disc
+	shadow.scale = Vector3(1.18, 1.0, 0.72)
+	shadow.position = Vector3(0.0, 0.012, 0.0)
+	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var material := StandardMaterial3D.new()
+	material.resource_name = "PlayerReadabilityContact"
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(0.055, 0.050, 0.040, 0.17)
+	material.roughness = 1.0
+	shadow.material_override = material
+	player.add_child(shadow)
 
 
 func _apply_hybrid_environment() -> void:
 	var hero: Node3D = get_node_or_null("HeroSceneV5") as Node3D
 	var camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
-	var rig: Node3D = player.get_node("CameraRig") as Node3D
-	var fixed_position: Vector3 = rig.global_position
-	rig.set_as_top_level(true)
-	rig.global_position = fixed_position
 	if hero != null:
 		var environment_script: Script = load(HYBRID_ENVIRONMENT) as Script
 		if environment_script != null and environment_script.can_instantiate():
 			environment_script.new().apply(hero,camera)
 		else:
 			push_error("[LembahSari] Could not load image environment")
-
-
-func _build_test_hud() -> void:
-	var layer: CanvasLayer = CanvasLayer.new()
-	layer.name = "PlayableV5TestHUD"
-	add_child(layer)
-
-	var label: Label = Label.new()
-	label.name = "TestBadge"
-	label.position = Vector2(18.0, 14.0)
-	label.text = "LEMBAH SARI 2.5D  •  KAMERA TETAP  •  WASD / joystick  •  Shift: lari"
-	label.add_theme_font_size_override("font_size", 16)
-	label.modulate = Color(1.0, 1.0, 1.0, 0.88)
-	layer.add_child(label)
