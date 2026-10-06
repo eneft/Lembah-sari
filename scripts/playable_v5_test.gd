@@ -1,5 +1,7 @@
 extends Node3D
 
+const NATURAL_ENVIRONMENT = preload("res://scripts/village_environment_detail.gd")
+
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
 const HERO_ROTATION_Y: float = 124.0
@@ -44,7 +46,7 @@ func _build_environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_brightness = 0.88
 	env.adjustment_contrast = 1.05
-	env.adjustment_saturation = 1.10
+	env.adjustment_saturation = 0.96
 	env.fog_enabled = true
 	env.fog_light_color = Color("cdd7cb")
 	env.fog_light_energy = 0.45
@@ -94,6 +96,7 @@ func _load_hero_scene() -> void:
 	hero.scale = Vector3.ONE * HERO_SCALE
 	add_child(hero)
 	_replace_embedded_player_house(hero)
+	NATURAL_ENVIRONMENT.new().apply(hero)
 
 
 func _replace_embedded_player_house(hero: Node3D) -> void:
