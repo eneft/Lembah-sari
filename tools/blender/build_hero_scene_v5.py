@@ -340,52 +340,84 @@ def v5_rice_fields(wheat_t, grass_t):
 def v5_foliage(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t):
     _V4_FOLIAGE(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t)
 
-    # Remove legacy scatter. The approved concept uses curated clusters:
-    # orchard left, palms framing the roof, low flowering shrubs along the path,
-    # and an open visual corridor from porch -> bridge -> paddies.
+    # Remove legacy scatter. This pass builds three readable depth bands:
+    # playable foreground clusters, an open house/paddy corridor, and a broken
+    # midground vegetation belt that hides the ground-to-backdrop seam.
     _hide_named_prefixes((
         "HeroTree_", "HeroPalm_", "HeroBush_", "HeroGrass_", "WildFlowers_", "HeroRock_",
         "V4Tree_", "V4Palm_", "V4Bush_", "V4Grass_",
     ))
 
-    # Orchard: small fruit-tree grouping on the left instead of unrelated singles.
+    # Orchard trees use deliberately uneven scale and depth so the left side no
+    # longer reads as a repeated row of identical copies.
     trees = [
-        (-10.2,0.15,0.78,-8),(-8.55,0.05,0.72,12),(-7.00,0.55,0.68,-16),
-        (-9.35,2.20,0.66,18),(-7.75,2.55,0.62,-12),
-        (9.85,6.15,0.66,-18),(10.75,4.45,0.60,14),
+        (-10.35,0.05,0.82,-9),(-9.05,-0.38,0.67,13),(-7.72,0.42,0.75,-18),
+        (-9.62,2.12,0.61,19),(-7.95,2.78,0.70,-11),(-6.72,1.92,0.57,16),
+        (9.82,6.12,0.63,-19),(10.76,4.52,0.72,15),
     ]
-    # Palms sit behind the architecture so their crowns frame, not cover, the roof.
+    # Palms frame the house roof and farm edge, but keep the roof peak and main
+    # gameplay path visually open.
     palms = [
-        (-8.85,4.65,0.78,10),(-6.55,6.15,0.72,-16),(-2.25,7.65,0.62,12),
-        (4.90,7.75,0.64,-16),(7.85,7.10,0.70,18),(10.35,5.15,0.68,-10),
+        (-9.02,4.72,0.82,9),(-6.72,6.22,0.67,-17),(-2.55,7.72,0.58,12),
+        (4.88,7.86,0.62,-15),(7.72,7.22,0.73,18),(10.28,5.28,0.64,-9),
     ]
     for i, (x, y, s, r) in enumerate(trees):
         base.place(tree_t, f"V5Tree_{i}", (x, y, 0), s, r)
     for i, (x, y, s, r) in enumerate(palms):
         base.place(palm_t, f"V5Palm_{i}", (x, y, 0), s, r)
 
-    # Layered shrubs around the house and path. Gaps deliberately expose porch/character.
-    bush_spots = [
-        (-10.65,-1.75),(-9.70,-2.35),(-8.55,-2.55),(-7.35,-2.35),(-6.25,-1.80),
-        (-5.80,2.80),(-5.15,3.55),(-4.20,4.12),(-3.10,4.50),(-1.85,4.68),
-        (-0.55,4.82),(0.85,4.92),(2.15,4.92),(3.45,4.72),
-        (6.65,-0.35),(7.55,-0.05),(8.45,0.48),
-        (9.55,-2.15),(8.60,-2.78),(7.45,-3.18),
+    # Midground transition belt. It is intentionally discontinuous around the
+    # house roof and path, with denser masses toward the far left/right edges.
+    mid_trees = [
+        (-12.2,7.35,0.58,-12),(-10.85,8.25,0.48,15),(-9.42,7.58,0.55,-20),
+        (-7.90,8.72,0.44,11),(-5.95,8.92,0.48,-14),
+        (5.92,9.02,0.45,16),(7.48,8.48,0.54,-19),(8.92,8.82,0.47,13),
+        (10.32,7.92,0.57,-10),(11.62,7.18,0.51,18),
     ]
-    for i, (x, y) in enumerate(bush_spots):
-        base.place(bush_t, f"V5Bush_{i}", (x, y, 0.025), 0.46 + (i % 4) * 0.045, i * 31)
+    mid_palms = [
+        (-11.35,9.20,0.44,14),(-8.48,9.55,0.40,-17),
+        (6.82,9.62,0.42,15),(9.70,9.30,0.46,-12),
+    ]
+    mid_bushes = [
+        (-12.45,6.55,0.42),(-11.58,6.86,0.50),(-10.62,6.42,0.38),
+        (-9.58,6.94,0.46),(-8.72,6.55,0.36),(-7.55,7.18,0.44),
+        (-6.32,7.02,0.40),(-4.95,7.42,0.36),
+        (4.72,7.55,0.38),(5.88,7.20,0.46),(7.04,7.42,0.40),
+        (8.18,7.02,0.48),(9.28,7.30,0.38),(10.42,6.78,0.46),
+        (11.50,6.42,0.40),(12.25,6.85,0.36),
+    ]
+    for i, (x, y, s, r) in enumerate(mid_trees):
+        base.place(tree_t, f"V5MidTree_{i}", (x, y, 0), s, r)
+    for i, (x, y, s, r) in enumerate(mid_palms):
+        base.place(palm_t, f"V5MidPalm_{i}", (x, y, 0), s, r)
+    for i, (x, y, s) in enumerate(mid_bushes):
+        base.place(bush_t, f"V5MidBush_{i}", (x, y, 0.015), s, (i * 37) % 70 - 35)
 
-    # Flowering clusters echo the reference without blocking gameplay.
-    flowers = [
-        (-8.85,-3.05),(-7.85,-2.95),(-6.85,-2.55),
-        (-5.55,-0.55),(-4.95,-1.12),(-3.75,-1.82),
-        (-1.95,-2.16),(0.10,-2.05),(1.45,-2.35),(3.25,-2.78),
-        (6.45,-1.82),(7.35,-1.42),
+    # Foreground shrubs are grouped into loose islands instead of evenly spaced
+    # rows. The center stays open for character readability and path navigation.
+    bush_spots = [
+        (-10.82,-2.18,0.53),(-9.92,-2.78,0.43),(-8.88,-2.08,0.49),
+        (-8.02,-3.02,0.39),(-7.02,-2.35,0.55),(-6.12,-2.72,0.42),
+        (-5.72,2.78,0.46),(-5.05,3.62,0.39),(-4.08,4.18,0.52),
+        (-2.92,4.58,0.41),(-1.62,4.72,0.48),(-0.18,4.90,0.37),
+        (1.20,4.96,0.50),(2.58,4.90,0.40),(3.72,4.58,0.46),
+        (6.58,-0.48,0.44),(7.52,-0.08,0.53),(8.48,0.56,0.40),
+        (9.68,-2.18,0.50),(8.72,-2.88,0.41),(7.52,-3.24,0.47),
     ]
-    for i, (x, y) in enumerate(flowers):
+    for i, (x, y, s) in enumerate(bush_spots):
+        base.place(bush_t, f"V5Bush_{i}", (x, y, 0.025), s, (i * 31) % 74 - 37)
+
+    # Flowering clusters provide irregular accents rather than a continuous border.
+    flowers = [
+        (-9.08,-3.12,0.42),(-8.12,-2.72,0.35),(-6.72,-2.88,0.45),
+        (-5.48,-0.62,0.38),(-4.82,-1.18,0.44),(-3.62,-1.92,0.35),
+        (-2.02,-2.22,0.42),(0.02,-2.06,0.36),(1.52,-2.42,0.45),
+        (3.20,-2.82,0.39),(6.38,-1.86,0.43),(7.42,-1.38,0.36),
+    ]
+    for i, (x, y, s) in enumerate(flowers):
         # "Bush" in the label makes the fixed-camera hybrid renderer use the
-        # flowering shrub card instead of deleting the flower mesh.
-        base.place(flower_t, f"V5BushFlower_{i}", (x, y, 0.03), 0.40 + (i % 3) * 0.045, i * 37)
+        # flowering shrub card while retaining the authored size variation.
+        base.place(flower_t, f"V5BushFlower_{i}", (x, y, 0.03), s, i * 37)
 
     grasses = [
         (-11.2,-7.85),(-9.85,-7.70),(-8.45,-7.42),(-7.05,-7.18),(-5.62,-6.98),
@@ -394,7 +426,9 @@ def v5_foliage(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t):
         (-6.25,2.65),(-5.72,3.10),(-2.80,3.62),(0.15,3.88),(2.65,4.02),(4.75,4.12),
     ]
     for i, (x, y) in enumerate(grasses):
-        base.place(grass_t, f"V5Grass_{i}", (x, y, 0.025), 0.48 + (i % 5) * 0.042, i * 19)
+        base.place(grass_t, f"V5Grass_{i}", (x, y, 0.025), 0.46 + (i % 5) * 0.045, i * 19)
+
+
 
 
 
