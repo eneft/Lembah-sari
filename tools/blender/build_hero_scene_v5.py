@@ -174,9 +174,13 @@ def v5_path_stream_bridge(rock_t, grass_t, lilypad_t):
         (-1.35, -5.78), (1.35, -5.33), (3.70, -4.80), (5.45, -4.08),
         (7.85, -3.42), (10.1, -2.86), (12.0, -2.42),
     ]
-    bank_widths = [3.10, 3.05, 2.98, 2.94, 2.90, 2.88, 2.82, 2.74, 2.62, 2.52, 2.46]
-    water_widths = [2.05, 2.02, 1.96, 1.91, 1.88, 1.84, 1.78, 1.70, 1.60, 1.50, 1.44]
+    # Uneven widths stop the shoreline reading as two perfectly parallel bands.
+    bank_widths = [3.18, 3.00, 3.12, 2.92, 3.02, 2.82, 2.91, 2.70, 2.68, 2.46, 2.50]
+    wet_widths = [2.46, 2.38, 2.42, 2.29, 2.32, 2.23, 2.20, 2.08, 1.98, 1.85, 1.80]
+    water_widths = [2.08, 1.98, 2.02, 1.88, 1.92, 1.80, 1.78, 1.67, 1.60, 1.48, 1.43]
     base.ribbon("V5StreamBank", stream_pts, bank_widths, base.MAT_SOIL, -0.075, 0.16)
+    # Thin damp margin visually blends soil into water instead of a hard cut.
+    base.ribbon("V5WetBank", stream_pts, wet_widths, MAT_MUD, -0.048, 0.10)
     base.ribbon("V5StreamWater", stream_pts, water_widths, base.MAT_WATER, 0.005, 0.12)
 
     # Crossing pushed to the right edge, matching the approved concept composition.
@@ -207,23 +211,34 @@ def v5_path_stream_bridge(rock_t, grass_t, lilypad_t):
             rail_points.append((p.x, p.y))
         _segment_box("V5BridgeRail", rail_points[0], rail_points[-1], 1.20, 0.095, 0.095, base.MAT_WOOD_DARK)
 
-    # A natural, landscaped bank: rocks are grouped rather than evenly scattered.
+    # Bank stones are arranged as a few irregular clusters. Large anchors get
+    # smaller companions so nothing reads as an evenly spaced row of props.
     rocks = [
-        (-10.7,-6.20,0.58,14),(-9.7,-7.30,0.42,-20),(-8.15,-6.05,0.50,28),
-        (-6.25,-6.95,0.46,-12),(-4.65,-5.70,0.54,24),(-2.70,-6.42,0.43,-18),
-        (-0.45,-5.18,0.50,11),(1.65,-5.85,0.42,-28),(3.30,-4.45,0.55,18),
-        (6.65,-4.25,0.52,-16),(8.25,-3.05,0.48,26),(10.25,-3.18,0.44,-9),
+        (-10.72,-6.18,0.60,14),(-10.22,-6.42,0.34,-22),(-9.78,-6.08,0.29,31),
+        (-7.95,-6.16,0.53,27),(-7.48,-6.43,0.31,-14),
+        (-4.72,-5.72,0.57,23),(-4.20,-5.98,0.33,-26),(-3.76,-5.64,0.26,11),
+        (-0.42,-5.17,0.52,10),(0.06,-5.42,0.28,-18),
+        (3.34,-4.47,0.57,18),(3.86,-4.63,0.31,-11),
+        (6.67,-4.20,0.55,-16),(7.17,-3.95,0.30,24),
+        (9.95,-3.06,0.48,-8),(10.42,-2.82,0.27,17),
     ]
     for i, (x, y, s, r) in enumerate(rocks):
         base.place(rock_t, f"V5RiverRock_{i}", (x, y, 0.045), s, r)
 
+    # Reeds concentrate around stone clusters and quiet inside bends, leaving
+    # occasional open shoreline so the bank does not become a continuous hedge.
     reeds = [
-        (-11.2,-6.00),(-10.0,-7.55),(-8.8,-5.95),(-7.2,-7.15),(-5.7,-5.82),
-        (-4.1,-6.72),(-2.0,-5.45),(-0.7,-6.02),(1.2,-4.92),(2.8,-5.20),
-        (4.25,-4.02),(6.65,-4.32),(7.55,-3.05),(9.15,-3.36),(10.55,-2.72),
+        (-11.28,-5.95),(-10.86,-6.56),(-10.35,-5.91),(-9.92,-6.70),
+        (-8.48,-5.88),(-8.03,-6.54),(-7.58,-5.96),
+        (-5.18,-5.50),(-4.78,-6.18),(-4.32,-5.48),(-3.88,-6.13),
+        (-2.02,-5.37),(-1.44,-5.83),(-0.70,-5.02),(-0.18,-5.65),
+        (2.75,-4.33),(3.28,-4.93),(3.92,-4.17),
+        (6.18,-3.83),(6.72,-4.48),(7.34,-3.67),
+        (9.18,-3.27),(9.74,-2.73),(10.45,-3.05),
     ]
     for i, (x, y) in enumerate(reeds):
-        base.place(grass_t, f"V5BankGrass_{i}", (x, y, 0.035), 0.50 + (i % 4) * 0.05, i * 23)
+        scale = 0.44 + (i % 5) * 0.055
+        base.place(grass_t, f"V5BankGrass_{i}", (x, y, 0.035), scale, i * 23)
 
     lilies = [
         (-9.4,-6.67,0.33),(-7.0,-6.42,0.30),(-4.7,-6.10,0.32),
