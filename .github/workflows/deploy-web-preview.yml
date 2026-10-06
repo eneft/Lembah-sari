@@ -96,6 +96,9 @@ jobs:
           set -euo pipefail
           timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_player_locomotion.gd
 
+      - name: Verify fixed camera and image environment
+        run: timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_hybrid_environment.gd
+
       - name: Export Web build
         shell: bash
         run: |
@@ -123,6 +126,8 @@ jobs:
           test -s build/web/index.service.worker.js
           timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_house.gd
           timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_locomotion.gd
+
+          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_hybrid_environment.gd
 
       - name: Upload downloadable Web build
         uses: actions/upload-artifact@v4

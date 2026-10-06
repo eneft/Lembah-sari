@@ -1,6 +1,6 @@
 extends Node3D
 
-const NATURAL_ENVIRONMENT = preload("res://scripts/village_environment_detail.gd")
+const HYBRID_ENVIRONMENT = preload("res://scripts/village_hybrid_environment.gd")
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
@@ -21,6 +21,7 @@ func _ready() -> void:
 	_load_hero_scene()
 	_build_test_collision()
 	_configure_player_camera()
+	_apply_hybrid_environment()
 	_build_test_hud()
 
 
@@ -96,7 +97,7 @@ func _load_hero_scene() -> void:
 	hero.scale = Vector3.ONE * HERO_SCALE
 	add_child(hero)
 	_replace_embedded_player_house(hero)
-	NATURAL_ENVIRONMENT.new().apply(hero)
+
 
 
 func _replace_embedded_player_house(hero: Node3D) -> void:
@@ -160,10 +161,10 @@ func _build_test_collision() -> void:
 		Vector3(0.0, -0.28, 0.0),
 		Vector3(34.0, 0.46, 30.0)
 	)
-	_add_box_collider("NorthBound", Vector3(0.0, 1.1, -15.0), Vector3(34.0, 2.4, 0.5))
-	_add_box_collider("SouthBound", Vector3(0.0, 1.1, 15.0), Vector3(34.0, 2.4, 0.5))
-	_add_box_collider("WestBound", Vector3(-17.0, 1.1, 0.0), Vector3(0.5, 2.4, 30.0))
-	_add_box_collider("EastBound", Vector3(17.0, 1.1, 0.0), Vector3(0.5, 2.4, 30.0))
+	_add_box_collider("NorthBound", Vector3(0.0, 1.1, -4.2), Vector3(34.0, 2.4, 0.5))
+	_add_box_collider("SouthBound", Vector3(0.0, 1.1, 10.0), Vector3(34.0, 2.4, 0.5))
+	_add_box_collider("WestBound", Vector3(-8.5, 1.1, 0.0), Vector3(0.5, 2.4, 30.0))
+	_add_box_collider("EastBound", Vector3(9.5, 1.1, 0.0), Vector3(0.5, 2.4, 30.0))
 
 
 func _add_box_collider(collider_name: String, center: Vector3, size: Vector3) -> void:
@@ -194,6 +195,17 @@ func _configure_player_camera() -> void:
 	player.set("camera_relative_movement", true)
 
 
+func _apply_hybrid_environment() -> void:
+	var hero: Node3D = get_node_or_null("HeroSceneV5") as Node3D
+	var camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
+	var rig: Node3D = player.get_node("CameraRig") as Node3D
+	var fixed_position: Vector3 = rig.global_position
+	rig.set_as_top_level(true)
+	rig.global_position = fixed_position
+	if hero != null:
+		HYBRID_ENVIRONMENT.new().apply(hero,camera)
+
+
 func _build_test_hud() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.name = "PlayableV5TestHUD"
@@ -202,7 +214,7 @@ func _build_test_hud() -> void:
 	var label: Label = Label.new()
 	label.name = "TestBadge"
 	label.position = Vector2(18.0, 14.0)
-	label.text = "V5 PLAYABLE TEST  •  HOUSE V4  •  WASD / joystick  •  Shift: lari"
+	label.text = "LEMBAH SARI 2.5D  •  KAMERA TETAP  •  WASD / joystick  •  Shift: lari"
 	label.add_theme_font_size_override("font_size", 16)
 	label.modulate = Color(1.0, 1.0, 1.0, 0.88)
 	layer.add_child(label)
