@@ -111,6 +111,17 @@ jobs:
           echo "Web build output:"
           find build/web -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
 
+      - name: Verify exported preview and download budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK_BYTES="$(stat -c%s build/web/index.pck)"
+          echo "Preview game data: ${PACK_BYTES} bytes (budget: 20 MiB)"
+          test "${PACK_BYTES}" -lt 20971520
+          test -s build/web/index.service.worker.js
+          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_house.gd
+          timeout 30s godot --headless --main-pack "${PWD}/build/web/index.pck" --fixed-fps 60 --script res://tools/tests/verify_player_locomotion.gd
+
       - name: Upload downloadable Web build
         uses: actions/upload-artifact@v4
         with:

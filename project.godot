@@ -64,8 +64,16 @@ interact={
 ]
 }
 
+[importer_defaults]
+
+texture={
+"compress/mode": 2,
+"process/size_limit": 1024
+}
+
 [rendering]
 
+textures/vram_compression/import_etc2_astc=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.58, 0.79, 0.95, 1)
