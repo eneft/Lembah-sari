@@ -104,6 +104,9 @@ jobs:
           test -s build/web/index.html
           test -s build/web/index.wasm
 
+      - name: Verify standalone exported game before publishing
+        run: bash tools/tests/verify_exported_pack.sh build/web/index.pck
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
