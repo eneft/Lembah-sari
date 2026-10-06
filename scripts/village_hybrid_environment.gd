@@ -124,7 +124,7 @@ func _surface(m: MeshInstance3D) -> void:
    key = "water"
   elif mesh_label.begins_with("v5paddywater_"):
    key = "paddy_water"
-  elif mesh_label.begins_with("v5paddybund_"):
+  elif mesh_label.begins_with("v5paddybund_") or mesh_label.begins_with("v5paddyearth_"):
    key = "paddy_bund"
   elif mesh_label.begins_with("v5housewear"):
    key = "wear"
