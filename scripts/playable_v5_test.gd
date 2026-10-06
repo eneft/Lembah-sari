@@ -132,7 +132,108 @@ func _replace_embedded_player_house(hero: Node3D) -> void:
 	repaired_house.rotation_degrees.y = PLAYER_HOUSE_LOCAL_ROTATION_Y
 	repaired_house.scale = Vector3.ONE * PLAYER_HOUSE_SCALE
 	hero.add_child(repaired_house)
+	_polish_player_house_gable(repaired_house)
 	print("[LembahSari] PLAYABLE_HOUSE_V4_ACTIVE")
+
+
+func _polish_player_house_gable(house: Node3D) -> void:
+	# The source mesh leaves a visually flat triangle under the front ridge.
+	# Overlay a light woven-bamboo infill and a real timber king-post truss.
+	# Coordinates are in the normalized repaired-house space; the complete house
+	# remains uniformly scaled by PLAYER_HOUSE_SCALE.
+	var polish := Node3D.new()
+	polish.name = "FrontGablePolish"
+	house.add_child(polish)
+
+	var weave_material := _make_gable_weave_material()
+	var panel_tool := SurfaceTool.new()
+	panel_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var left := Vector3(-0.315, 0.382, 0.320)
+	var right := Vector3(0.247, 0.382, 0.320)
+	var peak := Vector3(-0.034, 0.566, 0.320)
+	panel_tool.set_uv(Vector2(0.0, 0.0))
+	panel_tool.add_vertex(left)
+	panel_tool.set_uv(Vector2(1.0, 0.0))
+	panel_tool.add_vertex(right)
+	panel_tool.set_uv(Vector2(0.5, 1.0))
+	panel_tool.add_vertex(peak)
+	var panel := MeshInstance3D.new()
+	panel.name = "GableWovenBambooPanel"
+	panel.mesh = panel_tool.commit()
+	panel.set_surface_override_material(0, weave_material)
+	polish.add_child(panel)
+
+	# Existing fitted gable boards get the same finish when visible from other angles.
+	for node: Node in house.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node := node as MeshInstance3D
+		if String(mesh_node.name).begins_with("GableTimberBoards_"):
+			for surface: int in range(mesh_node.mesh.get_surface_count()):
+				mesh_node.set_surface_override_material(surface, weave_material)
+
+	var timber := StandardMaterial3D.new()
+	timber.resource_name = "FrontGableStructuralTimber"
+	timber.albedo_color = Color("65452f")
+	timber.roughness = 0.90
+	timber.metallic = 0.0
+
+	var beam_z := 0.327
+	var tie_left := Vector3(-0.315, 0.392, beam_z)
+	var tie_right := Vector3(0.247, 0.392, beam_z)
+	var ridge := Vector3(-0.034, 0.566, beam_z)
+	var center_bottom := Vector3(-0.034, 0.392, beam_z)
+	_add_gable_beam(polish, "GableTieBeam", tie_left, tie_right, 0.018, timber)
+	_add_gable_beam(polish, "GableLeftRafter", tie_left, ridge, 0.018, timber)
+	_add_gable_beam(polish, "GableRightRafter", ridge, tie_right, 0.018, timber)
+	_add_gable_beam(polish, "GableKingPost", center_bottom, ridge, 0.016, timber)
+	_add_gable_beam(polish, "GableLeftBrace", center_bottom, Vector3(-0.175, 0.480, beam_z), 0.012, timber)
+	_add_gable_beam(polish, "GableRightBrace", center_bottom, Vector3(0.107, 0.480, beam_z), 0.012, timber)
+	print("[LembahSari] FRONT_GABLE_POLISHED")
+
+
+func _make_gable_weave_material() -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.resource_name = "GableWovenBamboo"
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
+
+float stripe(float value, float frequency) {
+	return smoothstep(0.32, 0.48, abs(fract(value * frequency) - 0.5));
+}
+
+void fragment() {
+	vec2 p = UV;
+	float diagonal_a = stripe(p.x + p.y * 0.72, 16.0);
+	float diagonal_b = stripe(p.x - p.y * 0.72, 16.0);
+	float weave = mix(diagonal_a, diagonal_b, step(0.5, fract(p.y * 18.0)));
+	float grain = 0.5 + 0.5 * sin((p.x * 31.0 + p.y * 7.0) * 6.28318);
+	vec3 bamboo_light = vec3(0.53, 0.36, 0.20);
+	vec3 bamboo_dark = vec3(0.30, 0.19, 0.105);
+	vec3 base = mix(bamboo_dark, bamboo_light, 0.46 + weave * 0.34);
+	ALBEDO = base * (0.92 + grain * 0.08);
+	ROUGHNESS = 0.92;
+	METALLIC = 0.0;
+}
+"""
+	material.shader = shader
+	return material
+
+
+func _add_gable_beam(parent: Node3D, beam_name: String, start: Vector3, finish: Vector3, width: float, material: Material) -> void:
+	var direction := finish - start
+	var length := direction.length()
+	if length <= 0.0001:
+		return
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(width, width, length)
+	var beam := MeshInstance3D.new()
+	beam.name = beam_name
+	beam.mesh = mesh
+	beam.position = (start + finish) * 0.5
+	beam.quaternion = Quaternion(Vector3(0.0, 0.0, 1.0), direction.normalized())
+	beam.set_surface_override_material(0, material)
+	parent.add_child(beam)
 
 
 func _find_node_with_prefix(root: Node, prefix: String) -> Node:
