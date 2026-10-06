@@ -29,6 +29,25 @@ def prepare(directory: Path, revision: str) -> None:
         "  if (registration) return registration.update();\n"
         " }).catch(() => {});\n"
         "}\n")
+    # Show engine script/resource errors, including failures after startGame resolves.
+    html = html.replace("const engine = new Engine(GODOT_CONFIG);", """const engine = new Engine(GODOT_CONFIG);
+const reportRuntimeError = (...parts) => {
+ const message = parts.join(' ');
+ console.error(message);
+ if (!/SCRIPT ERROR|Parse Error|Failed loading|Error loading|Cannot open|could not load|missing hero/i.test(message)) return;
+ let panel = document.getElementById('runtime-error');
+ if (!panel) {
+  panel = document.createElement('pre'); panel.id = 'runtime-error';
+  panel.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;z-index:100;background:#241910;color:#ffe4cb;padding:14px;white-space:pre-wrap;max-height:45vh;overflow:auto;font:14px monospace';
+  panel.textContent = 'Game gagal memuat scene. Build: '+""" + json.dumps(revision[:7]) + """+'\\n';
+  document.body.appendChild(panel);
+ }
+ panel.textContent += message+'\\n';
+};
+
+""")
+    html = html.replace("console.error('Error while registering service worker:', err);", "console.error('Error while registering service worker:', err); displayFailureNotice('Browser belum mendukung fitur Godot: ' + missing.join(', '));")
+    html = html.replace("engine.startGame({", "engine.startGame({\n onPrintError: reportRuntimeError,")
     html_path.write_text(html)
     # A new entry point bypasses HTML cached by older installed workers.
     (directory / "play.html").write_text(html)

@@ -1,6 +1,6 @@
 extends Node3D
 
-const HYBRID_ENVIRONMENT = preload("res://scripts/village_hybrid_environment.gd")
+const HYBRID_ENVIRONMENT = "res://scripts/village_hybrid_environment.gd"
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
@@ -203,7 +203,11 @@ func _apply_hybrid_environment() -> void:
 	rig.set_as_top_level(true)
 	rig.global_position = fixed_position
 	if hero != null:
-		HYBRID_ENVIRONMENT.new().apply(hero,camera)
+		var environment_script: Script = load(HYBRID_ENVIRONMENT) as Script
+		if environment_script != null and environment_script.can_instantiate():
+			environment_script.new().apply(hero,camera)
+		else:
+			push_error("[LembahSari] Could not load image environment")
 
 
 func _build_test_hud() -> void:
