@@ -9,6 +9,7 @@ var regions: Array[AtlasTexture] = []
 var camera: Camera3D
 var layer: Node3D
 var count_cards: int = 0
+var count_midground: int = 0
 var mats: Dictionary = {}
 
 func apply(hero: Node3D, view: Camera3D) -> void:
@@ -68,7 +69,8 @@ func apply(hero: Node3D, view: Camera3D) -> void:
   else: _surface(m)
  _backdrop(hero)
  layer.set_meta("cards",count_cards)
- print("[LembahSari] HYBRID_25D_ACTIVE cards=%d background=image camera=fixed" % count_cards)
+ layer.set_meta("midground_cards",count_midground)
+ print("[LembahSari] HYBRID_25D_ACTIVE cards=%d midground=%d background=image camera=fixed" % [count_cards,count_midground])
 
 func _house(node: Node,hero: Node) -> bool:
  var p: Node = node
@@ -81,7 +83,23 @@ func _card(base: Vector3,height: float,kind: int,label: String) -> void:
  var sprite := Sprite3D.new()
  sprite.name = "Card_"+label
  sprite.texture = regions[kind]
- sprite.pixel_size = height/regions[kind].get_height()
+
+ # Deterministic variation keeps one atlas useful without visible clone rows.
+ var code: int = abs(label.hash())
+ var visual_height := height
+ if "Mid" in label:
+  visual_height *= 0.92 + float(code % 7) * 0.015
+  count_midground += 1
+ sprite.pixel_size = visual_height/regions[kind].get_height()
+ sprite.flip_h = (code % 2) == 0
+
+ var tone := 0.94 + float(code % 6) * 0.015
+ if "Mid" in label:
+  # Slight atmospheric falloff merges the transition belt into the backdrop.
+  sprite.modulate = Color(tone*0.91,tone*0.95,tone*0.89,1.0)
+ else:
+  sprite.modulate = Color(tone,tone,tone*0.98,1.0)
+
  sprite.shaded = false
  sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
  sprite.alpha_scissor_threshold = 0.35
@@ -89,7 +107,7 @@ func _card(base: Vector3,height: float,kind: int,label: String) -> void:
  sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
  layer.add_child(sprite)
  sprite.global_basis = camera.global_basis.orthonormalized()
- sprite.global_position = base+camera.global_basis.y.normalized()*height*0.48
+ sprite.global_position = base+camera.global_basis.y.normalized()*visual_height*0.48
  count_cards += 1
 
 func _material(a: String,b: String,accent: String,grain: float,kind: float = 0,macro_scale: float = 0.16,macro_strength: float = 0.24) -> ShaderMaterial:
