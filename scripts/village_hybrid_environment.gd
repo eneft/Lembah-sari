@@ -37,18 +37,20 @@ func apply(hero: Node3D, view: Camera3D) -> void:
   if _house(m,hero) or not m.is_visible_in_tree(): continue
   var label := String(m.name)
   var box: AABB = (hero.global_transform.affine_inverse()*m.global_transform)*m.get_aabb()
-  if "Tree" in label or "Palm" in label or "Bush" in label:
-   var kind: int = 1 if "Palm" in label else (2 if "Bush" in label else 0)
+  if "Tree" in label or "Palm" in label or "Bush" in label or "Flower" in label:
+   var kind: int = 1 if "Palm" in label else (2 if "Bush" in label or "Flower" in label else 0)
    var base := Vector3(box.get_center().x,-0.10,box.get_center().z)
-   _card(hero.to_global(base),maxf(box.end.y+0.10,0.35)*(1.45 if kind == 2 else 1.0),kind,label)
+   var scale_boost: float = 1.45 if kind == 2 else 1.0
+   if "Flower" in label:
+    scale_boost = 1.12
+   _card(hero.to_global(base),maxf(box.end.y+0.10,0.35)*scale_boost,kind,label)
    if kind < 2: _trunk_block(hero.to_global(base),label)
    m.hide()
   elif "Hill" in label or "Ridge" in label or "Landform" in label:
    m.hide()
-  elif "Rice" in label or label.begins_with("GardenPlant"):
-   _card(m.global_position,0.38 if "Rice" in label else 0.48,3,label)
-   m.hide()
-  elif "Flower" in label or "Grass" in label and not "Patch" in label:
+  elif "Rice" in label or label.begins_with("GardenPlant") or ("Grass" in label and not "Patch" in label):
+   var card_height: float = 0.38 if "Rice" in label else (0.34 if "Grass" in label else 0.48)
+   _card(m.global_position,card_height,3,label)
    m.hide()
   else: _surface(m)
  _backdrop(hero)
