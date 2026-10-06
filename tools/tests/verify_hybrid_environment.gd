@@ -3,7 +3,7 @@ var failed := false
 func _initialize() -> void:
  _run.call_deferred()
 func _run() -> void:
- for path: String in ["res://assets/textures/hybrid/vegetation_atlas.webp", "res://assets/textures/hybrid/valley_backdrop.webp", "res://assets/shaders/village_surface.gdshader", "res://assets/shaders/village_water.gdshader"]:
+ for path: String in ["res://assets/textures/hybrid/vegetation_atlas.webp", "res://assets/textures/hybrid/valley_backdrop.webp", "res://assets/shaders/village_surface.gdshader", "res://assets/shaders/village_water.gdshader", "res://assets/shaders/village_paddy_water.gdshader"]:
   _check(ResourceLoader.exists(path), "Missing exported environment asset: " + path)
  if failed:
   quit(1)
@@ -55,6 +55,29 @@ func _run() -> void:
   if child is Sprite3D and String(child.name).begins_with("Card_V5BankGrass_"):
    bank_cards += 1
  _check(bank_cards >= 20,"Riverbank polish needs clustered reed/grass cards")
+
+ var paddy_water_nodes: Array[Node] = hero.find_children("V5PaddyWater_*","MeshInstance3D",true,false)
+ var paddy_earth_nodes: Array[Node] = hero.find_children("V5PaddyEarth_*","MeshInstance3D",true,false)
+ var paddy_bund_nodes: Array[Node] = hero.find_children("V5PaddyBund_*","MeshInstance3D",true,false)
+ _check(paddy_water_nodes.size() == 4 and paddy_earth_nodes.size() == 4 and paddy_bund_nodes.size() == 4,"Rice terrace polish must keep four stepped paddies with water earth and bunds")
+
+ var paddy_min_y := INF
+ var paddy_max_y := -INF
+ for node: Node in paddy_water_nodes:
+  var paddy := node as MeshInstance3D
+  paddy_min_y = minf(paddy_min_y,paddy.global_position.y)
+  paddy_max_y = maxf(paddy_max_y,paddy.global_position.y)
+  var paddy_mat: ShaderMaterial = paddy.get_surface_override_material(0) as ShaderMaterial
+  _check(paddy_mat != null and paddy_mat.shader != null,"Each paddy needs its dedicated shallow-water shader")
+  if paddy_mat != null and paddy_mat.shader != null:
+   _check("village_paddy_water" in paddy_mat.shader.resource_path,"Paddy water must not reuse the river shader")
+ _check(paddy_max_y - paddy_min_y > 0.12,"Rice terraces need visibly stepped elevation")
+
+ var rice_cards := 0
+ for child in layer.get_children():
+  if child is Sprite3D and String(child.name).begins_with("Card_V5Rice_"):
+   rice_cards += 1
+ _check(rice_cards >= 35,"Rice terrace polish needs enough irregular rice clumps")
 
  var player: CharacterBody3D = world.get_node("Player")
  var camera: Camera3D = player.get_node("CameraRig/Camera3D")
