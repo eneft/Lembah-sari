@@ -1,5 +1,6 @@
 import math
 import os
+import random
 import sys
 
 import bpy
@@ -90,6 +91,12 @@ def _ridge_mesh(name, y, heights, material, depth=3.0):
     bev.segments = 3
     _smooth(obj)
     return obj
+
+
+def _inset_polygon(polygon, factor):
+    cx = sum(p[0] for p in polygon) / len(polygon)
+    cy = sum(p[1] for p in polygon) / len(polygon)
+    return [(cx + (x - cx) * factor, cy + (y - cy) * factor) for x, y in polygon]
 
 
 def _inside_polygon(x, y, polygon):
@@ -249,47 +256,85 @@ def v5_path_stream_bridge(rock_t, grass_t, lilypad_t):
 
 
 def v5_rice_fields(wheat_t, grass_t):
-    # Deliberate stepped rice terraces on the right side of the composition.
-    # Older grid paddies remain suppressed so the result reads as one designed farm.
+    # Hand-shaped stepped paddies. Water sits inset from the earthen shelf, bunds
+    # vary in width, and planting uses deterministic jitter rather than a perfect grid.
     _hide_named_prefixes(("PaddyBund_", "PaddyWater_", "Rice_", "V4Paddy_", "V4Bund", "V4Rice_"))
 
     fields = [
-        [(3.55,0.30),(6.35,0.35),(6.85,1.12),(6.30,2.10),(3.75,2.08),(3.18,1.20)],
-        [(5.55,2.38),(8.65,2.52),(9.15,3.35),(8.58,4.34),(5.80,4.22),(5.10,3.34)],
-        [(7.20,4.58),(10.45,4.82),(10.90,5.80),(10.20,6.72),(7.32,6.58),(6.72,5.52)],
-        [(2.05,4.48),(4.88,4.62),(5.28,5.45),(4.72,6.25),(2.12,6.18),(1.62,5.36)],
+        [(3.42,0.26),(4.62,0.18),(6.22,0.34),(6.78,0.92),(6.62,1.62),(5.88,2.18),(4.20,2.12),(3.34,1.48)],
+        [(5.32,2.34),(6.46,2.25),(8.18,2.46),(9.02,3.02),(9.12,3.70),(8.54,4.38),(6.76,4.36),(5.58,3.92),(5.06,3.18)],
+        [(7.04,4.56),(8.28,4.54),(10.12,4.80),(10.82,5.48),(10.68,6.20),(9.86,6.78),(8.20,6.72),(7.12,6.36),(6.66,5.48)],
+        [(2.02,4.42),(3.16,4.36),(4.58,4.54),(5.22,5.04),(5.20,5.66),(4.62,6.28),(3.12,6.32),(2.10,6.02),(1.58,5.40)],
     ]
-    for idx, poly in enumerate(fields):
-        z = 0.055 + idx * 0.034
-        _polygon_surface(f"V5PaddyWater_{idx}", poly, z, base.MAT_WATER_SHALLOW, 0.065, 0.09)
-        outline = poly + [poly[0]]
-        base.ribbon(f"V5PaddyBund_{idx}", outline, [0.34] * len(outline), base.MAT_SOIL, z + 0.075, 0.09)
+    levels = [0.055, 0.115, 0.185, 0.250]
 
-        min_x = min(p[0] for p in poly); max_x = max(p[0] for p in poly)
-        min_y = min(p[1] for p in poly); max_y = max(p[1] for p in poly)
+    for idx, poly in enumerate(fields):
+        z = levels[idx]
+        water_poly = _inset_polygon(poly, 0.86)
+
+        # Earthen terrace mass extends down toward the base terrain instead of
+        # presenting the paddy as a thin floating board.
+        shelf_thickness = z + 0.075
+        _polygon_surface(
+            f"V5PaddyEarth_{idx}", poly, z - 0.035, MAT_MUD,
+            shelf_thickness, 0.12,
+        )
+
+        # Shallow water remains just above the shelf and leaves a readable mud rim.
+        _polygon_surface(
+            f"V5PaddyWater_{idx}", water_poly, z + 0.008,
+            base.MAT_WATER_SHALLOW, 0.018, 0.045,
+        )
+
+        outline = poly + [poly[0]]
+        bund_widths = [
+            0.30 + 0.055 * ((edge * 3 + idx * 2) % 4)
+            for edge in range(len(outline))
+        ]
+        base.ribbon(
+            f"V5PaddyBund_{idx}", outline, bund_widths,
+            base.MAT_SOIL, z + 0.072, 0.10,
+        )
+
+        # Organic rows: keep cultivation readable, but introduce small positional
+        # offsets, occasional gaps and scale/rotation variation.
+        rng = random.Random(20261006 + idx * 97)
+        min_x = min(p[0] for p in water_poly); max_x = max(p[0] for p in water_poly)
+        min_y = min(p[1] for p in water_poly); max_y = max(p[1] for p in water_poly)
+
         row = 0
-        y = min_y + 0.36
-        while y <= max_y - 0.20:
+        y = min_y + 0.34
+        while y <= max_y - 0.18:
             col = 0
-            x = min_x + 0.34 + (0.11 if row % 2 else 0.0)
+            x = min_x + 0.31 + (0.12 if row % 2 else 0.0)
             while x <= max_x - 0.18:
-                if _inside_polygon(x, y, poly):
-                    scale = 0.28 + ((row + col + idx) % 4) * 0.018
+                px = x + rng.uniform(-0.075, 0.075)
+                py = y + rng.uniform(-0.055, 0.055)
+                # Sparse missing clumps keep rows from reading like a stamped grid.
+                if _inside_polygon(px, py, water_poly) and rng.random() > 0.09:
+                    scale = rng.uniform(0.265, 0.345)
+                    rotation = rng.uniform(-20.0, 20.0)
                     base.place(
-                        wheat_t, f"V5Rice_{idx}_{row}_{col}", (x, y, z + 0.11),
-                        scale, ((row * 17 + col * 11 + idx * 23) % 34) - 17,
+                        wheat_t, f"V5Rice_{idx}_{row}_{col}",
+                        (px, py, z + 0.115), scale, rotation,
                     )
-                x += 0.56
+                x += 0.57 + rng.uniform(-0.025, 0.025)
                 col += 1
-            y += 0.52
+            y += 0.52 + rng.uniform(-0.025, 0.025)
             row += 1
 
+    # Low grass softens selected corners and level changes without outlining every
+    # paddy continuously.
     terrace_grass = [
-        (2.35,3.82),(3.72,4.18),(5.28,4.38),(6.35,4.62),(8.35,4.42),
-        (10.35,4.55),(6.55,6.88),(8.05,6.98),(9.70,6.95),
+        (2.20,3.98,0.49),(3.55,4.26,0.54),(5.12,4.24,0.47),
+        (6.16,4.54,0.56),(7.72,4.38,0.48),(9.08,4.48,0.53),
+        (10.48,4.70,0.46),(6.62,6.80,0.52),(8.18,6.94,0.48),
+        (9.66,6.90,0.56),(3.10,6.42,0.47),(4.74,6.18,0.52),
     ]
-    for i, (x, y) in enumerate(terrace_grass):
-        base.place(grass_t, f"V5PaddyGrass_{i}", (x, y, 0.04), 0.48 + (i % 3) * 0.045, i * 29)
+    for i, (x, y, scale) in enumerate(terrace_grass):
+        base.place(grass_t, f"V5PaddyGrass_{i}", (x, y, 0.055), scale, i * 29)
+
+
 
 
 def v5_foliage(tree_t, palm_t, bush_t, grass_t, flower_t, rock_t):
