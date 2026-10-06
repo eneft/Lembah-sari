@@ -22,37 +22,48 @@ func _build_environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_color = Color("ead4ae")
-	env.ambient_light_energy = 0.26
+	# Morning grade: lift shadow-side readability without flattening the scene.
+	env.ambient_light_color = Color("e6d9bc")
+	env.ambient_light_energy = 0.34
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.88
-	env.adjustment_contrast = 1.05
-	env.adjustment_saturation = 1.10
+	env.adjustment_brightness = 0.94
+	env.adjustment_contrast = 1.01
+	env.adjustment_saturation = 0.99
 	env.fog_enabled = true
-	env.fog_light_color = Color("cdd7cb")
-	env.fog_light_energy = 0.45
-	env.fog_density = 0.0025
-	env.fog_sky_affect = 0.22
+	env.fog_light_color = Color("d4dbcd")
+	env.fog_light_energy = 0.36
+	env.fog_density = 0.0018
+	env.fog_sky_affect = 0.18
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
 
 	var sun := DirectionalLight3D.new()
 	sun.name = "WarmMorningSun"
-	sun.rotation_degrees = Vector3(-38.0, -39.0, 0.0)
-	sun.light_color = Color("ffdaa4")
-	sun.light_energy = 0.64
+	sun.rotation_degrees = Vector3(-36.0, -43.0, 0.0)
+	sun.light_color = Color("ffd6a1")
+	sun.light_energy = 0.56
+	sun.light_specular = 0.72
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 58.0
+	# GL Compatibility cannot use directional PCSS, so soften the blocky house
+	# shadow with filtered edges, reduced opacity and blended PSSM splits.
+	sun.shadow_opacity = 0.74
+	sun.shadow_blur = 1.28
+	sun.shadow_bias = 0.075
+	sun.shadow_normal_bias = 1.55
+	sun.directional_shadow_max_distance = 50.0
+	sun.directional_shadow_fade_start = 0.72
+	sun.directional_shadow_blend_splits = true
 	add_child(sun)
 
 	var fill := DirectionalLight3D.new()
 	fill.name = "SoftSkyFill"
-	fill.rotation_degrees = Vector3(-58.0, 132.0, 0.0)
-	fill.light_color = Color("b8cecb")
-	fill.light_energy = 0.075
+	fill.rotation_degrees = Vector3(-54.0, 128.0, 0.0)
+	fill.light_color = Color("bfd5d0")
+	fill.light_energy = 0.12
+	fill.light_specular = 0.35
 	fill.shadow_enabled = false
 	add_child(fill)
 
