@@ -117,6 +117,24 @@ func _run() -> void:
    yard_cards += 1
  _check(yard_cards >= 7,"House-yard edges need lightweight grass and flower accents")
 
+ _check(world.get_node_or_null("PlayableV5TestHUD") == null,"Final playable build must not overlay the old 2.5D debug badge")
+
+ var readability_shadow: MeshInstance3D = world.get_node_or_null("Player/PlayerContactShadow") as MeshInstance3D
+ _check(readability_shadow != null and readability_shadow.mesh != null,"Player needs a subtle contact shadow for ground readability")
+ if readability_shadow != null:
+  var readability_mat: StandardMaterial3D = readability_shadow.material_override as StandardMaterial3D
+  _check(readability_mat != null and readability_mat.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA,"Player contact shadow must stay lightweight transparent geometry")
+
+ var fixed_rig: Node3D = world.get_node_or_null("Player/CameraRig") as Node3D
+ var fixed_camera: Camera3D = world.get_node_or_null("Player/CameraRig/Camera3D") as Camera3D
+ _check(fixed_rig != null and fixed_camera != null and fixed_rig.is_set_as_top_level(),"Final camera rig must be detached from player translation")
+ if fixed_camera != null:
+  _check(fixed_camera.global_position.distance_to(Vector3(12.3,4.88,-3.9)) < 0.02,"Final fixed camera world position must remain locked")
+  var screen_size := fixed_camera.get_viewport().get_visible_rect().size
+  var spawn_screen := fixed_camera.unproject_position(world.get_node("Player").global_position + Vector3(0.0,0.82,0.0))
+  _check(spawn_screen.x > screen_size.x * 0.30 and spawn_screen.x < screen_size.x * 0.70,"Player spawn should begin inside the central horizontal readability zone")
+  _check(spawn_screen.y > screen_size.y * 0.25 and spawn_screen.y < screen_size.y * 0.78,"Player spawn should begin clear of top/bottom HUD zones")
+
  var world_env: WorldEnvironment = world.get_node_or_null("V5WorldEnvironment") as WorldEnvironment
  var sun: DirectionalLight3D = world.get_node_or_null("WarmMorningSun") as DirectionalLight3D
  var fill: DirectionalLight3D = world.get_node_or_null("SoftSkyFill") as DirectionalLight3D
