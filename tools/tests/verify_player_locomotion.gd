@@ -23,15 +23,22 @@ func _run() -> void:
 	_check(skeleton.get_bone_count() >= 20, "Stylized boy rig must keep a usable humanoid skeleton.")
 	_check(String(player.get("walk_source_animation")).to_lower().find("walk") >= 0, "Stylized boy walk.001 source must be mapped at runtime.")
 	var textured: bool = false
+	var total_vertices: int = 0
+	var largest_texture_width: int = 0
 	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
 		var mesh: MeshInstance3D = node as MeshInstance3D
 		if mesh.mesh == null or mesh.skin == null:
 			continue
 		for surface: int in range(mesh.mesh.get_surface_count()):
+			total_vertices += mesh.mesh.surface_get_array_len(surface)
 			var material: StandardMaterial3D = mesh.get_active_material(surface) as StandardMaterial3D
 			if material != null and material.albedo_texture != null:
 				textured = true
+				largest_texture_width = maxi(largest_texture_width, material.albedo_texture.get_width())
 	_check(textured, "Skinned player texture must load.")
+	_check(total_vertices >= 30000, "Player mesh must retain high-fidelity geometry (>= 30k vertices).")
+	_check(largest_texture_width >= 1024, "Player texture must retain at least 1024px source detail.")
+	print("CHARACTER_FIDELITY_OK vertices=%d texture_width=%d" % [total_vertices, largest_texture_width])
 	for clip_name: StringName in [&"Idle", &"Walk", &"Run"]:
 		if not animator.has_animation(clip_name):
 			_check(false, "Missing clip: %s" % clip_name)
