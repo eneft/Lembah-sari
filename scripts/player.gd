@@ -22,6 +22,8 @@ var input_locked: bool = false
 
 var character_animation_player: AnimationPlayer
 var current_locomotion_animation: StringName = &""
+var uses_single_walk_source: bool = false
+var walk_source_animation: StringName = &""
 
 # Distance covered by one complete in-place cycle, in the GLB's model units.
 # Keep these aligned with tools/animation/refine_player_locomotion.py.
@@ -92,6 +94,7 @@ func _setup_character_animations() -> void:
 		push_warning("[LembahSari] AnimationPlayer tidak ditemukan pada player_character_lembah_sari.glb")
 		return
 
+	_ensure_canonical_locomotion_animations()
 	for animation_name: StringName in [&"Idle", &"Walk", &"Run"]:
 		if not character_animation_player.has_animation(animation_name):
 			push_warning("[LembahSari] Animation clip tidak ditemukan: %s" % animation_name)
@@ -99,6 +102,61 @@ func _setup_character_animations() -> void:
 		var animation: Animation = character_animation_player.get_animation(animation_name)
 		if animation != null:
 			animation.loop_mode = Animation.LOOP_LINEAR
+
+func _ensure_canonical_locomotion_animations() -> void:
+	if character_animation_player.has_animation(&"Idle") and character_animation_player.has_animation(&"Walk") and character_animation_player.has_animation(&"Run"):
+		return
+
+	var source_name: StringName = _find_walk_source_animation()
+	if source_name == &"":
+		push_warning("[LembahSari] Tidak ada clip Walk fallback pada karakter baru.")
+		return
+	var source: Animation = character_animation_player.get_animation(source_name)
+	if source == null:
+		return
+
+	var library: AnimationLibrary = character_animation_player.get_animation_library(&"")
+	if library == null:
+		library = AnimationLibrary.new()
+		character_animation_player.add_animation_library(&"", library)
+
+	if not character_animation_player.has_animation(&"Walk"):
+		var walk_clip: Animation = source.duplicate(true) as Animation
+		walk_clip.loop_mode = Animation.LOOP_LINEAR
+		library.add_animation(&"Walk", walk_clip)
+	if not character_animation_player.has_animation(&"Run"):
+		var run_clip: Animation = source.duplicate(true) as Animation
+		run_clip.loop_mode = Animation.LOOP_LINEAR
+		library.add_animation(&"Run", run_clip)
+	if not character_animation_player.has_animation(&"Idle"):
+		library.add_animation(&"Idle", _build_idle_snapshot(source))
+
+	uses_single_walk_source = true
+	walk_source_animation = source_name
+	print("[LembahSari] STYLIZED_BOY_RUNTIME_READY source=%s canonical=Idle/Walk/Run" % source_name)
+
+func _find_walk_source_animation() -> StringName:
+	for candidate: StringName in character_animation_player.get_animation_list():
+		var normalized: String = String(candidate).to_lower()
+		if normalized == "walk" or normalized.begins_with("walk.") or normalized.find("walk") >= 0:
+			return candidate
+	return &""
+
+func _build_idle_snapshot(source: Animation) -> Animation:
+	var idle: Animation = Animation.new()
+	idle.length = 1.0
+	idle.loop_mode = Animation.LOOP_LINEAR
+	for track: int in range(source.get_track_count()):
+		if source.track_get_key_count(track) == 0:
+			continue
+		var idle_track: int = idle.add_track(source.track_get_type(track))
+		idle.track_set_path(idle_track, source.track_get_path(track))
+		idle.track_set_enabled(idle_track, source.track_is_enabled(track))
+		idle.track_set_interpolation_type(idle_track, source.track_get_interpolation_type(track))
+		var pose: Variant = source.track_get_key_value(track, 0)
+		idle.track_insert_key(idle_track, 0.0, pose, 1.0)
+		idle.track_insert_key(idle_track, 1.0, pose, 1.0)
+	return idle
 
 func _find_animation_player(root: Node) -> AnimationPlayer:
 	if root is AnimationPlayer:
@@ -123,6 +181,11 @@ func _update_character_animation() -> void:
 	var running: bool = speed > walk_speed + 0.20
 	var animation_name: StringName = &"Run" if running else &"Walk"
 	_play_locomotion_animation(animation_name)
+	if uses_single_walk_source:
+		var reference_speed: float = run_speed if running else walk_speed
+		var base_rate: float = 1.65 if running else 1.0
+		character_animation_player.speed_scale = clampf((speed / maxf(reference_speed, 0.001)) * base_rate, 0.1, 2.2)
+		return
 	var cycle_distance: float = RUN_CYCLE_DISTANCE if running else WALK_CYCLE_DISTANCE
 	var model_scale: float = absf(visual.global_basis.get_scale().y)
 	var clip: Animation = character_animation_player.get_animation(animation_name)

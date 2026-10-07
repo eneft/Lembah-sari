@@ -239,6 +239,13 @@ jobs:
           file assets/models/hero_scene_v5.glb
           ls -lh assets/models/house_main_01.glb assets/models/hero_scene_v5.glb
 
+      - name: Assemble stylized boy player GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/assemble_player_character.sh
+          test -s assets/models/player_character_lembah_sari.glb
+
       - name: Import and validate project
         shell: bash
         run: |

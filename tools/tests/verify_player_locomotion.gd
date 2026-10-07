@@ -20,6 +20,8 @@ func _run() -> void:
 		quit(1)
 		return
 	var skeleton: Skeleton3D = skeletons[0] as Skeleton3D
+	_check(skeleton.get_bone_count() >= 20, "Stylized boy rig must keep a usable humanoid skeleton.")
+	_check(String(player.get("walk_source_animation")).to_lower().find("walk") >= 0, "Stylized boy walk.001 source must be mapped at runtime.")
 	var textured: bool = false
 	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
 		var mesh: MeshInstance3D = node as MeshInstance3D
@@ -53,7 +55,10 @@ func _run() -> void:
 		for bone: int in range(skeleton.get_bone_count()):
 			if not poses[bone].is_equal_approx(skeleton.get_bone_pose(bone)):
 				changed += 1
-		_check(changed > 0, "%s must move the skeleton." % clip_name)
+		if clip_name == &"Idle":
+			_check(changed == 0, "Idle fallback must hold a neutral pose.")
+		else:
+			_check(changed > 0, "%s must move the skeleton." % clip_name)
 		print("CHARACTER_CLIP_OK %s changed_bones=%d" % [clip_name, changed])
 	animator.play(&"Idle")
 	_check(player.is_on_floor(), "The player must stand on the playable floor.")
