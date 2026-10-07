@@ -30,10 +30,17 @@ func _run() -> void:
 			if material != null and material.albedo_texture != null:
 				textured = true
 	_check(textured, "Skinned player texture must load.")
-	for clip_name: StringName in [&"Idle", &"Walk", &"Run"]:
-		if not animator.has_animation(clip_name):
-			_check(false, "Missing clip: %s" % clip_name)
-			continue
+	var idle_clip: StringName = player.get("idle_clip") as StringName
+	var walk_clip: StringName = player.get("walk_clip") as StringName
+	var run_clip: StringName = player.get("run_clip") as StringName
+	_check(walk_clip != &"" and animator.has_animation(walk_clip), "Player needs a usable walk clip.")
+	_check(idle_clip != &"" and animator.has_animation(idle_clip), "Player needs an idle clip or neutral walk-pose fallback.")
+	_check(run_clip != &"" and animator.has_animation(run_clip), "Player needs a run clip or walk-cycle fallback.")
+	var clips_to_test: Array[StringName] = []
+	for clip_name: StringName in [idle_clip, walk_clip, run_clip]:
+		if clip_name != &"" and clip_name not in clips_to_test:
+			clips_to_test.append(clip_name)
+	for clip_name: StringName in clips_to_test:
 		var clip: Animation = animator.get_animation(clip_name)
 		_check(clip.length > 0.0 and clip.loop_mode == Animation.LOOP_LINEAR, "%s must loop." % clip_name)
 		var animation_root: Node = animator.get_node(animator.root_node)
@@ -55,7 +62,7 @@ func _run() -> void:
 				changed += 1
 		_check(changed > 0, "%s must move the skeleton." % clip_name)
 		print("CHARACTER_CLIP_OK %s changed_bones=%d" % [clip_name, changed])
-	animator.play(&"Idle")
+	player.call("_play_locomotion_animation", &"Idle")
 	_check(player.is_on_floor(), "The player must stand on the playable floor.")
 	var start: Vector3 = player.global_position
 	Input.action_press(&"move_right")
@@ -67,13 +74,13 @@ func _run() -> void:
 		var screen_right: Vector3 = camera.global_basis.x
 		screen_right.y = 0.0
 		_check(walk_direction.dot(screen_right.normalized()) > .98, "Right input must move toward screen right with the rotated camera.")
-	_check(animator.current_animation == &"Walk" and walked > 0.4, "Walking input must move the player and play Walk.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Walk" and walked > 0.4, "Walking input must move the player and enter logical Walk.")
 	var walking_rate: float = animator.speed_scale
 	Input.action_release(&"move_right")
 	# This project's 0.3 dead zone maps raw strength 0.65 to half output.
 	Input.action_press(&"move_right", 0.65)
 	await _frames(20)
-	_check(animator.current_animation == &"Walk", "Partial joystick input must remain a walk.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Walk", "Partial joystick input must remain a walk.")
 	print("CADENCE_CHECK full=%.3f partial=%.3f input=%s" % [walking_rate, animator.speed_scale, Input.get_vector("move_left", "move_right", "move_up", "move_down")])
 	_check(absf(animator.speed_scale / walking_rate - 0.5) < 0.08, "Half-speed movement must also halve the step cadence.")
 	Input.action_release(&"move_right")
@@ -83,11 +90,11 @@ func _run() -> void:
 	Input.action_press(&"run")
 	await _frames(30)
 	var ran: float = player.global_position.distance_to(start)
-	_check(animator.current_animation == &"Run" and ran > walked, "Run must play and move faster than Walk.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Run" and ran > walked, "Run must play and move faster than Walk.")
 	Input.action_release(&"run")
 	Input.action_release(&"move_right")
 	await _frames(30)
-	_check(animator.current_animation == &"Idle" and Vector2(player.velocity.x, player.velocity.z).length() < 0.01, "Releasing input must stop movement and play Idle.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Idle" and Vector2(player.velocity.x, player.velocity.z).length() < 0.01, "Releasing input must stop movement and settle into logical Idle.")
 	_check(player.is_on_floor(), "The player must remain on the floor.")
 	# A collision reduces actual motion to zero even while input is still held.
 	var wall: StaticBody3D = StaticBody3D.new()
@@ -103,7 +110,7 @@ func _run() -> void:
 	wall.rotation.y = atan2(-walk_direction.z, walk_direction.x)
 	Input.action_press(&"move_right")
 	await _frames(60)
-	_check(animator.current_animation == &"Idle", "Holding input against a wall must stop the walking animation.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Idle", "Holding input against a wall must stop the walking animation.")
 	Input.action_release(&"move_right")
 	wall.queue_free()
 	await _frames(2)
@@ -111,7 +118,7 @@ func _run() -> void:
 	await _frames(15)
 	player.call("set_input_locked", true)
 	await _frames(20)
-	_check(animator.current_animation == &"Idle", "Locking input for dialogue must settle back into Idle.")
+	_check((player.get("current_locomotion_animation") as StringName) == &"Idle", "Locking input for dialogue must settle back into Idle.")
 	Input.action_release(&"move_left")
 	player.call("set_input_locked", false)
 	if not failed:
