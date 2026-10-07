@@ -22,6 +22,10 @@ var input_locked: bool = false
 
 var character_animation_player: AnimationPlayer
 var current_locomotion_animation: StringName = &""
+var idle_clip: StringName = &""
+var walk_clip: StringName = &""
+var run_clip: StringName = &""
+var using_walk_pose_for_idle: bool = false
 
 # Distance covered by one complete in-place cycle, in the GLB's model units.
 # Keep these aligned with tools/animation/refine_player_locomotion.py.
@@ -92,13 +96,47 @@ func _setup_character_animations() -> void:
 		push_warning("[LembahSari] AnimationPlayer tidak ditemukan pada player_character_lembah_sari.glb")
 		return
 
-	for animation_name: StringName in [&"Idle", &"Walk", &"Run"]:
-		if not character_animation_player.has_animation(animation_name):
-			push_warning("[LembahSari] Animation clip tidak ditemukan: %s" % animation_name)
+	walk_clip = _find_animation_alias([&"Walk", &"walk.001", &"walk"])
+	if walk_clip == &"":
+		var names: PackedStringArray = character_animation_player.get_animation_list()
+		if not names.is_empty():
+			walk_clip = StringName(names[0])
+
+	idle_clip = _find_animation_alias([&"Idle", &"idle"])
+	run_clip = _find_animation_alias([&"Run", &"run"])
+	using_walk_pose_for_idle = idle_clip == &"" and walk_clip != &""
+	if using_walk_pose_for_idle:
+		idle_clip = walk_clip
+	if run_clip == &"":
+		run_clip = walk_clip
+
+	for animation_name: StringName in [idle_clip, walk_clip, run_clip]:
+		if animation_name == &"":
 			continue
 		var animation: Animation = character_animation_player.get_animation(animation_name)
 		if animation != null:
 			animation.loop_mode = Animation.LOOP_LINEAR
+
+	if walk_clip == &"":
+		push_warning("[LembahSari] Karakter tidak memiliki clip locomotion yang bisa dipakai.")
+	else:
+		print("[LembahSari] PLAYER_ANIMATION_MAP idle=%s walk=%s run=%s idle_pose=%s" % [idle_clip, walk_clip, run_clip, using_walk_pose_for_idle])
+
+
+func _find_animation_alias(candidates: Array[StringName]) -> StringName:
+	if character_animation_player == null:
+		return &""
+	for candidate: StringName in candidates:
+		if character_animation_player.has_animation(candidate):
+			return candidate
+	var names: PackedStringArray = character_animation_player.get_animation_list()
+	for raw_name: String in names:
+		var lowered := raw_name.to_lower()
+		for candidate: StringName in candidates:
+			if lowered == String(candidate).to_lower():
+				return StringName(raw_name)
+	return &""
+
 
 func _find_animation_player(root: Node) -> AnimationPlayer:
 	if root is AnimationPlayer:
@@ -109,40 +147,63 @@ func _find_animation_player(root: Node) -> AnimationPlayer:
 			return found
 	return null
 
+
 func _update_character_animation() -> void:
-	if character_animation_player == null:
+	if character_animation_player == null or walk_clip == &"":
 		return
-	# Actual displacement includes acceleration, braking, and collisions. A held
-	# direction against a wall must not keep the feet walking on the spot.
 	var real_velocity: Vector3 = get_real_velocity()
 	var speed: float = Vector2(real_velocity.x, real_velocity.z).length()
 	if speed < 0.08:
 		_play_locomotion_animation(&"Idle")
-		character_animation_player.speed_scale = 1.0
 		return
 	var running: bool = speed > walk_speed + 0.20
-	var animation_name: StringName = &"Run" if running else &"Walk"
-	_play_locomotion_animation(animation_name)
+	var logical_animation: StringName = &"Run" if running else &"Walk"
+	_play_locomotion_animation(logical_animation)
+	var physical_clip: StringName = run_clip if running else walk_clip
 	var cycle_distance: float = RUN_CYCLE_DISTANCE if running else WALK_CYCLE_DISTANCE
 	var model_scale: float = absf(visual.global_basis.get_scale().y)
-	var clip: Animation = character_animation_player.get_animation(animation_name)
-	character_animation_player.speed_scale = clampf(speed * clip.length / (cycle_distance * maxf(model_scale, 0.001)), 0.1, 2.5)
+	var clip: Animation = character_animation_player.get_animation(physical_clip)
+	var cadence: float = clampf(speed * clip.length / (cycle_distance * maxf(model_scale, 0.001)), 0.1, 2.8)
+	if running and run_clip == walk_clip:
+		cadence = maxf(cadence, 1.55)
+	character_animation_player.speed_scale = cadence
 
-func _play_locomotion_animation(animation_name: StringName) -> void:
+
+func _physical_clip_for(logical_animation: StringName) -> StringName:
+	match logical_animation:
+		&"Idle":
+			return idle_clip
+		&"Run":
+			return run_clip
+		_:
+			return walk_clip
+
+
+func _play_locomotion_animation(logical_animation: StringName) -> void:
 	if character_animation_player == null:
 		return
-	if current_locomotion_animation == animation_name:
+	var physical_clip: StringName = _physical_clip_for(logical_animation)
+	if physical_clip == &"" or not character_animation_player.has_animation(physical_clip):
 		return
-	if not character_animation_player.has_animation(animation_name):
+	if current_locomotion_animation == logical_animation:
+		if logical_animation == &"Idle" and using_walk_pose_for_idle:
+			character_animation_player.pause()
 		return
+
 	var phase: float = 0.0
-	var preserve_phase: bool = current_locomotion_animation in [&"Walk", &"Run"] and animation_name in [&"Walk", &"Run"]
+	var preserve_phase: bool = current_locomotion_animation in [&"Walk", &"Run"] and logical_animation in [&"Walk", &"Run"]
 	if preserve_phase and character_animation_player.current_animation_length > 0.0:
 		phase = fposmod(character_animation_player.current_animation_position / character_animation_player.current_animation_length, 1.0)
-	character_animation_player.play(animation_name, 0.16)
+
+	character_animation_player.play(physical_clip, 0.14)
 	if preserve_phase:
-		character_animation_player.seek(phase * character_animation_player.get_animation(animation_name).length)
-	current_locomotion_animation = animation_name
+		character_animation_player.seek(phase * character_animation_player.get_animation(physical_clip).length)
+	elif logical_animation == &"Idle" and using_walk_pose_for_idle:
+		character_animation_player.seek(0.0, true)
+		character_animation_player.pause()
+		character_animation_player.speed_scale = 1.0
+	current_locomotion_animation = logical_animation
+
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey:
