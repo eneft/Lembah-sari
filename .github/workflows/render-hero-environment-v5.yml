@@ -58,6 +58,8 @@ on:
       - 'assets/source/player_stylized_boy_clean2048.xz.b64.part*'
       - 'scripts/playable_v5_test.gd'
       - 'scripts/character_scale_review.gd'
+      - 'scripts/playable_character_review.gd'
+      - 'scenes/PlayableCharacterReview.tscn'
       - 'scenes/CharacterScaleReview.tscn'
       - '.github/workflows/render-hero-environment-v5.yml'
   workflow_dispatch:
@@ -272,6 +274,16 @@ jobs:
           test -s character_scale_review.png
           file character_scale_review.png
 
+      - name: Render playable character visibility review
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/PlayableCharacterReview.tscn
+          test -s playable_character_review.png
+          test -s playable_character_mask.png
+          file playable_character_review.png playable_character_mask.png
+
       - name: Upload V5 screenshot
         uses: actions/upload-artifact@v4
         with:
@@ -285,6 +297,16 @@ jobs:
         with:
           name: character-scale-review
           path: character_scale_review.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload playable character review
+        uses: actions/upload-artifact@v4
+        with:
+          name: playable-character-review
+          path: |
+            playable_character_review.png
+            playable_character_mask.png
           if-no-files-found: error
           retention-days: 14
 
