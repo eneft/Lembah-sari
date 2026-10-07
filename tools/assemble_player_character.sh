@@ -32,7 +32,7 @@ magic, version, total = struct.unpack_from("<III", data, 0)
 if magic != 0x46546C67 or version != 2 or total != len(data):
     raise SystemExit("invalid GLB header")
 json_len, json_type = struct.unpack_from("<II", data, 12)
-doc = json.loads(data[20:20 + json_len].rstrip(b" \\0"))
+doc = json.loads(data[20:20 + json_len].rstrip(b" \\x00"))
 animations = [a.get("name", "") for a in doc.get("animations", [])]
 if "walk.001" not in animations:
     raise SystemExit(f"walk.001 missing: {animations}")
