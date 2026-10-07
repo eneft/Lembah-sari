@@ -55,7 +55,7 @@ on:
       - 'scenes/Player.tscn'
       - 'scripts/player.gd'
       - 'tools/assemble_player_character.sh'
-      - 'assets/source/player_stylized_boy_hq2048.xz.b64.part*'
+      - 'assets/source/player_stylized_boy_clean2048.xz.b64.part*'
       - 'scripts/playable_v5_test.gd'
       - 'scripts/character_scale_review.gd'
       - 'scenes/CharacterScaleReview.tscn'

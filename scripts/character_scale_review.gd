@@ -1,94 +1,96 @@
 extends Node3D
 
-const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
-const HERO_ROTATION_Y: float = 124.0
-const HERO_SCALE: float = 1.035
+const REVIEW_BACKGROUND: Color = Color("10161d")
+const MIN_FOREGROUND_PIXELS: int = 500
+const MIN_SILHOUETTE_HEIGHT: int = 80
+const MIN_SILHOUETTE_WIDTH: int = 24
 
 @onready var player: CharacterBody3D = $Player
 
 func _ready() -> void:
-	# Review-only scene: freeze character movement/gravity so the captured frame
-	# measures silhouette and environment scale from the authored spawn position.
 	player.set_physics_process(false)
 	player.velocity = Vector3.ZERO
-	_build_environment()
-	_load_hero_scene()
+	_build_review_environment()
 	_configure_review_camera()
-	_capture_review()
+	await _capture_and_validate()
 
-func _build_environment() -> void:
-	var sky_material: ProceduralSkyMaterial = ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color("7ea8b5")
-	sky_material.sky_horizon_color = Color("c8d5ca")
-	sky_material.ground_bottom_color = Color("566a4f")
-	sky_material.ground_horizon_color = Color("c7caa9")
-	sky_material.sun_angle_max = 18.0
-	var sky: Sky = Sky.new()
-	sky.sky_material = sky_material
-
+func _build_review_environment() -> void:
 	var env: Environment = Environment.new()
-	env.background_mode = Environment.BG_SKY
-	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_color = Color("ead4ae")
-	env.ambient_light_energy = 0.26
-	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.88
-	env.adjustment_contrast = 1.05
-	env.adjustment_saturation = 1.10
-
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = REVIEW_BACKGROUND
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("f1e5d1")
+	env.ambient_light_energy = 0.62
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var world: WorldEnvironment = WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
 
-	var sun: DirectionalLight3D = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-38.0, -39.0, 0.0)
-	sun.light_color = Color("ffdaa4")
-	sun.light_energy = 0.64
-	sun.shadow_enabled = true
-	add_child(sun)
+	var key: DirectionalLight3D = DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-38.0, -34.0, 0.0)
+	key.light_color = Color("ffd9ad")
+	key.light_energy = 1.15
+	add_child(key)
 
 	var fill: DirectionalLight3D = DirectionalLight3D.new()
-	fill.rotation_degrees = Vector3(-58.0, 132.0, 0.0)
-	fill.light_color = Color("b8cecb")
-	fill.light_energy = 0.075
-	fill.shadow_enabled = false
+	fill.rotation_degrees = Vector3(-25.0, 145.0, 0.0)
+	fill.light_color = Color("bcd7e4")
+	fill.light_energy = 0.48
 	add_child(fill)
-
-func _load_hero_scene() -> void:
-	if not ResourceLoader.exists(HERO_SCENE):
-		push_error("Character scale review is missing hero_scene_v5.glb")
-		return
-	var packed: PackedScene = load(HERO_SCENE) as PackedScene
-	if packed == null:
-		push_error("Character scale review could not load hero scene")
-		return
-	var hero: Node3D = packed.instantiate() as Node3D
-	if hero == null:
-		push_error("Character scale review hero root is not Node3D")
-		return
-	hero.rotation_degrees.y = HERO_ROTATION_Y
-	hero.scale = Vector3.ONE * HERO_SCALE
-	add_child(hero)
 
 func _configure_review_camera() -> void:
 	var camera: Camera3D = player.get_node_or_null("CameraRig/Camera3D") as Camera3D
 	if camera == null:
-		push_error("Character scale review could not find player camera")
+		push_error("Character-only review could not find player camera.")
+		get_tree().quit(1)
 		return
-	camera.position = Vector3(5.8, 5.0, 5.8)
-	camera.fov = 35.0
-	camera.far = 160.0
+	camera.set_as_top_level(true)
+	camera.global_position = player.global_position + Vector3(2.25, 1.50, 3.05)
+	camera.fov = 31.0
+	camera.near = 0.05
+	camera.far = 20.0
 	camera.current = true
-	camera.look_at(player.global_position + Vector3(0.0, 0.82, 0.0), Vector3.UP)
+	camera.look_at(player.global_position + Vector3(0.0, 0.78, 0.0), Vector3.UP)
 
-func _capture_review() -> void:
-	for _frame in range(18):
+func _capture_and_validate() -> void:
+	for _frame: int in range(24):
 		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
 	var image: Image = get_viewport().get_texture().get_image()
-	var result: Error = image.save_png("character_scale_review.png")
-	if result != OK:
-		push_error("Failed to save character scale review: %s" % result)
-	get_tree().quit()
+	var save_result: Error = image.save_png("character_scale_review.png")
+	if save_result != OK:
+		push_error("Failed to save character-only review: %s" % save_result)
+		get_tree().quit(1)
+		return
+
+	var background: Color = image.get_pixel(0, 0)
+	var foreground_pixels: int = 0
+	var min_x: int = image.get_width()
+	var min_y: int = image.get_height()
+	var max_x: int = -1
+	var max_y: int = -1
+	const SAMPLE_STEP: int = 2
+
+	for y: int in range(0, image.get_height(), SAMPLE_STEP):
+		for x: int in range(0, image.get_width(), SAMPLE_STEP):
+			var pixel: Color = image.get_pixel(x, y)
+			var difference: float = absf(pixel.r - background.r) + absf(pixel.g - background.g) + absf(pixel.b - background.b)
+			if difference <= 0.10:
+				continue
+			foreground_pixels += 1
+			min_x = mini(min_x, x)
+			min_y = mini(min_y, y)
+			max_x = maxi(max_x, x)
+			max_y = maxi(max_y, y)
+
+	var silhouette_width: int = 0 if max_x < 0 else max_x - min_x + 1
+	var silhouette_height: int = 0 if max_y < 0 else max_y - min_y + 1
+	var visible: bool = foreground_pixels >= MIN_FOREGROUND_PIXELS and silhouette_width >= MIN_SILHOUETTE_WIDTH and silhouette_height >= MIN_SILHOUETTE_HEIGHT
+	print("CHARACTER_VISUAL_REVIEW pixels=%d bbox=%dx%d" % [foreground_pixels, silhouette_width, silhouette_height])
+	if not visible:
+		push_error("Character visual validation failed: player mesh is missing, off-camera, or collapsed.")
+		get_tree().quit(1)
+		return
+	print("CHARACTER_VISUAL_REVIEW_VALIDATED pixels=%d bbox=%dx%d" % [foreground_pixels, silhouette_width, silhouette_height])
+	get_tree().quit(0)
