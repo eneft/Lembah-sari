@@ -2,9 +2,9 @@
 set -euo pipefail
 
 MODEL="assets/models/player_character_lembah_sari.glb"
-SOURCE_DIR="assets/models/player_stylized_boy_source"
+SOURCE_DIR="assets/models/player_stylized_boy_source_v2"
 PART_GLOB="${SOURCE_DIR}/player_stylized_boy.glb.xz.b64.part*"
-EXPECTED_SHA256="261a068f706d076b93497ee24c9d1f2b369c2487d7f366fb6671d162c4aa6451"
+EXPECTED_SHA256="0b15337dce23002f869c6b32c6e7201bb898e148ffa1dcfa9d8caa477d4273c2"
 
 shopt -s nullglob
 PARTS=( ${PART_GLOB} )
@@ -33,7 +33,7 @@ python3 - "${TMP_GLB}" <<'PY'
 import json, struct, sys
 p = sys.argv[1]
 data = open(p, "rb").read()
-if len(data) < 500_000:
+if len(data) < 300_000:
     raise SystemExit(f"character GLB unexpectedly small: {len(data)}")
 magic, version, total = struct.unpack_from("<III", data, 0)
 if magic != 0x46546C67 or version != 2 or total != len(data):
