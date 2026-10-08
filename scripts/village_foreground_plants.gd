@@ -8,19 +8,20 @@ const PLANT_PATHS: Array[String] = [
 	"res://assets/models/foreground/04_Rumput_Tinggi.glb",
 ]
 const SOURCE_HEIGHTS: Array[float] = [4.4, 1.2, 3.6, 0.9]
-# Offsets in hero-local coordinates relative to house; +X is screen-left.
+# Offsets in hero-local coordinates relative to house; -X is screen-left
+# for the approved 124-degree hero rotation and fixed gameplay camera.
 const LAYOUT: Array[Dictionary] = [
-	{"type":0, "name":"Canopy_Left_Hero",  "offset":Vector2(4.8,-0.45), "scale":0.94, "yaw":34.0, "radius":1.10},
-	{"type":0, "name":"Canopy_Left_Small", "offset":Vector2(7.0,1.45),  "scale":0.68, "yaw":-28.0,"radius":0.85},
-	{"type":2, "name":"Palm_Left_Back",    "offset":Vector2(3.50,-3.20),"scale":1.24, "yaw":63.0, "radius":0.60},
-	{"type":2, "name":"Palm_Right_Back",   "offset":Vector2(-6.0,-2.20),"scale":1.12,"yaw":-37.0,"radius":0.60},
-	{"type":1, "name":"Bush_Left_Front_A", "offset":Vector2(5.6,3.15),  "scale":0.83, "yaw":51.0, "radius":0.85},
-	{"type":1, "name":"Bush_Left_Front_B", "offset":Vector2(3.65,4.20), "scale":0.71, "yaw":-18.0,"radius":0.75},
-	{"type":1, "name":"Bush_House_Left",  "offset":Vector2(3.25,2.15), "scale":0.61, "yaw":112.0,"radius":0.65},
-	{"type":1, "name":"Bush_Garden_Edge", "offset":Vector2(-4.7,2.30), "scale":0.67, "yaw":-92.0,"radius":0.70},
-	{"type":3, "name":"Reed_River_Left_A", "offset":Vector2(5.55,5.85), "scale":0.64, "yaw":-13.0,"radius":0.30},
-	{"type":3, "name":"Reed_River_Left_B", "offset":Vector2(3.10,5.85), "scale":0.58, "yaw":57.0, "radius":0.30},
-	{"type":3, "name":"Reed_River_Right",  "offset":Vector2(-5.5,5.70), "scale":0.64, "yaw":-43.0,"radius":0.30},
+	{"type":0, "name":"Canopy_Left_Hero",  "offset":Vector2(-4.8,-0.45), "scale":0.94, "yaw":34.0, "radius":1.10},
+	{"type":0, "name":"Canopy_Left_Small", "offset":Vector2(-7.0,1.45),  "scale":0.68, "yaw":-28.0,"radius":0.85},
+	{"type":2, "name":"Palm_Left_Back",    "offset":Vector2(-3.50,-3.20),"scale":1.24, "yaw":63.0, "radius":0.60},
+	{"type":2, "name":"Palm_Right_Back",   "offset":Vector2(6.0,-2.20),"scale":1.12,"yaw":-37.0,"radius":0.60},
+	{"type":1, "name":"Bush_Left_Front_A", "offset":Vector2(-5.6,3.15),  "scale":0.83, "yaw":51.0, "radius":0.85},
+	{"type":1, "name":"Bush_Left_Front_B", "offset":Vector2(-3.65,4.20), "scale":0.71, "yaw":-18.0,"radius":0.75},
+	{"type":1, "name":"Bush_House_Left",  "offset":Vector2(-3.25,2.15), "scale":0.61, "yaw":112.0,"radius":0.65},
+	{"type":1, "name":"Bush_Garden_Edge", "offset":Vector2(4.7,2.30), "scale":0.67, "yaw":-92.0,"radius":0.70},
+	{"type":3, "name":"Reed_River_Left_A", "offset":Vector2(-5.55,5.85), "scale":0.64, "yaw":-13.0,"radius":0.30},
+	{"type":3, "name":"Reed_River_Left_B", "offset":Vector2(-3.10,5.85), "scale":0.58, "yaw":57.0, "radius":0.30},
+	{"type":3, "name":"Reed_River_Right",  "offset":Vector2(5.5,5.70), "scale":0.64, "yaw":-43.0,"radius":0.30},
 ]
 func apply(hero: Node3D, player: CharacterBody3D) -> void:
 	var house: Node3D = hero.get_node_or_null("PlayerHouseTraditionalV4") as Node3D
