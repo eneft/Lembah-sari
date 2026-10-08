@@ -19,9 +19,9 @@ const LAYOUT: Array[Dictionary] = [
 	{"type":0,"name":"Canopy_Left_Hero","offset":Vector2(-4.8,-0.65),"scale":0.92,"yaw":34.0,"radius":1.65},
 	{"type":2,"name":"Palm_Left_Back","offset":Vector2(-3.50,-3.20),"scale":1.12,"yaw":63.0,"radius":1.10},
 	{"type":2,"name":"Palm_Right_Back","offset":Vector2(6.0,-2.20),"scale":1.10,"yaw":-37.0,"radius":1.05},
-	{"type":1,"name":"Bush_Left_Front_A","offset":Vector2(-5.65,3.05),"scale":0.70,"yaw":51.0,"radius":0.88},
-	{"type":1,"name":"Bush_Left_Front_B","offset":Vector2(-3.25,3.60),"scale":0.57,"yaw":-18.0,"radius":0.80},
-	{"type":1,"name":"Bush_Garden_Edge","offset":Vector2(4.70,2.30),"scale":0.58,"yaw":-92.0,"radius":1.38},
+	{"type":1,"name":"Bush_Left_Front_A","offset":Vector2(-5.05,2.72),"scale":0.66,"yaw":39.0,"radius":0.88},
+	{"type":1,"name":"Bush_Left_Front_B","offset":Vector2(-3.72,3.18),"scale":0.53,"yaw":-16.0,"radius":0.80},
+	{"type":1,"name":"Bush_Garden_Edge","offset":Vector2(4.55,2.16),"scale":0.52,"yaw":-86.0,"radius":1.38},
 	{"type":3,"name":"Reed_River_Left_A","offset":Vector2(-5.55,5.85),"scale":0.64,"yaw":-13.0,"radius":0.30},
 	{"type":3,"name":"Reed_River_Left_B","offset":Vector2(-3.10,5.85),"scale":0.58,"yaw":57.0,"radius":0.30},
 	{"type":3,"name":"Reed_River_Right","offset":Vector2(5.50,5.70),"scale":0.64,"yaw":-43.0,"radius":0.30},
@@ -81,6 +81,10 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 				(mesh as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_harmonize_3d_plant_materials(model)
 		_attach_root_grounding(model,kind,grounding_material)
+		# One small understory grouping on the right palm, without entering
+		# the playable farming beds or creating extra collision bodies.
+		if String(model.name) == "Palm_Right_Back":
+			_attach_right_palm_base(model,imported[3],imported[1])
 		model.set_meta("plant_type",kind)
 		model.set_meta("authored_height",SOURCE_HEIGHTS[kind] * float(entry["scale"]))
 		placed += 1
@@ -101,15 +105,15 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 			banana = banana_script.new().build() as Node3D
 	if banana != null:
 		banana.name = "BananaTree_Left_Indonesian"
-		banana.position = house.position + Vector3(-6.10,0.0,1.50)
+		banana.position = house.position + Vector3(-5.85,0.0,1.30)
 		# User GLB is normalized to 1 m high. Target ~3.2 m near the house.
-		banana.scale = Vector3.ONE * 3.25
-		banana.rotation_degrees.y = -14.0
+		banana.scale = Vector3.ONE * 3.10
+		banana.rotation_degrees.y = -10.0
 		root.add_child(banana)
 		_harmonize_3d_plant_materials(banana)
 		_attach_root_grounding(banana,4,grounding_material)
 		banana.set_meta("plant_type",4)
-		banana.set_meta("authored_height",3.25)
+		banana.set_meta("authored_height",3.10)
 		var banana_position: Vector3 = banana.global_position
 		if playerspace.distance_to(Vector2(banana_position.x,banana_position.z)) < 1.28:
 			banana.queue_free()
@@ -222,13 +226,21 @@ func _attach_root_grounding(model: Node3D,kind: int,material: StandardMaterial3D
 	var shadow := MeshInstance3D.new()
 	shadow.name = "RootContactShadow"
 	var plane := PlaneMesh.new()
-	var extent: float = 1.24 if kind == 0 else (0.68 if kind == 4 else (0.57 if kind == 2 else 0.72))
-	plane.size = Vector2(extent,extent*0.77)
+	# Use metres, not source-model scale: a 3.1x GLB must not turn a subtle
+	# contact shadow into a two-metre black disk around the trunk.
+	var extent: float = 1.40 if kind == 0 else (1.02 if kind == 4 else (0.85 if kind == 2 else 0.78))
+	plane.size = Vector2(extent,extent*0.79)
 	shadow.mesh = plane
 	shadow.material_override = material
 	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	model.add_child(shadow)
-	shadow.position = Vector3(0.0,0.023,0.0)
+	# Normalize root shadow against the GLB scale and put it on the same
+	# world soil plane as the image billboards (rather than hovering 3x higher).
+	var parent_scale: float = maxf(absf(model.scale.y),0.001)
+	shadow.scale = Vector3.ONE/parent_scale
+	shadow.position = Vector3(0.0,(-0.027-model.global_position.y)/parent_scale,0.0)
+	if kind == 2 or kind == 4:
+		_attach_root_soil_mound(model,kind)
 	# Trunk collider only for rooted trees, never ornamental shrub/grass.
 	if kind == 0 or kind == 2 or kind == 4:
 		var blocker := StaticBody3D.new()
@@ -252,8 +264,8 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 		push_error("[LembahSari] Banana card texture or fixed camera is missing")
 		return 0
 	var layout: Array[Dictionary] = [
-		{"name":"Card_BananaRearLeft","offset":Vector3(-7.45,0.0,-0.15),"height":2.42,"flip":true,"tint":Color(0.91,0.95,0.83,1.0)},
-		{"name":"Card_BananaMidLeft","offset":Vector3(-3.95,0.0,1.95),"height":2.25,"flip":false,"tint":Color(0.87,0.93,0.83,1.0)},
+		{"name":"Card_BananaRearLeft","offset":Vector3(-7.05,0.0,-0.40),"height":2.28,"flip":true,"tint":Color(0.90,0.95,0.83,1.0)},
+		{"name":"Card_BananaMidLeft","offset":Vector3(-4.55,0.0,1.25),"height":2.05,"flip":false,"tint":Color(0.87,0.93,0.82,1.0)},
 	]
 	var count: int = 0
 	var viewport_size: Vector2 = fixed_camera.get_viewport().get_visible_rect().size
@@ -274,15 +286,27 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 		layer.add_child(sprite)
 		sprite.global_basis = fixed_camera.global_basis.orthonormalized()
 		sprite.global_position = base+fixed_camera.global_basis.y.normalized()*height*0.48
+		# A small physical grass clump conceals the lower edge of the 2D card.
+		var grass_scene: PackedScene = load(PLANT_PATHS[3]) as PackedScene
+		if grass_scene != null:
+			var understory: Node3D = grass_scene.instantiate() as Node3D
+			if understory != null:
+				understory.name = "BananaImageRootCover_"+sprite.name
+				layer.add_child(understory)
+				understory.global_position = Vector3(base.x+(-0.10 if count == 0 else 0.12),-0.042,base.z+0.09)
+				understory.scale = Vector3.ONE*0.17
+				understory.rotation_degrees.y = -24.0 if count == 0 else 31.0
+				for n: Node in understory.find_children("*","MeshInstance3D",true,false):
+					(n as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var contact := MeshInstance3D.new()
 		contact.name = "ContactShadow_"+sprite.name
 		var plane := PlaneMesh.new()
-		plane.size = Vector2(0.90,0.60)
+		plane.size = Vector2(0.72,0.46)
 		contact.mesh = plane
 		contact.material_override = shadow_mat
 		contact.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		layer.add_child(contact)
-		contact.global_position = Vector3(base.x,-0.027,base.z)
+		contact.global_position = Vector3(base.x,-0.024,base.z)
 		contact.rotation_degrees.y = -26.0 if count == 0 else 19.0
 		sprite.set_meta("banana_image",true)
 		sprite.set_meta("ground_anchor",base)
@@ -295,14 +319,55 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 func _attach_banana_ground_cover(banana: Node3D,grass_scene: PackedScene) -> void:
 	# These authored grasses share existing lightweight mesh assets.
 	# Children inherit the banana's normalized 3.25x transform.
-	for i: int in range(2):
+	for i: int in range(3):
 		var clump: Node3D = grass_scene.instantiate() as Node3D
 		if clump == null:
 			continue
 		clump.name = "BananaRootGrass_"+str(i)
-		clump.position = Vector3(-0.12,0.0,0.065) if i == 0 else Vector3(0.11,0.0,-0.09)
-		clump.scale = Vector3.ONE*(0.12 if i == 0 else 0.09)
-		clump.rotation_degrees.y = 22.0 if i == 0 else -46.0
+		clump.position = [Vector3(-0.16,0.0,0.08),Vector3(0.13,0.0,-0.10),Vector3(0.03,0.0,0.18)][i]
+		clump.scale = Vector3.ONE*[0.13,0.10,0.08][i]
+		clump.rotation_degrees.y = [18.0,-42.0,62.0][i]
 		banana.add_child(clump)
 		for n: Node in clump.find_children("*","MeshInstance3D",true,false):
 			(n as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func _attach_root_soil_mound(model: Node3D,kind: int) -> void:
+	# Small, shallow soil collar fixes the "floating palm trunk" illusion.
+	var soil := MeshInstance3D.new()
+	soil.name = "RootSoilMound"
+	var sphere := SphereMesh.new()
+	sphere.radial_segments = 12
+	sphere.rings = 6
+	soil.mesh = sphere
+	var material := StandardMaterial3D.new()
+	material.resource_name = "WarmSoilAtTrunk"
+	material.albedo_color = Color("64704b")
+	material.roughness = 0.98
+	soil.material_override = material
+	soil.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	model.add_child(soil)
+	var model_scale: float = maxf(absf(model.scale.y),0.001)
+	var width: float = 0.42 if kind == 2 else 0.33
+	soil.scale = Vector3(width,0.082,width*0.77)/model_scale
+	# Half-buried green soil, not a visible raised rock around the trunk.
+	soil.position = Vector3(0.0,(-0.048-model.global_position.y)/model_scale,0.0)
+
+func _attach_right_palm_base(palm: Node3D,grass_scene: PackedScene,bush_scene: PackedScene) -> void:
+	var layout: Array[Dictionary] = [
+		{"name":"PalmUnderstoryGrass_A","at":Vector3(-0.24,0.0,0.23),"scale":0.22,"yaw":28.0,"bush":false},
+		{"name":"PalmUnderstoryGrass_B","at":Vector3(0.23,0.0,-0.15),"scale":0.18,"yaw":-35.0,"bush":false},
+		{"name":"PalmUnderstoryBush","at":Vector3(0.37,0.0,0.16),"scale":0.19,"yaw":75.0,"bush":true},
+	]
+	for entry: Dictionary in layout:
+		var packed: PackedScene = bush_scene if bool(entry["bush"]) else grass_scene
+		var cover: Node3D = packed.instantiate() as Node3D if packed != null else null
+		if cover == null:
+			continue
+		cover.name = String(entry["name"])
+		cover.position = entry["at"]
+		cover.scale = Vector3.ONE*float(entry["scale"])
+		cover.rotation_degrees.y = float(entry["yaw"])
+		palm.add_child(cover)
+		cover.set_meta("ornamental_ground_cover",true)
+		for child: Node in cover.find_children("*","MeshInstance3D",true,false):
+			(child as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
