@@ -33,6 +33,7 @@ func apply(hero: Node3D, view: Camera3D) -> void:
  mats["ground_deep"] = _material("263d25","667a46","3b5c31",26,0,0.19,0.30)
  mats["ground_warm"] = _material("465637","85945d","70794b",24,0,0.18,0.25)
  mats["path"] = _material("695840","b7a078","887454",19,1,0.27,0.23)
+ (mats["path"] as ShaderMaterial).set_shader_parameter("footpath_detail",1.0)
  mats["soil"] = _material("493421","887049","5d4930",30,1,0.18,0.22)
  mats["paddy_bund"] = _material("4f412b","88724b","667044",31,1,0.20,0.24)
  mats["bank_wet"] = _material("26372f","59634b","35483c",34,1,0.22,0.28)
