@@ -69,7 +69,7 @@ func _run() -> void:
    var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
    _check(banana != null,"Banana geometry must have distinct node")
    if banana != null:
-    _check(absf(float(banana.get_meta("authored_height",0.0))-3.25) < 0.01,"Banana must keep natural house scale")
+    _check(absf(float(banana.get_meta("authored_height",0.0))-3.10) < 0.01,"Banana must keep natural house scale")
     _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    _check(int(layer.get_meta("banana_cards",0)) == 2,"Two banana image companions must join the existing real banana tree")
@@ -82,6 +82,8 @@ func _run() -> void:
      _check(card.get_meta("source_texture","") == "res://assets/textures/hybrid/banana_tree_card.svg","Banana cutouts must share the authored transparent image")
      var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+name) as MeshInstance3D
      _check(contact != null and contact.visible,"Banana image roots require ground-contact shadow")
+     var groundcover: Node3D = layer.get_node_or_null("BananaImageRootCover_"+name) as Node3D
+     _check(groundcover != null and groundcover.visible,"Banana image card roots must be hidden by real 3D grass")
    var banana_camera: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
    var a_card: Sprite3D = layer.get_node("Card_BananaRearLeft") as Sprite3D
    var b_card: Sprite3D = layer.get_node("Card_BananaMidLeft") as Sprite3D
