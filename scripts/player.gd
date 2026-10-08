@@ -30,6 +30,9 @@ var walk_source_animation: StringName = &""
 var source_walk_distance: float = 0.0
 var source_walk_duration: float = 0.0
 var visual_breath_clock: float = 0.0
+var run_from_uploaded_source: bool = false
+var run_source_bones: int = 0
+const RUN_RETARGET: String = "res://scripts/animation/run_retarget.gd"
 
 # Distance covered by one complete in-place cycle, in the GLB's model units.
 # Keep these aligned with tools/animation/refine_player_locomotion.py.
@@ -125,6 +128,14 @@ func _setup_character_animations() -> void:
 		return
 
 	_ensure_canonical_locomotion_animations()
+	# Replace ONLY the fallback Run clip; the GLB mesh, texture and Walk remain
+	# exactly those of CharacterLembahSari.
+	var transfer_script: Script = load(RUN_RETARGET) as Script
+	if transfer_script != null and transfer_script.can_instantiate():
+		run_source_bones = int(transfer_script.new().install(character_animation_player))
+		run_from_uploaded_source = run_source_bones >= 55
+	else:
+		push_error("[LembahSari] Extracted Run retarget module is missing")
 	for animation_name: StringName in [&"Idle", &"Walk", &"Run"]:
 		if not character_animation_player.has_animation(animation_name):
 			push_warning("[LembahSari] Animation clip tidak ditemukan: %s" % animation_name)
@@ -257,6 +268,13 @@ func _update_character_animation() -> void:
 	var running: bool = speed > walk_speed + 0.20
 	var animation_name: StringName = &"Run" if running else &"Walk"
 	_play_locomotion_animation(animation_name)
+	if running and run_from_uploaded_source:
+		# The Run gait is now genuinely from run.001, not sped-up Walk.
+		# Sync its shorter 1.25s cycle to real physics speed and visual size.
+		var run_clip: Animation = character_animation_player.get_animation(&"Run")
+		var model_scale_run: float = absf(visual.global_basis.get_scale().y)
+		character_animation_player.speed_scale = clampf(speed*run_clip.length/(RUN_CYCLE_DISTANCE*maxf(model_scale_run,0.001)),0.2,2.5)
+		return
 	if uses_single_walk_source:
 		# Match the cadence to actual distance covered by the CharacterBody.
 		# Do not let the feet move at 1x while the player moves ~40% faster.
