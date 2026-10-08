@@ -69,6 +69,23 @@ func _run() -> void:
 		print("CHARACTER_CLIP_OK %s changed_bones=%d" % [clip_name, changed])
 	animator.play(&"Idle")
 	_check(player.is_on_floor(), "The player must stand on the playable floor.")
+	# Short, observable acceleration gate: a first stride must not snap
+	# directly to full speed; braking should not leave the player drifting.
+	Input.action_press(&"move_right")
+	await _frames(3)
+	var launch_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
+	_check(launch_speed > 0.08 and launch_speed < float(player.get("walk_speed")) * 0.75,
+		"Walking must ramp up smoothly over the first three frames.")
+	var desired_yaw: float = atan2(player.facing.x, player.facing.z)
+	var remaining_yaw: float = absf(wrapf(desired_yaw - player.get_node("Visual").rotation.y, -PI, PI))
+	_check(remaining_yaw > 0.20, "Player torso should ease into a turn, not snap to its target angle.")
+	Input.action_release(&"move_right")
+	await _frames(14)
+	_check(Vector2(player.velocity.x, player.velocity.z).length() < 0.035,
+		"Stopping a walk must settle cleanly without residual movement.")
+	_check(float(player.get("animation_blend_time")) >= 0.20,
+		"Idle / Walk transitions need a visible crossfade.")
+	print("WALK_SMOOTHNESS_OK launch=%.3f yaw_remaining=%.3f braking=ok blend=%.2f" % [launch_speed, remaining_yaw, player.get("animation_blend_time")])
 	var start: Vector3 = player.global_position
 	Input.action_press(&"move_right")
 	await _frames(30)
