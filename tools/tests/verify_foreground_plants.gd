@@ -73,13 +73,22 @@ func _run() -> void:
     _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    _check(int(layer.get_meta("banana_cards",0)) == 2,"Two banana image companions must join the existing real banana tree")
+   var primary_png: String = "res://assets/textures/hybrid/banana_tree_card.png"
+   var fallback_svg: String = "res://assets/textures/hybrid/banana_tree_card.svg"
+   var png_available: bool = ResourceLoader.exists(primary_png)
+   var expected_texture: String = primary_png if png_available else fallback_svg
+   _check(ResourceLoader.exists(expected_texture),"At least one banana card image must be in the exported game")
    for name: String in ["Card_BananaRearLeft","Card_BananaMidLeft"]:
     var card: Sprite3D = layer.get_node_or_null(name) as Sprite3D
     _check(card != null and card.visible,"Missing lit banana image card: "+name)
     if card != null:
      _check(card.shaded and card.alpha_cut == SpriteBase3D.ALPHA_CUT_DISCARD,"Banana image must match real polygon lighting and depth: "+name)
      _check(card.texture != null and card.texture.get_height() >= 500,"Banana must have a botanical cutout, not a generic palm texture")
-     _check(card.get_meta("source_texture","") == "res://assets/textures/hybrid/banana_tree_card.svg","Banana cutouts must share the authored transparent image")
+     _check(String(card.get_meta("source_texture","")) == expected_texture,"Banana images must select supplied PNG when it exists, or SVG fallback")
+     _check(bool(card.get_meta("image_is_png",false)) == png_available,"PNG image flag must reflect the actual chosen texture")
+     if png_available:
+      _check(card.texture.get_width() >= 800 and card.texture.get_height() >= 1000,"Full-resolution transparent banana PNG must load, not a placeholder")
+     print("BANANA_CARD_TEXTURE_OK name=%s source=%s image_size=%s" % [name,expected_texture,card.texture.get_size()])
      var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+name) as MeshInstance3D
      _check(contact != null and contact.visible,"Banana image roots require ground-contact shadow")
      var groundcover: Node3D = layer.get_node_or_null("BananaImageRootCover_"+name) as Node3D
