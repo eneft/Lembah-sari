@@ -85,16 +85,19 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 func _hide_overlapping_cards(layer: Node3D, location: Vector3, kind: int, radius: float) -> int:
 	var removed := 0
 	for child: Node in layer.get_children():
-		if not child is Sprite3D or not child.visible:
+		if not child is Sprite3D:
 			continue
-		var label := String(child.name)
+		var sprite: Sprite3D = child as Sprite3D
+		if not sprite.visible:
+			continue
+		var label := String(sprite.name)
 		if "Mid" in label:
 			continue
 		var eligible := (kind == 0 and "Tree" in label) or (kind == 2 and "Palm" in label) or (kind == 1 and ("Bush" in label or "Flower" in label)) or (kind == 3 and ("Grass" in label or "Bank" in label))
 		if not eligible:
 			continue
-		var center: Vector3 = (child as Sprite3D).global_position
+		var center: Vector3 = sprite.global_position
 		if Vector2(center.x,center.z).distance_to(Vector2(location.x,location.z)) <= radius:
-			child.hide()
+			sprite.hide()
 			removed += 1
 	return removed
