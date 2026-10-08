@@ -55,6 +55,14 @@ func _run() -> void:
 	_check(int(grass.get_meta("tufts",0)) == count,"Grass instancing metadata must match GPU transforms")
 	_check(int(grass.get_meta("path_edge_tufts",0)) >= 8,"Walking path must gain small dimensional grass at its edges")
 	_check(bool(grass.get_meta("organic_mask",false)),"Grass should scatter as soft-edged islands, never a rectangular lawn")
+	_check(bool(grass.get_meta("riverbank_irregular",false)),"Riverbank vegetation must follow a soft meandering shoreline")
+	_check(bool(grass.get_meta("foreground_cluster_mask",false)),"Left tropical garden grass must grow in connected islands")
+	_check(bool(grass.get_meta("path_curve_enabled",false)),"Footpath grass should follow a curve rather than a straight ruler")
+	var scatter_script: Script = load("res://scripts/village_foreground_grass.gd") as Script
+	var scatter = scatter_script.new()
+	var bend: Vector2 = scatter.call("_path_screen",0.5)
+	var straight_midpoint := Vector2(0.755,0.625)
+	_check(bend.distance_to(straight_midpoint) > 0.018,"Footpath must bend enough to soften the path edge")
 	_check(String(grass.get_meta("blade_profile","")) == "curved_broad","Grass mesh must have curved broad tips instead of spikes")
 	var hero: Node3D = world.get_node("HeroSceneV5") as Node3D
 	var hybrid: Node3D = hero.get_node("HybridEnvironment") as Node3D
