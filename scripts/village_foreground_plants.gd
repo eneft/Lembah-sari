@@ -160,7 +160,7 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 	root.set_meta("left_large_canopy_count",3)
 	root.set_meta("left_empty_gap_filled",root.has_node("Tree_LeftFieldFill"))
 	root.set_meta("banana_relocated_left",banana != null)
-	root.set_meta("banana_left_focus_zone",banana != null and camera != null)
+	root.set_meta("banana_left_focus_zone",banana != null and banana.has_meta("red_circle_screen_uv"))
 	print("[LembahSari] FOREGROUND_PLANTS_3D_ACTIVE models=%d banana=%s hidden_near_cards=%d background=image" % [placed,banana != null,hidden])
 func _choose_red_circle_banana_ground(camera: Camera3D,house: Node3D,player: CharacterBody3D,plants: Node3D) -> Vector3:
 	# The user-marked circle is roughly x=0.10-0.24, y=0.39-0.70 in
