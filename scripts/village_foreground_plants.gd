@@ -194,7 +194,7 @@ func _build_grounding_shadow_material() -> StandardMaterial3D:
 	for y: int in range(48):
 		for x: int in range(48):
 			var p: Vector2 = (Vector2(float(x)+0.5,float(y)+0.5)/48.0-Vector2(0.5,0.5))*2.0
-			var alpha: float = powf(maxf(0.0,1.0-p.length()),1.7)*0.24
+			var alpha: float = pow(maxf(0.0,1.0-p.length()),1.7)*0.24
 			image.set_pixel(x,y,Color(0.23,0.23,0.16,alpha))
 	var mat := StandardMaterial3D.new()
 	mat.resource_name = "Grounded3DTreeRootShadow"
