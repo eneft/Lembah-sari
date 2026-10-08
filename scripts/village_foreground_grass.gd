@@ -40,12 +40,11 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 			if along_path:
 				# Low, broken grass on *either edge*, not the walking surface.
 				var t: float = (float(attempt-1110)+rng.randf())/100.0
-				var path_start := Vector2(0.49,0.565)
-				var path_end := Vector2(1.02,0.685)
-				var tangent: Vector2 = (path_end-path_start).normalized()
+				var curve_t: float = 0.06+t*0.84
+				var tangent: Vector2 = (_path_screen(minf(1.0,curve_t+0.006))-_path_screen(maxf(0.0,curve_t-0.006))).normalized()
 				var normal := Vector2(-tangent.y,tangent.x)
 				var side: float = -1.0 if attempt % 2 == 0 else 1.0
-				uv = path_start.lerp(path_end,0.06+t*0.84)+normal*side*rng.randf_range(0.065,0.079)
+				uv = _path_screen(curve_t)+normal*side*rng.randf_range(0.065,0.079)
 				if rng.randf() > 0.64:
 					continue
 			else:
@@ -103,6 +102,9 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 	root.set_meta("curved_blades",true)
 	root.set_meta("organic_mask",true)
 	root.set_meta("blade_profile","curved_broad")
+	root.set_meta("path_curve_enabled",true)
+	root.set_meta("riverbank_irregular",true)
+	root.set_meta("foreground_cluster_mask",true)
 	print("[LembahSari] ORGANIC_GRASS_ACTIVE tufts=%d batches=%d path_edges=%d far=image" % [count,root.get_child_count(),short_path_edges])
 
 func _organic_coverage(uv: Vector2,rect: Rect2,noise: FastNoiseLite,region: String) -> float:
@@ -114,12 +116,48 @@ func _organic_coverage(uv: Vector2,rect: Rect2,noise: FastNoiseLite,region: Stri
 	var secondary: float = noise.get_noise_2d(uv.x*540.0+103.0,uv.y*400.0-41.0)
 	var clouds: float = clampf(0.57+patch*0.56+secondary*0.19,0.0,1.0)
 	if region == "RiverBankGrass3D":
-		# The bank follows a broken shoreline; don't draw a uniformly green rim.
-		return softness*(0.23+clouds*0.54)
+		# Follow a meandering irregular waterline instead of a straight band.
+		var side_fade: float = smoothstep(0.0,0.11,normalized.x)*smoothstep(0.0,0.12,1.0-normalized.x)
+		var shore_y: float = 0.768+sin(uv.x*18.0)*0.009+noise.get_noise_2d(uv.x*720.0,113.0)*0.012
+		var shore_distance: float = absf(uv.y-shore_y)
+		var shore_envelope: float = 1.0-smoothstep(0.014,0.034,shore_distance)
+		return shore_envelope*side_fade*(0.23+clouds*0.61)
+	if region == "LeftGardenGrass3D":
+		# Three intersecting irregular ground-cover islands under the banana
+		# and main canopy. No square grass carpet against the camera edge.
+		var a: float = _ellipse_island(uv,Vector2(0.20,0.58),Vector2(0.145,0.087))
+		var b: float = _ellipse_island(uv,Vector2(0.365,0.625),Vector2(0.10,0.062))
+		var c: float = _ellipse_island(uv,Vector2(0.12,0.656),Vector2(0.065,0.055))
+		return maxf(a,maxf(b,c))*(0.24+clouds*0.68)
 	if region == "LawnGrass3D":
 		var dry_opening: float = smoothstep(0.22,0.70,noise.get_noise_2d(uv.x*135.0+36.0,uv.y*260.0))
 		return softness*(0.22+clouds*0.48)*(1.0-0.33*dry_opening)
 	return softness*(0.20+clouds*0.52)
+
+func _ellipse_island(uv: Vector2,center: Vector2,radii: Vector2) -> float:
+	var distance: float = ((uv-center)/radii).length()
+	return 1.0-smoothstep(0.65,1.13,distance)
+
+func _path_screen(t: float) -> Vector2:
+	# Screen-space read of the existing footpath. The geometry/collision remains
+	# untouched: the curved line only manages grass along its irregular edges.
+	var path_start := Vector2(0.49,0.565)
+	var path_end := Vector2(1.02,0.685)
+	var p: Vector2 = path_start.lerp(path_end,t)
+	p.y += sin(t*PI)*0.024
+	p.x -= sin(t*PI)*0.008
+	return p
+
+func _path_distance(point: Vector2) -> float:
+	var nearest: float = INF
+	var prev: Vector2 = _path_screen(0.0)
+	for index: int in range(1,25):
+		var next: Vector2 = _path_screen(float(index)/24.0)
+		var segment: Vector2 = next-prev
+		var t: float = clampf((point-prev).dot(segment)/maxf(segment.length_squared(),0.0000001),0.0,1.0)
+		nearest = minf(nearest,point.distance_to(prev+segment*t))
+		prev = next
+	return nearest
 
 func _build_leaf_mesh() -> ArrayMesh:
 	# Eight overlapping broad, curved banana-like grass leaflets per low tuft.
@@ -180,11 +218,7 @@ func _is_playable_ground(at: Vector3,player: CharacterBody3D) -> bool:
 	return Vector2(at.x-player.global_position.x,at.z-player.global_position.z).length_squared() > 0.68*0.68
 
 func _is_clear_zone(p: Vector2) -> bool:
-	var path_start := Vector2(0.49,0.565)
-	var path_end := Vector2(1.02,0.685)
-	var segment: Vector2 = path_end-path_start
-	var u: float = clampf((p-path_start).dot(segment)/segment.length_squared(),0.0,1.0)
-	if p.distance_to(path_start+segment*u) < 0.055:
+	if _path_distance(p) < 0.055:
 		return true
 	# Nothing on the house porch, game farm beds, or river surface.
 	if p.x > 0.66 and p.y < 0.59:
