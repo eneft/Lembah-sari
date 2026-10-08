@@ -7,7 +7,10 @@ signal day_transition_requested(summary: String)
 
 @export var walk_speed: float = 1.25
 @export var run_speed: float = 3.2
-@export var acceleration: float = 18.0
+@export var acceleration: float = 9.0
+@export var braking: float = 12.5
+@export var turn_response: float = 6.2
+@export var animation_blend_time: float = 0.24
 @export var gravity: float = 18.0
 @export var camera_relative_movement: bool = false
 
@@ -24,6 +27,7 @@ var character_animation_player: AnimationPlayer
 var current_locomotion_animation: StringName = &""
 var uses_single_walk_source: bool = false
 var walk_source_animation: StringName = &""
+var visual_breath_clock: float = 0.0
 
 # Distance covered by one complete in-place cycle, in the GLB's model units.
 # Keep these aligned with tools/animation/refine_player_locomotion.py.
@@ -39,14 +43,15 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if input_locked:
-		velocity.x = move_toward(velocity.x, 0.0, acceleration * delta)
-		velocity.z = move_toward(velocity.z, 0.0, acceleration * delta)
+		velocity.x = move_toward(velocity.x, 0.0, braking * delta)
+		velocity.z = move_toward(velocity.z, 0.0, braking * delta)
 		if not is_on_floor():
 			velocity.y -= gravity * delta
 		else:
 			velocity.y = 0.0
 		move_and_slide()
 		_update_character_animation()
+		_update_visual_motion(delta)
 		return
 
 	var desktop: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -67,8 +72,13 @@ func _physics_process(delta: float) -> void:
 	var running: bool = wants_run and _has_running_stamina()
 	var target_speed: float = run_speed if running else walk_speed
 	var target_velocity: Vector3 = direction * target_speed
-	velocity.x = move_toward(velocity.x, target_velocity.x, acceleration * delta)
-	velocity.z = move_toward(velocity.z, target_velocity.z, acceleration * delta)
+	# Ease into each stride, but brake decisively without micro-drifting.
+	var response: float = acceleration if direction.length() > 0.1 else braking
+	velocity.x = move_toward(velocity.x, target_velocity.x, response * delta)
+	velocity.z = move_toward(velocity.z, target_velocity.z, response * delta)
+	if direction.length() <= 0.1 and Vector2(velocity.x, velocity.z).length() < 0.035:
+		velocity.x = 0.0
+		velocity.z = 0.0
 
 	if running:
 		_drain_running_stamina(delta)
@@ -80,13 +90,31 @@ func _physics_process(delta: float) -> void:
 
 	if direction.length() > 0.1:
 		facing = direction.normalized()
-		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), 10.0 * delta)
+		var turn_weight: float = 1.0 - exp(-turn_response * delta)
+		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(facing.x, facing.z), turn_weight)
 
 	move_and_slide()
 	_update_character_animation()
+	_update_visual_motion(delta)
 
 	if Input.is_action_just_pressed("interact"):
 		_do_interact()
+
+# Render-only secondary motion; never changes the collision body or camera.
+func _update_visual_motion(delta: float) -> void:
+	visual_breath_clock += delta
+	var ground_speed: float = Vector2(get_real_velocity().x, get_real_velocity().z).length()
+	var move_weight: float = smoothstep(0.08, walk_speed, ground_speed)
+	var running_weight: float = smoothstep(walk_speed, run_speed, ground_speed)
+	var phase: float = 0.0
+	if character_animation_player != null and character_animation_player.current_animation_length > 0.001:
+		phase = character_animation_player.current_animation_position / character_animation_player.current_animation_length
+	var sway: float = sin(phase * TAU) * 0.010 * move_weight
+	var idle_breath: float = sin(visual_breath_clock * 1.7) * 0.004 * (1.0 - move_weight)
+	var lean: float = move_weight * (0.022 + 0.020 * running_weight) + idle_breath
+	var smooth_weight: float = 1.0 - exp(-6.0 * delta)
+	visual.rotation.x = lerpf(visual.rotation.x, lean, smooth_weight)
+	visual.rotation.z = lerpf(visual.rotation.z, sway, smooth_weight)
 
 func _setup_character_animations() -> void:
 	character_animation_player = _find_animation_player(character_model)
@@ -202,7 +230,7 @@ func _play_locomotion_animation(animation_name: StringName) -> void:
 	var preserve_phase: bool = current_locomotion_animation in [&"Walk", &"Run"] and animation_name in [&"Walk", &"Run"]
 	if preserve_phase and character_animation_player.current_animation_length > 0.0:
 		phase = fposmod(character_animation_player.current_animation_position / character_animation_player.current_animation_length, 1.0)
-	character_animation_player.play(animation_name, 0.16)
+	character_animation_player.play(animation_name, animation_blend_time)
 	if preserve_phase:
 		character_animation_player.seek(phase * character_animation_player.get_animation(animation_name).length)
 	current_locomotion_animation = animation_name
