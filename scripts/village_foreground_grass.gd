@@ -23,16 +23,30 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 	rng.seed = GRASS_SEED
 	var screen_size: Vector2 = view.get_viewport().get_visible_rect().size
 	var count: int = 0
+	var path_edge_tufts: int = 0
 	for region: Dictionary in REGIONS:
 		var zone: Rect2 = region["rect"]
 		var max_amount: int = int(region["amount"])
 		var transforms: Array[Transform3D] = []
 		var colors: Array[Color] = []
 		for attempt: int in range(max_amount):
-			var sample: Vector2 = Vector2(
-				rng.randf_range(zone.position.x,zone.end.x),
-				rng.randf_range(zone.position.y,zone.end.y)
-			)
+			var is_path_edge: bool = String(region["name"]) == "LawnGrass3D" and attempt >= 392
+			var sample: Vector2 = Vector2.ZERO
+			if is_path_edge:
+				# Carefully place short tufts along both *edges* of the
+				# pedestrian route instead of scattering onto the road.
+				var t: float = (float(attempt-392)+rng.randf())/118.0
+				var track_a := Vector2(0.49,0.565)
+				var track_b := Vector2(1.02,0.685)
+				var tangent: Vector2 = (track_b-track_a).normalized()
+				var side: Vector2 = Vector2(-tangent.y,tangent.x)
+				var direction: float = -1.0 if attempt % 2 == 0 else 1.0
+				sample = track_a.lerp(track_b,t*0.93) + side*direction*rng.randf_range(0.061,0.088)
+			else:
+				sample = Vector2(
+					rng.randf_range(zone.position.x,zone.end.x),
+					rng.randf_range(zone.position.y,zone.end.y)
+				)
 			if _is_clear_zone(sample):
 				continue
 			var at: Vector3 = _ground_point(view,sample * screen_size)
@@ -41,6 +55,9 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 			if _near_foreground_plant(world,at):
 				continue
 			var height: float = rng.randf_range(float(region["min_h"]),float(region["max_h"]))
+			if is_path_edge:
+				height = rng.randf_range(0.065,0.12)
+				path_edge_tufts += 1
 			var width: float = rng.randf_range(0.68,1.14) * height
 			var spin: float = rng.randf_range(-PI,PI)
 			var tilt: float = rng.randf_range(-0.09,0.09)
@@ -76,6 +93,7 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 		root.add_child(node)
 		count += transforms.size()
 	root.set_meta("tufts",count)
+	root.set_meta("path_edge_tufts",path_edge_tufts)
 	root.set_meta("batches",root.get_child_count())
 	root.set_meta("image_background_preserved",true)
 	print("[LembahSari] VOLUMETRIC_GRASS_READY tufts=%d batches=%d foreground=polygon far=image" % [count,root.get_child_count()])
