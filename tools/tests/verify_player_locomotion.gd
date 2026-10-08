@@ -76,8 +76,9 @@ func _run() -> void:
 	var launch_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
 	_check(launch_speed > 0.08 and launch_speed < float(player.get("walk_speed")) * 0.75,
 		"Walking must ramp up smoothly over the first three frames.")
+	var visual_node: Node3D = player.get_node("Visual") as Node3D
 	var desired_yaw: float = atan2(player.facing.x, player.facing.z)
-	var remaining_yaw: float = absf(wrapf(desired_yaw - player.get_node("Visual").rotation.y, -PI, PI))
+	var remaining_yaw: float = absf(wrapf(desired_yaw - visual_node.rotation.y, -PI, PI))
 	_check(remaining_yaw > 0.20, "Player torso should ease into a turn, not snap to its target angle.")
 	Input.action_release(&"move_right")
 	await _frames(14)
