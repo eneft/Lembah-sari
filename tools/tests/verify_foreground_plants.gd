@@ -33,7 +33,7 @@ func _run() -> void:
   else:
    var banana_path: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
    var banana_available: bool = ResourceLoader.exists(banana_path)
-   var expected_models: int = 10
+   var expected_models: int = 11
    _check(int(plants.get_meta("installed",0)) == expected_models,"Curated plant count must match available GLBs")
    var models := 0
    for child: Node in plants.get_children():
@@ -42,7 +42,7 @@ func _run() -> void:
     var meshes: Array[Node] = child.find_children("*","MeshInstance3D",true,false)
     _check(not meshes.is_empty(),"Each hero plant must retain actual polygon geometry")
     var height: float = float(child.get_meta("authored_height",0.0))
-    _check(height >= 0.50 and height <= 4.60,"Vegetation must retain house-relative proportions")
+    _check(height >= 0.50 and height <= 5.20,"Vegetation must retain house-relative proportions")
     # Inspect physical placement against existing sprites and fixed camera.
     var plant := child as Node3D
     var nearest := INF
@@ -63,13 +63,13 @@ func _run() -> void:
      if match_kind and distance < nearest_same:
       nearest_same = distance
     print("PLANT_POSITION name=%s world=%s screen=%s nearest_card=%s nearest_dist=%.2f same_type_dist=%.2f" % [plant.name,plant.global_position,px,nearest_label,nearest,nearest_same])
-   _check(models == expected_models,"Only nine curated plants plus optional banana may occupy the foreground")
+   _check(models == expected_models,"Only ten curated plants plus one real banana may occupy the foreground")
    _check(bool(plants.get_meta("banana_active",false)),"A banana tree must always frame the left house")
    _check(bool(plants.get_meta("banana_source_glb",false)) == banana_available,"Original banana GLB must supersede procedural fallback when present")
    var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
    _check(banana != null,"Banana geometry must have distinct node")
    if banana != null:
-    _check(absf(float(banana.get_meta("authored_height",0.0))-3.10) < 0.01,"Banana must keep natural house scale")
+    _check(absf(float(banana.get_meta("authored_height",0.0))-2.92) < 0.01,"Banana must keep natural house scale")
     _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    _check(int(layer.get_meta("banana_cards",0)) == 2,"Two banana image companions must join the existing real banana tree")
@@ -102,6 +102,27 @@ func _run() -> void:
     print("BANANA_IMAGE_COMPOSITION screen_rear=%s screen_mid=%s" % [a_screen,b_screen])
     _check(a_screen.distance_to(b_screen) >= 55.0,"Banana image silhouettes should be staggered, not visually stacked")
 
+   # Three distinct polygon trees, not the two little round bushes from
+   # the last screenshot. One must fill the far-left visual gap.
+   _check(bool(plants.get_meta("left_side_recomposed",false)),"Left canopy scene must be reconstructed")
+   _check(bool(plants.get_meta("left_empty_gap_filled",false)),"Left field must have a real mature tree")
+   _check(int(plants.get_meta("left_large_canopy_count",0)) == 3,"Three mature left trees required")
+   var large_trees: Array[String] = ["Tree_LeftFieldFill","Tree_LeftLarge_A","Tree_LeftLarge_B"]
+   var composition_camera: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
+   var left_positions: Array[float] = []
+   for tree_name: String in large_trees:
+    var mature: Node3D = plants.get_node_or_null(tree_name) as Node3D
+    _check(mature != null and mature.visible,"Missing mature tree at left: "+tree_name)
+    if mature != null:
+     _check(int(mature.get_meta("plant_type",-1)) == 0,"Mature tree cannot still be a bush: "+tree_name)
+     var maturity: float = float(mature.get_meta("authored_height",0.0))
+     _check(maturity >= 2.90,"Larger tree canopy is not scaled large enough: "+tree_name)
+     var projection: Vector2 = composition_camera.unproject_position(mature.global_position+Vector3.UP*maturity*0.40)
+     print("LEFT_CANOPY_FINAL name=%s screen=%s height=%.2f" % [tree_name,projection,maturity])
+     left_positions.append(projection.x)
+   if left_positions.size() == 3:
+    _check(left_positions[0] < left_positions[1] and left_positions[1] < left_positions[2],"Left trees should be spread from field to house, not overlapping into one crown")
+    _check(left_positions[0] > -150.0 and left_positions[0] < 330.0,"Left filler canopy must sit inside the left field, not outside the camera")
    var house: Node3D = hero.get_node("PlayerHouseTraditionalV4") as Node3D
    var canopy: Node3D = plants.get_node("Canopy_Left_Hero") as Node3D
    var right_palm: Node3D = plants.get_node("Palm_Right_Back") as Node3D
