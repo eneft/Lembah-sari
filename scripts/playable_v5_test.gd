@@ -2,6 +2,7 @@ extends Node3D
 
 const HYBRID_ENVIRONMENT = "res://scripts/village_hybrid_environment.gd"
 const FOREGROUND_PLANTS = "res://scripts/village_foreground_plants.gd"
+const FOREGROUND_GRASS = "res://scripts/village_foreground_grass.gd"
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
@@ -31,6 +32,7 @@ func _ready() -> void:
 	_build_player_readability()
 	_apply_hybrid_environment()
 	_apply_foreground_plants()
+	_apply_foreground_grass()
 
 
 func _build_environment() -> void:
@@ -366,3 +368,13 @@ func _apply_foreground_plants() -> void:
 		push_error("[LembahSari] Foreground plant placement script is missing")
 		return
 	plant_script.new().apply(hero,player)
+
+func _apply_foreground_grass() -> void:
+	# Render-only real polygon grass, after the hero plants are placed, so grass
+	# can avoid the tree/palm trunks; fixed camera and movement remain unchanged.
+	var grass_script: Script = load(FOREGROUND_GRASS) as Script
+	if grass_script == null or not grass_script.can_instantiate():
+		push_error("[LembahSari] Missing procedural foreground grass")
+		return
+	var camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
+	grass_script.new().apply(self,camera,player)
