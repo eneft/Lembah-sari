@@ -36,7 +36,7 @@ func _run() -> void:
 	_check(ghost_shadows == 0,"Hidden image foliage cannot leave detached contact shadows")
 	_check(visible_cards > 90,"Hybrid backdrop and midground cards must remain visible")
 	_check(int(layer.get_meta("thinned_front_cards",-1)) >= 0,"Deterministic card decluttering must run")
-	_check(plants.get_child_count() >= 9 and plants.get_child_count() <= 10,"Only curated near 3D plants may remain")
+	_check(plants.get_child_count() == 11,"Exactly three mature left trees plus baseline curated vegetation and banana must remain")
 	var rooted_models: int = 0
 	for node: Node in plants.get_children():
 		if not node is Node3D:
