@@ -51,6 +51,14 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 		if transforms.is_empty():
 			push_warning("[LembahSari] Grass region has no playable ground: %s" % region["name"])
 			continue
+		# Headless/dummy renderers return identity from MultiMesh GPU readback.
+		# Keep exact authored height bounds in CPU metadata for regression tests.
+		var min_height: float = INF
+		var max_height: float = -INF
+		for authored: Transform3D in transforms:
+			var authored_height: float = authored.basis.get_scale().y
+			min_height = minf(min_height,authored_height)
+			max_height = maxf(max_height,authored_height)
 		var multimesh := MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
 		multimesh.use_colors = true
@@ -63,6 +71,8 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 		node.name = String(region["name"])
 		node.multimesh = multimesh
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.set_meta("authored_min_height",min_height)
+		node.set_meta("authored_max_height",max_height)
 		root.add_child(node)
 		count += transforms.size()
 	root.set_meta("tufts",count)
