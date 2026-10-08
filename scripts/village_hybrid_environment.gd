@@ -11,12 +11,14 @@ var layer: Node3D
 var count_cards: int = 0
 var count_midground: int = 0
 var mats: Dictionary = {}
+var contact_shadow_material: StandardMaterial3D
 
 func apply(hero: Node3D, view: Camera3D) -> void:
  camera = view
  layer = Node3D.new()
  layer.name = "HybridEnvironment"
  hero.add_child(layer)
+ contact_shadow_material = _make_contact_shadow_material()
  var size := ATLAS.get_size()
  var split_x := size.x*0.535
  var split_y := size.y*0.60
@@ -111,7 +113,41 @@ func _card(base: Vector3,height: float,kind: int,label: String) -> void:
  layer.add_child(sprite)
  sprite.global_basis = camera.global_basis.orthonormalized()
  sprite.global_position = base+camera.global_basis.y.normalized()*visual_height*0.48
+ # Midground trees already blend into the 2D valley. Foreground image cards
+ # require a subtle real ground-plane shadow, else their roots float.
+ if kind <= 2 and not "Mid" in label:
+  _image_contact_shadow(base,kind,label,visual_height)
  count_cards += 1
+
+func _make_contact_shadow_material() -> StandardMaterial3D:
+ var image := Image.create_empty(48,48,false,Image.FORMAT_RGBA8)
+ for y: int in range(48):
+  for x: int in range(48):
+   var xy := (Vector2(float(x)+0.5,float(y)+0.5)/48.0-Vector2(0.5,0.5))*2.0
+   var falloff: float = pow(clampf(1.0-xy.length(),0.0,1.0),1.85)
+   image.set_pixel(x,y,Color(0.20,0.22,0.14,falloff*0.23))
+ var mat := StandardMaterial3D.new()
+ mat.resource_name = "VegetationGroundContactShadow"
+ mat.albedo_texture = ImageTexture.create_from_image(image)
+ mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+ mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+ mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+ mat.roughness = 1.0
+ return mat
+
+func _image_contact_shadow(base: Vector3,kind: int,label: String,height: float) -> void:
+ # Render-only ellipse. It never creates colliders or changes the player path.
+ var shadow := MeshInstance3D.new()
+ shadow.name = "ContactShadow_Card_"+label
+ var plane := PlaneMesh.new()
+ var width: float = clampf(height*(0.73 if kind == 0 else 0.55),0.43,2.4)
+ plane.size = Vector2(width,width*0.58)
+ shadow.mesh = plane
+ shadow.material_override = contact_shadow_material
+ shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+ layer.add_child(shadow)
+ shadow.global_position = Vector3(base.x,-0.022,base.z)
+ shadow.rotation_degrees.y = float(abs(label.hash()) % 73)-36.0
 
 func _material(a: String,b: String,accent: String,grain: float,kind: float = 0,macro_scale: float = 0.16,macro_strength: float = 0.24) -> ShaderMaterial:
  var mat := ShaderMaterial.new()
