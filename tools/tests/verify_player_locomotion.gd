@@ -45,6 +45,28 @@ func _run() -> void:
 				min_z = minf(min_z, pos.z)
 				max_z = maxf(max_z, pos.z)
 			print("SOURCE_WALK_POSITION path=%s keys=%d first=%s last=%s planar_drift=%.5f planar_range=(%.4f,%.4f) max_displacement=%.5f" % [source_animation.track_get_path(track), key_count, first_position, last_position, Vector2(last_position.x - first_position.x, last_position.z - first_position.z).length(), max_x-min_x, max_z-min_z, furthest])
+	# The clean source has ~1.366 units of root travel baked into the walk.
+	# Reject any copy that would move the visible mesh forward then snap back.
+	var imported_distance: float = float(player.get("source_walk_distance"))
+	_check(imported_distance > 1.0, "Source root-travel diagnostic must remain measurable before neutralization.")
+	for in_place_clip: StringName in [&"Walk", &"Run"]:
+		var clip: Animation = animator.get_animation(in_place_clip)
+		var root_tracks: int = 0
+		var max_root_excursion: float = 0.0
+		for track: int in range(clip.get_track_count()):
+			if clip.track_get_type(track) != Animation.TYPE_POSITION_3D:
+				continue
+			var path: String = String(clip.track_get_path(track)).to_lower()
+			if not ("hips" in path or "pelvis" in path or "root" in path):
+				continue
+			root_tracks += 1
+			var origin: Vector3 = clip.track_get_key_value(track, 0)
+			for key: int in range(clip.track_get_key_count(track)):
+				var sample: Vector3 = clip.track_get_key_value(track, key)
+				max_root_excursion = maxf(max_root_excursion, Vector2(sample.x-origin.x, sample.z-origin.z).length())
+		_check(root_tracks > 0 and max_root_excursion < 0.0001,
+			"%s must play in place: root travel must not jump backwards on loop." % in_place_clip)
+		print("IN_PLACE_ROOT_OK clip=%s planar_excursion=%.6f original_root_travel=%.5f" % [in_place_clip, max_root_excursion, imported_distance])
 	_check(skeleton.get_bone_count() >= 20, "Stylized boy rig must keep a usable humanoid skeleton.")
 	_check(String(player.get("walk_source_animation")).to_lower().find("walk") >= 0, "Stylized boy walk.001 source must be mapped at runtime.")
 	var textured: bool = false
