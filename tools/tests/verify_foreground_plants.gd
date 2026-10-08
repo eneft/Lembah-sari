@@ -40,6 +40,26 @@ func _run() -> void:
     _check(not meshes.is_empty(),"Each hero plant must retain actual polygon geometry")
     var height: float = float(child.get_meta("authored_height",0.0))
     _check(height >= 0.50 and height <= 4.60,"Vegetation must retain house-relative proportions")
+    # Inspect physical placement against existing sprites and fixed camera.
+    var plant := child as Node3D
+    var nearest := INF
+    var nearest_label := ""
+    var nearest_same := INF
+    var kind: int = int(child.get_meta("plant_type",-1))
+    var cam: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
+    var px: Vector2 = cam.unproject_position(plant.global_position + Vector3.UP * height * 0.35)
+    for card_node: Node in layer.get_children():
+     if not card_node is Sprite3D: continue
+     var card := card_node as Sprite3D
+     var distance: float = Vector2(card.global_position.x-plant.global_position.x,card.global_position.z-plant.global_position.z).length()
+     if distance < nearest:
+      nearest = distance
+      nearest_label = String(card.name)
+     var label: String = String(card.name)
+     var match_kind: bool = (kind == 0 and "Tree" in label) or (kind == 1 and ("Bush" in label or "Flower" in label)) or (kind == 2 and "Palm" in label) or (kind == 3 and ("Grass" in label or "Bank" in label))
+     if match_kind and distance < nearest_same:
+      nearest_same = distance
+    print("PLANT_POSITION name=%s world=%s screen=%s nearest_card=%s nearest_dist=%.2f same_type_dist=%.2f" % [plant.name,plant.global_position,px,nearest_label,nearest,nearest_same])
    _check(models == 11,"Exactly eleven curated instances must be active")
    print("FOREGROUND_PLANTS_VALIDATED instances=%d midground=image backdrop=image" % models)
  world.queue_free()
