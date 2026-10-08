@@ -44,7 +44,7 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 			var width: float = rng.randf_range(0.68,1.14) * height
 			var spin: float = rng.randf_range(-PI,PI)
 			var tilt: float = rng.randf_range(-0.09,0.09)
-			var basis: Basis = Basis.from_euler(Vector3(tilt,spin,0.0)).scaled(Vector3(width,height,width))
+			var basis: Basis = Basis.from_euler(Vector3(tilt,spin,0.0)) * Basis.from_scale(Vector3(width,height,width))
 			transforms.append(Transform3D(basis,at))
 			var variation: float = rng.randf_range(0.89,1.09)
 			colors.append(Color(variation,variation*0.99,variation*0.91,1.0))
@@ -72,7 +72,7 @@ func apply(world: Node3D, view: Camera3D, player: CharacterBody3D) -> void:
 
 func _build_blade_mesh() -> ArrayMesh:
 	# Each tuft is five crossed, tapered blades. Triangles are real geometry;
-	# base and tips have natural color gradient. 10 triangles/tuft.
+	# base and tips have natural color gradient. 15 triangles/tuft.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for blade: int in range(5):
