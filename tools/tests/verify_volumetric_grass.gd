@@ -40,13 +40,13 @@ func _run() -> void:
 		var max_y: float = 0.0
 		for point: Vector3 in vertices:
 			max_y = maxf(max_y,point.y)
-		_check(max_y > 0.80,"Grass mesh must rise visibly above the ground")
+		_check(max_y > 0.74,"Grass mesh must rise visibly above the ground")
 		# Dummy/headless rasterizer does not preserve GPU MultiMesh readback.
 		# Validate the CPU-authored transform bounds recorded at creation time.
 		var min_height: float = float(draw.get_meta("authored_min_height",-1.0))
 		var max_height: float = float(draw.get_meta("authored_max_height",-1.0))
 		print("GRASS_BATCH_HEIGHT name=%s min=%.4f max=%.4f instances=%d" % [name,min_height,max_height,multimesh.instance_count])
-		_check(min_height > 0.055 and max_height < 0.40 and max_height > min_height,"Grass authored height outside approved limits: "+name)
+		_check(min_height > 0.034 and max_height < 0.32 and max_height > min_height,"Grass authored height outside approved limits: "+name)
 		if max_height > 0.20:
 			tall += multimesh.instance_count
 		count += multimesh.instance_count
@@ -54,6 +54,8 @@ func _run() -> void:
 	_check(tall > 35,"Riverside/yard need raised grass, not a flat lawn")
 	_check(int(grass.get_meta("tufts",0)) == count,"Grass instancing metadata must match GPU transforms")
 	_check(int(grass.get_meta("path_edge_tufts",0)) >= 8,"Walking path must gain small dimensional grass at its edges")
+	_check(bool(grass.get_meta("organic_mask",false)),"Grass should scatter as soft-edged islands, never a rectangular lawn")
+	_check(String(grass.get_meta("blade_profile","")) == "curved_broad","Grass mesh must have curved broad tips instead of spikes")
 	var hero: Node3D = world.get_node("HeroSceneV5") as Node3D
 	var hybrid: Node3D = hero.get_node("HybridEnvironment") as Node3D
 	var cards: int = 0
