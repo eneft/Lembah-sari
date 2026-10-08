@@ -7,6 +7,7 @@ uniform float grain_scale = 20.0;
 uniform float macro_scale = 0.16;
 uniform float macro_strength = 0.24;
 uniform float surface_kind = 0.0;
+uniform float footpath_detail = 0.0;
 
 varying vec3 place;
 
@@ -65,6 +66,14 @@ void fragment(){
 		// Dirt/soil: compressed tracks and slightly darker damp mottling.
 		float compact=noise(p*vec2(0.34,1.65));
 		base*=mix(0.92,1.045,compact);
+		if(footpath_detail>0.5){
+			// Tiny stone specks and soft compressed footprints live INSIDE
+			// the existing path geometry; no duplicated road and no z-fighting.
+			float pressed=noise(p*vec2(0.61,1.4)+vec2(18.0,-7.0));
+			float pebbles=smoothstep(0.83,0.96,noise(p*7.8+vec2(31.0,17.0)));
+			base*=1.0-pressed*0.055;
+			base=mix(base,base*vec3(0.90,0.92,0.87),pebbles*0.21);
+		}
 	}else{
 		float grain=noise(p*vec2(45.0,3.0));
 		base=mix(base,accent_color.rgb,grain*0.12);
