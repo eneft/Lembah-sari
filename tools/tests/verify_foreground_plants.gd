@@ -33,7 +33,7 @@ func _run() -> void:
   else:
    var banana_path: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
    var banana_available: bool = ResourceLoader.exists(banana_path)
-   var expected_models: int = 9+(1 if banana_available else 0)
+   var expected_models: int = 10
    _check(int(plants.get_meta("installed",0)) == expected_models,"Curated plant count must match available GLBs")
    var models := 0
    for child: Node in plants.get_children():
@@ -64,12 +64,13 @@ func _run() -> void:
       nearest_same = distance
     print("PLANT_POSITION name=%s world=%s screen=%s nearest_card=%s nearest_dist=%.2f same_type_dist=%.2f" % [plant.name,plant.global_position,px,nearest_label,nearest,nearest_same])
    _check(models == expected_models,"Only nine curated plants plus optional banana may occupy the foreground")
-   _check(bool(plants.get_meta("banana_active",false)) == banana_available,"Banana must appear only with user-provided model")
-   if banana_available:
-    var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
-    _check(banana != null,"Banana model must have distinct node")
-    if banana != null:
-     _check(absf(float(banana.get_meta("authored_height",0.0))-3.2) < 0.01,"Banana must keep natural house scale")
+   _check(bool(plants.get_meta("banana_active",false)),"A banana tree must always frame the left house")
+   _check(bool(plants.get_meta("banana_source_glb",false)) == banana_available,"Original banana GLB must supersede procedural fallback when present")
+   var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
+   _check(banana != null,"Banana geometry must have distinct node")
+   if banana != null:
+    _check(absf(float(banana.get_meta("authored_height",0.0))-3.2) < 0.01,"Banana must keep natural house scale")
+    _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    var house: Node3D = hero.get_node("PlayerHouseTraditionalV4") as Node3D
    var canopy: Node3D = plants.get_node("Canopy_Left_Hero") as Node3D
