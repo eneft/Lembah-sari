@@ -11,6 +11,7 @@ const SOURCE_HEIGHTS: Array[float] = [4.4, 1.2, 3.6, 0.9]
 # Offsets in hero-local coordinates relative to house; -X is screen-left
 # for the approved 124-degree hero rotation and fixed gameplay camera.
 const BANANA_PATH: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
+const BANANA_FALLBACK: String = "res://scripts/village_banana_fallback.gd"
 # Camera-locked, house-relative coordinates. Keep the front stairs/path clear.
 # One big canopy and banana frame the left; two palms frame right/back.
 const LAYOUT: Array[Dictionary] = [
@@ -91,6 +92,12 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 		var banana_scene: PackedScene = load(BANANA_PATH) as PackedScene
 		if banana_scene != null:
 			banana = banana_scene.instantiate() as Node3D
+	if banana == null:
+		# The real source asset stays authoritative. Show a small polygon
+		# fallback rather than an empty slot until its GLB is uploaded.
+		var banana_script: Script = load(BANANA_FALLBACK) as Script
+		if banana_script != null and banana_script.can_instantiate():
+			banana = banana_script.new().build() as Node3D
 	if banana != null:
 		banana.name = "BananaTree_Left_Indonesian"
 		banana.position = house.position + Vector3(-6.55,0.0,0.65)
@@ -111,6 +118,7 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 			if layer != null:
 				hidden += _hide_near_banana_cards(layer,banana_position,1.6)
 	root.set_meta("banana_active",banana != null)
+	root.set_meta("banana_source_glb",banana != null and not bool(banana.get_meta("fallback_banana",false)))
 	root.set_meta("installed",placed)
 	root.set_meta("hidden_cards",hidden)
 	root.set_meta("expected",LAYOUT.size()+(1 if banana != null else 0))
