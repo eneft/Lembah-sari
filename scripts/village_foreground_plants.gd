@@ -109,16 +109,31 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 			banana = banana_script.new().build() as Node3D
 	if banana != null:
 		banana.name = "BananaTree_Left_Indonesian"
-		banana.position = house.position + Vector3(-5.55,0.0,1.18)
-		# User GLB is normalized to 1 m high. Target ~3.2 m near the house.
+		# Position by the actual fixed-camera red-circle foreground, NOT
+		# an unverified house offset that becomes hidden under the 3D canopy.
+		# Pick a free point on the real ground plane and keep player spawning
+		# and the nearby mature tree trunks clear.
 		banana.scale = Vector3.ONE * 2.92
-		banana.rotation_degrees.y = -8.0
+		banana.rotation_degrees.y = -18.0
 		root.add_child(banana)
+		var camera: Camera3D = player.get_node_or_null("CameraRig/Camera3D") as Camera3D
+		if camera != null:
+			var target: Vector3 = _choose_red_circle_banana_ground(camera,house,player,root)
+			banana.global_position = target
+		else:
+			# Camera-less editor fallback only; the game always has its camera.
+			banana.position = house.position + Vector3(-8.15,0.0,2.10)
 		_harmonize_3d_plant_materials(banana)
 		_attach_root_grounding(banana,4,grounding_material)
 		banana.set_meta("plant_type",4)
 		banana.set_meta("authored_height",2.92)
 		var banana_position: Vector3 = banana.global_position
+		if camera != null:
+			var size: Vector2 = camera.get_viewport().get_visible_rect().size
+			var projected: Vector2 = camera.unproject_position(banana_position)/size
+			banana.set_meta("red_circle_screen_uv",projected)
+			banana.set_meta("player_clearance_m",playerspace.distance_to(Vector2(banana_position.x,banana_position.z)))
+			print("[LembahSari] BANANA_RED_CIRCLE_3D screen_uv=%s clearance=%.2f" % [projected,float(banana.get_meta("player_clearance_m"))])
 		if playerspace.distance_to(Vector2(banana_position.x,banana_position.z)) < 1.28:
 			banana.queue_free()
 			banana = null
@@ -144,7 +159,47 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 	root.set_meta("left_side_recomposed",true)
 	root.set_meta("left_large_canopy_count",3)
 	root.set_meta("left_empty_gap_filled",root.has_node("Tree_LeftFieldFill"))
+	root.set_meta("banana_relocated_left",banana != null)
+	root.set_meta("banana_left_focus_zone",banana != null and camera != null)
 	print("[LembahSari] FOREGROUND_PLANTS_3D_ACTIVE models=%d banana=%s hidden_near_cards=%d background=image" % [placed,banana != null,hidden])
+func _choose_red_circle_banana_ground(camera: Camera3D,house: Node3D,player: CharacterBody3D,plants: Node3D) -> Vector3:
+	# The user-marked circle is roughly x=0.10-0.24, y=0.39-0.70 in
+	# viewport fractions. The coordinates below are *trunk ground anchors*.
+	var site_y: float = house.global_position.y
+	var size: Vector2 = camera.get_viewport().get_visible_rect().size
+	var candidate_uv: Array[Vector2] = [
+		Vector2(0.18,0.57),
+		Vector2(0.21,0.61),
+		Vector2(0.14,0.61),
+		Vector2(0.24,0.58),
+		Vector2(0.17,0.65),
+	]
+	var best: Vector3 = house.global_position
+	var safest_score: float = -INF
+	for screen_uv: Vector2 in candidate_uv:
+		var pixel: Vector2 = screen_uv*size
+		var origin: Vector3 = camera.project_ray_origin(pixel)
+		var direction: Vector3 = camera.project_ray_normal(pixel)
+		if absf(direction.y) < 0.001:
+			continue
+		var world_pos: Vector3 = origin+direction*((site_y-origin.y)/direction.y)
+		var player_gap: float = Vector2(world_pos.x-player.global_position.x,world_pos.z-player.global_position.z).length()
+		var tree_gap: float = INF
+		for name: String in ["Tree_LeftFieldFill","Tree_LeftLarge_A","Tree_LeftLarge_B"]:
+			var trunk: Node3D = plants.get_node_or_null(name) as Node3D
+			if trunk != null:
+				tree_gap = minf(tree_gap,Vector2(world_pos.x-trunk.global_position.x,world_pos.z-trunk.global_position.z).length())
+		if player_gap >= 1.52 and tree_gap >= 1.30:
+			return world_pos
+		var score: float = minf(player_gap-1.52,tree_gap-1.30)
+		if score > safest_score:
+			safest_score = score
+			best = world_pos
+	# Never place an obstructing tree just to fill the screen.
+	# The caller's existing spawn-distance check will reject an unsafe point.
+	push_warning("[LembahSari] No fully clear banana foreground anchor; using best remaining separation.")
+	return best
+
 func _hide_overlapping_cards(layer: Node3D, location: Vector3, kind: int, radius: float) -> int:
 	var removed := 0
 	for child: Node in layer.get_children():
@@ -272,8 +327,8 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 		push_error("[LembahSari] Banana card texture or fixed camera is missing")
 		return 0
 	var layout: Array[Dictionary] = [
-		{"name":"Card_BananaRearLeft","offset":Vector3(-6.55,0.0,-0.05),"height":1.96,"flip":true,"tint":Color(0.89,0.94,0.85,1.0)},
-		{"name":"Card_BananaMidLeft","offset":Vector3(-4.95,0.0,0.88),"height":1.84,"flip":false,"tint":Color(0.86,0.92,0.84,1.0)},
+		{"name":"Card_BananaRearLeft","offset":Vector3(-8.78,0.0,1.30),"height":1.90,"flip":true,"tint":Color(0.89,0.94,0.85,1.0)},
+		{"name":"Card_BananaMidLeft","offset":Vector3(-7.40,0.0,1.95),"height":1.78,"flip":false,"tint":Color(0.86,0.92,0.84,1.0)},
 	]
 	var count: int = 0
 	var viewport_size: Vector2 = fixed_camera.get_viewport().get_visible_rect().size
