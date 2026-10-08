@@ -95,13 +95,15 @@ func _card(base: Vector3,height: float,kind: int,label: String) -> void:
  sprite.flip_h = (code % 2) == 0
 
  var tone := 0.94 + float(code % 6) * 0.015
+ # Cards now receive the same warm morning light as polygon foliage.
+ # Depth fog stays a little quieter, but near leaves are never flat/unlit
+ # overlays. Tune the atlas tint and model material to one green-gold palette.
  if "Mid" in label:
-  # Slight atmospheric falloff merges the transition belt into the backdrop.
-  sprite.modulate = Color(tone*0.91,tone*0.95,tone*0.89,1.0)
+  sprite.modulate = Color(tone*0.87,tone*0.92,tone*0.84,1.0)
  else:
-  sprite.modulate = Color(tone,tone,tone*0.98,1.0)
+  sprite.modulate = Color(tone*0.93,tone*0.94,tone*0.84,1.0)
 
- sprite.shaded = false
+ sprite.shaded = true
  sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
  sprite.alpha_scissor_threshold = 0.35
  sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -175,7 +177,7 @@ func _backdrop(hero: Node3D) -> void:
  sprite.pixel_size = 80.0/size.x
  # Slightly quieter background values keep the playable ground/house in front
  # while retaining the lush valley color from the source image.
- sprite.modulate = Color(0.94,0.97,0.93,1.0)
+ sprite.modulate = Color(0.92,0.96,0.87,1.0)
  sprite.shaded = false
  sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
  hero.add_child(sprite)
