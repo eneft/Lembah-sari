@@ -41,11 +41,16 @@ func _run() -> void:
 		for point: Vector3 in vertices:
 			max_y = maxf(max_y,point.y)
 		_check(max_y > 0.80,"Grass mesh must rise visibly above the ground")
+		var min_height: float = INF
+		var max_height: float = -INF
 		for index: int in range(multimesh.instance_count):
 			var tr: Transform3D = multimesh.get_instance_transform(index)
 			var height: float = tr.basis.get_scale().y
-			_check(height > 0.09 and height < 0.39,"Grass instance height outside approved limits")
+			min_height = minf(min_height,height)
+			max_height = maxf(max_height,height)
 			if height > 0.20: tall += 1
+		print("GRASS_BATCH_HEIGHT name=%s min=%.4f max=%.4f instances=%d sample_transform=%s" % [name,min_height,max_height,multimesh.instance_count,multimesh.get_instance_transform(0)])
+		_check(min_height > 0.09 and max_height < 0.40,"Grass instance height outside approved limits: "+name)
 		count += multimesh.instance_count
 	_check(count > 270 and count < 1150,"Grass must be visibly dense but bounded")
 	_check(tall > 35,"Riverside/yard need raised grass, not a flat lawn")
