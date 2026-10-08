@@ -260,7 +260,7 @@ func _update_character_animation() -> void:
 	if uses_single_walk_source:
 		# Match the cadence to actual distance covered by the CharacterBody.
 		# Do not let the feet move at 1x while the player moves ~40% faster.
-		var world_cycle_distance: float = source_walk_distance * absf(character_model.global_basis.get_scale().z)
+		var world_cycle_distance: float = source_walk_distance * absf(visual.global_basis.get_scale().z)
 		if world_cycle_distance > 0.1 and source_walk_duration > 0.1:
 			character_animation_player.speed_scale = clampf(speed * source_walk_duration / world_cycle_distance, 0.1, 3.8)
 		else:
