@@ -68,7 +68,7 @@ func install(player: AnimationPlayer) -> int:
 			else:
 				motion.scale_track_insert_key(keep_track,0.0,stationary as Vector3)
 				motion.scale_track_insert_key(keep_track,motion.length,stationary as Vector3)
-	if mapped < 55:
+	if mapped < 50:
 		push_error("[LembahSari] Run rig incompatible: matched only %d/65 rotation tracks." % mapped)
 		return 0
 	var library: AnimationLibrary = player.get_animation_library(&"")
