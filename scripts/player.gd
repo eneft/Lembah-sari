@@ -27,6 +27,8 @@ var character_animation_player: AnimationPlayer
 var current_locomotion_animation: StringName = &""
 var uses_single_walk_source: bool = false
 var walk_source_animation: StringName = &""
+var source_walk_distance: float = 0.0
+var source_walk_duration: float = 0.0
 var visual_breath_clock: float = 0.0
 
 # Distance covered by one complete in-place cycle, in the GLB's model units.
@@ -143,6 +145,13 @@ func _ensure_canonical_locomotion_animations() -> void:
 	if source == null:
 		return
 
+	# Imported walk.001 has forward travel baked into mixamorig_Hips:
+	# ~1.366 units over 2.375 seconds, followed by a hard loop reset.
+	# The CharacterBody3D already owns world movement. Preserve the bone poses
+	# and vertical gait bounce, but never apply that travel a second time.
+	source_walk_distance = _source_planar_root_distance(source)
+	source_walk_duration = source.length
+
 	var library: AnimationLibrary = character_animation_player.get_animation_library(&"")
 	if library == null:
 		library = AnimationLibrary.new()
@@ -151,17 +160,56 @@ func _ensure_canonical_locomotion_animations() -> void:
 	if not character_animation_player.has_animation(&"Walk"):
 		var walk_clip: Animation = source.duplicate(true) as Animation
 		walk_clip.loop_mode = Animation.LOOP_LINEAR
+		_pin_root_to_origin(walk_clip)
 		library.add_animation(&"Walk", walk_clip)
 	if not character_animation_player.has_animation(&"Run"):
 		var run_clip: Animation = source.duplicate(true) as Animation
 		run_clip.loop_mode = Animation.LOOP_LINEAR
+		_pin_root_to_origin(run_clip)
 		library.add_animation(&"Run", run_clip)
 	if not character_animation_player.has_animation(&"Idle"):
 		library.add_animation(&"Idle", _build_idle_snapshot(source))
 
 	uses_single_walk_source = true
 	walk_source_animation = source_name
-	print("[LembahSari] STYLIZED_BOY_RUNTIME_READY source=%s canonical=Idle/Walk/Run" % source_name)
+	print("[LembahSari] STYLIZED_BOY_IN_PLACE source=%s travel=%.4f duration=%.3f clips=Walk/Run" % [source_name, source_walk_distance, source_walk_duration])
+
+# Keep the pose/leg rotation tracks untouched; only remove planar root travel.
+# This prevents a forward-walking GLB from snapping the visible mesh backwards
+# at the loop boundary while the CharacterBody keeps moving forwards.
+func _pin_root_to_origin(clip: Animation) -> void:
+	for track: int in range(clip.get_track_count()):
+		if clip.track_get_type(track) != Animation.TYPE_POSITION_3D:
+			continue
+		var path: String = String(clip.track_get_path(track)).to_lower()
+		if not ("hips" in path or "pelvis" in path or "root" in path):
+			continue
+		var keys: int = clip.track_get_key_count(track)
+		if keys < 1:
+			continue
+		var origin: Vector3 = clip.track_get_key_value(track, 0)
+		for key: int in range(keys):
+			var position: Vector3 = clip.track_get_key_value(track, key)
+			position.x = origin.x
+			position.z = origin.z
+			clip.track_set_key_value(track, key, position)
+
+# Original GLB root translation gives approximate gait travel per loop.
+# Use it only as a cadence reference; it is not applied to the actual model.
+func _source_planar_root_distance(clip: Animation) -> float:
+	for track: int in range(clip.get_track_count()):
+		if clip.track_get_type(track) != Animation.TYPE_POSITION_3D:
+			continue
+		var path: String = String(clip.track_get_path(track)).to_lower()
+		if not ("hips" in path or "pelvis" in path or "root" in path):
+			continue
+		var keys: int = clip.track_get_key_count(track)
+		if keys < 2:
+			continue
+		var start: Vector3 = clip.track_get_key_value(track, 0)
+		var finish: Vector3 = clip.track_get_key_value(track, keys - 1)
+		return Vector2(finish.x - start.x, finish.z - start.z).length()
+	return 0.0
 
 func _find_walk_source_animation() -> StringName:
 	for candidate: StringName in character_animation_player.get_animation_list():
@@ -210,9 +258,14 @@ func _update_character_animation() -> void:
 	var animation_name: StringName = &"Run" if running else &"Walk"
 	_play_locomotion_animation(animation_name)
 	if uses_single_walk_source:
-		var reference_speed: float = run_speed if running else walk_speed
-		var base_rate: float = 1.65 if running else 1.0
-		character_animation_player.speed_scale = clampf((speed / maxf(reference_speed, 0.001)) * base_rate, 0.1, 2.2)
+		# Match the cadence to actual distance covered by the CharacterBody.
+		# Do not let the feet move at 1x while the player moves ~40% faster.
+		var world_cycle_distance: float = source_walk_distance * absf(character_model.global_basis.get_scale().z)
+		if world_cycle_distance > 0.1 and source_walk_duration > 0.1:
+			character_animation_player.speed_scale = clampf(speed * source_walk_duration / world_cycle_distance, 0.1, 3.8)
+		else:
+			var reference_speed: float = run_speed if running else walk_speed
+			character_animation_player.speed_scale = clampf(speed / maxf(reference_speed, 0.001), 0.1, 2.2)
 		return
 	var cycle_distance: float = RUN_CYCLE_DISTANCE if running else WALK_CYCLE_DISTANCE
 	var model_scale: float = absf(visual.global_basis.get_scale().y)
