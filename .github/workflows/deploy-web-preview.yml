@@ -112,6 +112,9 @@ jobs:
       - name: Verify raised grass and image color integration
         run: timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_volumetric_grass.gd
 
+      - name: Verify rooted sprites, stones and banana slot
+        run: timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_grounded_landscape.gd
+
       - name: Export Web build
         shell: bash
         run: |
@@ -136,7 +139,12 @@ jobs:
           set -euo pipefail
           PACK_BYTES="$(stat -c%s build/web/index.pck)"
           echo "Preview game data: ${PACK_BYTES} bytes (budget: 20.5 MiB, four curated foreground GLBs)"
-          test "${PACK_BYTES}" -lt 21495808
+          if [[ -f assets/models/foreground/05_Pohon_Pisang_Optimized.glb ]]; then
+            echo "Banana asset installed: allow up to 27 MiB for the source model"
+            test "${PACK_BYTES}" -lt 28311552
+          else
+            test "${PACK_BYTES}" -lt 21495808
+          fi
           test -s build/web/index.service.worker.js
           bash tools/tests/verify_exported_pack.sh build/web/index.pck
 
