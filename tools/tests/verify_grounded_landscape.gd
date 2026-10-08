@@ -50,9 +50,23 @@ func _run() -> void:
 		if root_shadow != null:
 			rooted_models += 1
 			_check(root_shadow.material_override is StandardMaterial3D,"Root shadow must use a feathered transparent material")
+			_check(absf(root_shadow.scale.x*model.scale.x-1.0) < 0.05,"Root shadow must be normalized against scaled GLB: "+String(model.name))
+			_check(absf(root_shadow.global_position.y+0.027) < 0.10,"Root shadow should meet the actual soil plane: "+String(model.name))
+		if kind == 2 or kind == 4:
+			var soil: MeshInstance3D = model.get_node_or_null("RootSoilMound") as MeshInstance3D
+			_check(soil != null and soil.visible,"Banana and palms should have gently buried soil collars")
 		if kind == 0 or kind == 2 or kind == 4:
 			_check(model.get_node_or_null("RootTrunkCollider") is StaticBody3D,"Rooted tree trunk must block passing straight through its base")
 	_check(rooted_models >= 6,"At least six major polygon plants must be grounded")
+	var right_palm: Node3D = plants.get_node_or_null("Palm_Right_Back") as Node3D
+	_check(right_palm != null,"Main right-hand framing palm must remain present")
+	if right_palm != null:
+		for name: String in ["PalmUnderstoryGrass_A","PalmUnderstoryGrass_B","PalmUnderstoryBush"]:
+			var cover: Node3D = right_palm.get_node_or_null(name) as Node3D
+			_check(cover != null and cover.visible,"Right palm understory must hide bare roots: "+name)
+			if cover != null:
+				_check(bool(cover.get_meta("ornamental_ground_cover",false)),"Palms must only have ornamental low understory")
+				_check(cover.find_children("*","CollisionShape3D",true,false).is_empty(),"Palm ground cover must not obstruct farming gameplay")
 	var banana_active: bool = bool(plants.get_meta("banana_active",false))
 	if banana_active:
 		_check(plants.get_node_or_null("BananaTree_Left_Indonesian") != null,"Source banana asset must load")
