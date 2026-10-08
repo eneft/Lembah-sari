@@ -20,6 +20,19 @@ func _run() -> void:
 		quit(1)
 		return
 	var skeleton: Skeleton3D = skeletons[0] as Skeleton3D
+	# Uploaded donor contributes only motion; the existing player mesh/texture
+	# and clean walk.001 remain the game's character identity.
+	_check(bool(player.get("run_from_uploaded_source")),"Run must use extracted donor run.001 motion, not duplicated Walk")
+	_check(int(player.get("run_source_bones")) >= 55,"Run retarget must animate most matching source bones")
+	var actual_run: Animation = animator.get_animation(&"Run")
+	_check(actual_run != null and absf(actual_run.length-1.25)<0.015,"Run animation must keep original ~1.25 second cycle")
+	_check(actual_run.resource_name == "Run_Extracted_Only","Run resource must be the transferred clip, not original Walk")
+	var transferred_rotation_tracks: int = 0
+	for idx: int in range(actual_run.get_track_count()):
+		if actual_run.track_get_type(idx) == Animation.TYPE_ROTATION_3D and actual_run.track_get_key_count(idx) >= 14:
+			transferred_rotation_tracks += 1
+	_check(transferred_rotation_tracks >= 55,"Run must contain actual sampled quaternion animation, not procedural fake movement")
+	print("RUN_EXTRACTED_SOURCE_VALIDATED bones=%d transferred_rotations=%d donor_mesh_used=false duration=%.3f" % [int(player.get("run_source_bones")),transferred_rotation_tracks,actual_run.length])
 	# Diagnose any authored translation that moves the mesh forward and snaps it back.
 	var source_animation: Animation = animator.get_animation(player.get("walk_source_animation"))
 	if source_animation != null:
@@ -146,6 +159,7 @@ func _run() -> void:
 		_check(walk_direction.dot(screen_right.normalized()) > .98, "Right input must move toward screen right with the rotated camera.")
 	_check(animator.current_animation == &"Walk" and walked > 0.4, "Walking input must move the player and play Walk.")
 	var walking_rate: float = animator.speed_scale
+	_check(animator.get_animation(&"Walk").resource_name != "Run_Extracted_Only","Walk must be preserved from the game's existing source")
 	Input.action_release(&"move_right")
 	# This project's 0.3 dead zone maps raw strength 0.65 to half output.
 	Input.action_press(&"move_right", 0.65)
