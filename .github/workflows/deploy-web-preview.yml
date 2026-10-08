@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y unzip
+          sudo apt-get install -y unzip xvfb libgl1-mesa-dri libglx-mesa0 libxrandr2 libxi6 libxcursor1 libxinerama1 libxkbcommon0 libasound2t64
 
           curl -fL --retry 3 -o /tmp/godot.zip \
             https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
@@ -87,6 +87,27 @@ jobs:
           test -s assets/models/hero_scene_v5.glb
           test -s assets/models/player_house_traditional_v4.glb
           godot --headless --path . --editor --quit-after 90
+
+      - name: Render character-only visual proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f character_scale_review.png
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/CharacterScaleReview.tscn
+          test -s character_scale_review.png
+          echo 'Character-only visual proof passed.'
+
+      - name: Verify character visibility in real gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f playable_character_review.png playable_character_mask.png
+          xvfb-run -a -s '-screen 0 1280x720x24' \
+            godot --path . --resolution 1280x720 --rendering-method gl_compatibility res://scenes/PlayableCharacterReview.tscn
+          test -s playable_character_review.png
+          test -s playable_character_mask.png
+          echo 'Playable character pixel-mask gate passed.'
 
       - name: Smoke test traditional player house
         shell: bash
@@ -147,6 +168,17 @@ jobs:
           fi
           test -s build/web/index.service.worker.js
           bash tools/tests/verify_exported_pack.sh build/web/index.pck
+
+      - name: Upload character visual proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-visual-proof
+          path: |
+            character_scale_review.png
+            playable_character_review.png
+            playable_character_mask.png
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload downloadable Web build
         uses: actions/upload-artifact@v4
