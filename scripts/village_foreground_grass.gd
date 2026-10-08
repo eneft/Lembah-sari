@@ -101,6 +101,8 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 	root.set_meta("image_background_preserved",true)
 	root.set_meta("organic_distribution",true)
 	root.set_meta("curved_blades",true)
+	root.set_meta("organic_mask",true)
+	root.set_meta("blade_profile","curved_broad")
 	print("[LembahSari] ORGANIC_GRASS_ACTIVE tufts=%d batches=%d path_edges=%d far=image" % [count,root.get_child_count(),short_path_edges])
 
 func _organic_coverage(uv: Vector2,rect: Rect2,noise: FastNoiseLite,region: String) -> float:
