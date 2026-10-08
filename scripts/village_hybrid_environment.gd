@@ -31,8 +31,8 @@ func apply(hero: Node3D, view: Camera3D) -> void:
   regions.append(tex)
  mats["ground"] = _material("35452f","8b9460","65724a",24,0,0.15,0.26)
  mats["ground_deep"] = _material("263d25","667a46","3b5c31",26,0,0.19,0.30)
- mats["ground_warm"] = _material("56613f","9c9a61","7c7148",24,0,0.14,0.27)
- mats["path"] = _material("765b40","c3ab7b","92734e",30,1,0.21,0.20)
+ mats["ground_warm"] = _material("465637","85945d","70794b",24,0,0.18,0.25)
+ mats["path"] = _material("695840","b7a078","887454",19,1,0.27,0.23)
  mats["soil"] = _material("493421","887049","5d4930",30,1,0.18,0.22)
  mats["paddy_bund"] = _material("4f412b","88724b","667044",31,1,0.20,0.24)
  mats["bank_wet"] = _material("26372f","59634b","35483c",34,1,0.22,0.28)
@@ -78,37 +78,47 @@ func apply(hero: Node3D, view: Camera3D) -> void:
  print("[LembahSari] HYBRID_25D_ACTIVE cards=%d midground=%d background=image camera=fixed" % [count_cards,count_midground])
 
 func _trim_repeated_foreground() -> int:
- # Only reduce near-field cloned flower bushes and dense right-side palms.
- # Preserve rice, irrigation, yard decorative accents and every "Mid" card.
+ # Screenshot correction: remove repeated cut-out shrubs from the open lawn.
+ # Keep the farming crop, river reeds, house yard, and every distant card.
  var removed: int = 0
  var viewport: Vector2 = camera.get_viewport().get_visible_rect().size
  var left_bush_count: int = 0
+ var meadow_bush_count: int = 0
  var right_palm_count: int = 0
- for child: Node in layer.get_children():
-  if not child is Sprite3D:
+ for node: Node in layer.get_children():
+  if not node is Sprite3D:
    continue
-  var sprite: Sprite3D = child as Sprite3D
+  var sprite: Sprite3D = node as Sprite3D
   if not sprite.visible:
    continue
   var label: String = String(sprite.name)
-  if "Mid" in label or "Yard" in label or "Rice" in label or "Bank" in label:
+  if "Mid" in label or "Yard" in label or "Rice" in label or "Bank" in label or "GardenPlant" in label:
    continue
   var p: Vector2 = camera.unproject_position(sprite.global_position)/viewport
   var remove_it: bool = false
-  if (("Bush" in label or "Flower" in label) and p.x < 0.50 and p.y > 0.48 and p.y < 0.80):
+  var shrub: bool = ("Bush" in label or "Flower" in label)
+  if shrub and p.y >= 0.605 and p.y < 0.805 and p.x >= 0.19 and p.x < 0.92:
+   meadow_bush_count += 1
+   # An occasional image shrub between polygon clusters is intentional;
+   # a line of identical floating shrubs is not.
+   remove_it = meadow_bush_count % 4 != 1
+  elif shrub and p.x < 0.51 and p.y >= 0.46 and p.y < 0.605:
    left_bush_count += 1
-   remove_it = left_bush_count % 3 != 1 and removed < 15
-  elif "Palm" in label and p.x > 0.76 and p.y < 0.63:
+   remove_it = left_bush_count % 3 != 1
+  elif "Palm" in label and p.x > 0.76 and p.y < 0.64:
    right_palm_count += 1
-   remove_it = right_palm_count > 2
+   remove_it = right_palm_count > 1
+  elif "Grass" in label and p.y >= 0.635 and p.y < 0.79 and p.x >= 0.20 and p.x < 0.92:
+   # The real polygon grass now owns this near-field visual layer.
+   remove_it = true
   if remove_it:
    sprite.hide()
-   var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
-   if contact != null:
-    contact.hide()
-   var legacy_trunk: StaticBody3D = layer.get_node_or_null("TrunkCollider_"+label.trim_prefix("Card_")) as StaticBody3D
-   if legacy_trunk != null:
-    legacy_trunk.queue_free()
+   var shadow: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
+   if shadow != null:
+    shadow.hide()
+   var legacy: StaticBody3D = layer.get_node_or_null("TrunkCollider_"+label.trim_prefix("Card_")) as StaticBody3D
+   if legacy != null:
+    legacy.queue_free()
    removed += 1
  return removed
 
