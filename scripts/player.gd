@@ -133,7 +133,7 @@ func _setup_character_animations() -> void:
 	var transfer_script: Script = load(RUN_RETARGET) as Script
 	if transfer_script != null and transfer_script.can_instantiate():
 		run_source_bones = int(transfer_script.new().install(character_animation_player))
-		run_from_uploaded_source = run_source_bones >= 55
+		run_from_uploaded_source = run_source_bones >= 50
 	else:
 		push_error("[LembahSari] Extracted Run retarget module is missing")
 	for animation_name: StringName in [&"Idle", &"Walk", &"Run"]:
