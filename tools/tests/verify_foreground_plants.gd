@@ -69,9 +69,28 @@ func _run() -> void:
    var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
    _check(banana != null,"Banana geometry must have distinct node")
    if banana != null:
-    _check(absf(float(banana.get_meta("authored_height",0.0))-3.2) < 0.01,"Banana must keep natural house scale")
+    _check(absf(float(banana.get_meta("authored_height",0.0))-3.25) < 0.01,"Banana must keep natural house scale")
     _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
+   _check(int(layer.get_meta("banana_cards",0)) == 2,"Two banana image companions must join the existing real banana tree")
+   for name: String in ["Card_BananaRearLeft","Card_BananaMidLeft"]:
+    var card: Sprite3D = layer.get_node_or_null(name) as Sprite3D
+    _check(card != null and card.visible,"Missing lit banana image card: "+name)
+    if card != null:
+     _check(card.shaded and card.alpha_cut == SpriteBase3D.ALPHA_CUT_DISCARD,"Banana image must match real polygon lighting and depth: "+name)
+     _check(card.texture != null and card.texture.get_height() >= 500,"Banana must have a botanical cutout, not a generic palm texture")
+     _check(card.get_meta("source_texture","") == "res://assets/textures/hybrid/banana_tree_card.svg","Banana cutouts must share the authored transparent image")
+     var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+name) as MeshInstance3D
+     _check(contact != null and contact.visible,"Banana image roots require ground-contact shadow")
+   var banana_camera: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
+   var a_card: Sprite3D = layer.get_node("Card_BananaRearLeft") as Sprite3D
+   var b_card: Sprite3D = layer.get_node("Card_BananaMidLeft") as Sprite3D
+   if a_card != null and b_card != null:
+    var a_screen: Vector2 = banana_camera.unproject_position(a_card.global_position)
+    var b_screen: Vector2 = banana_camera.unproject_position(b_card.global_position)
+    print("BANANA_IMAGE_COMPOSITION screen_rear=%s screen_mid=%s" % [a_screen,b_screen])
+    _check(a_screen.distance_to(b_screen) >= 55.0,"Banana image silhouettes should be staggered, not visually stacked")
+
    var house: Node3D = hero.get_node("PlayerHouseTraditionalV4") as Node3D
    var canopy: Node3D = plants.get_node("Canopy_Left_Hero") as Node3D
    var right_palm: Node3D = plants.get_node("Palm_Right_Back") as Node3D
