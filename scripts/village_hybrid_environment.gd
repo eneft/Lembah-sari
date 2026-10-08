@@ -71,9 +71,43 @@ func apply(hero: Node3D, view: Camera3D) -> void:
    m.hide()
   else: _surface(m)
  _backdrop(hero)
+ var thinned: int = _trim_repeated_foreground()
+ layer.set_meta("thinned_front_cards",thinned)
  layer.set_meta("cards",count_cards)
  layer.set_meta("midground_cards",count_midground)
  print("[LembahSari] HYBRID_25D_ACTIVE cards=%d midground=%d background=image camera=fixed" % [count_cards,count_midground])
+
+func _trim_repeated_foreground() -> int:
+ # Only reduce near-field cloned flower bushes and dense right-side palms.
+ # Preserve rice, irrigation, yard decorative accents and every "Mid" card.
+ var removed: int = 0
+ var viewport: Vector2 = camera.get_viewport().get_visible_rect().size
+ var left_bush_count: int = 0
+ var right_palm_count: int = 0
+ for child: Node in layer.get_children():
+  if not child is Sprite3D:
+   continue
+  var sprite: Sprite3D = child as Sprite3D
+  if not sprite.visible:
+   continue
+  var label: String = String(sprite.name)
+  if "Mid" in label or "Yard" in label or "Rice" in label or "Bank" in label:
+   continue
+  var p: Vector2 = camera.unproject_position(sprite.global_position)/viewport
+  var remove_it: bool = false
+  if (("Bush" in label or "Flower" in label) and p.x < 0.50 and p.y > 0.48 and p.y < 0.80):
+   left_bush_count += 1
+   remove_it = left_bush_count % 3 != 1 and removed < 15
+  elif "Palm" in label and p.x > 0.76 and p.y < 0.63:
+   right_palm_count += 1
+   remove_it = right_palm_count > 2
+  if remove_it:
+   sprite.hide()
+   var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
+   if contact != null:
+    contact.hide()
+   removed += 1
+ return removed
 
 func _house(node: Node,hero: Node) -> bool:
  var p: Node = node
