@@ -71,6 +71,21 @@ func _run() -> void:
    if banana != null:
     _check(absf(float(banana.get_meta("authored_height",0.0))-2.92) < 0.01,"Banana must keep natural house scale")
     _check((banana.find_children("*","MeshInstance3D",true,false) as Array).size() >= 2,"Banana needs trunk, leaves and ground-shadow polygon geometry")
+    _check(bool(plants.get_meta("banana_relocated_left",false)),"Original 3D banana must be moved out from behind the mature tree crowns")
+    _check(bool(plants.get_meta("banana_left_focus_zone",false)),"Banana must be placed by fixed-camera foreground selection")
+    var banana_cam: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
+    var red_uv: Vector2 = banana_cam.unproject_position(banana.global_position)/banana_cam.get_viewport().get_visible_rect().size
+    var clear_m: float = float(banana.get_meta("player_clearance_m",0.0))
+    print("BANANA_RED_CIRCLE_AUDIT position=%s normalized_screen=%s player_clearance=%.2f" % [banana.global_position,red_uv,clear_m])
+    _check(red_uv.x > 0.10 and red_uv.x < 0.26 and red_uv.y > 0.49 and red_uv.y < 0.69,"3D banana trunk must land inside the red-marked left foreground")
+    _check(clear_m >= 1.45,"3D banana must not obstruct character spawn")
+    var mature_gap: float = INF
+    for n: String in ["Tree_LeftFieldFill","Tree_LeftLarge_A","Tree_LeftLarge_B"]:
+     var mature_tree: Node3D = plants.get_node_or_null(n) as Node3D
+     if mature_tree != null:
+      mature_gap = minf(mature_gap,Vector2(mature_tree.global_position.x-banana.global_position.x,mature_tree.global_position.z-banana.global_position.z).length())
+    _check(mature_gap >= 1.30,"Relocated banana trunk cannot overlap mature tree trunks")
+
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    _check(int(layer.get_meta("banana_cards",0)) == 2,"Two banana image companions must join the existing real banana tree")
    var primary_png: String = "res://assets/textures/hybrid/banana_tree_card.png"
