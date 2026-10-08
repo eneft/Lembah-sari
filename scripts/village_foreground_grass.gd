@@ -7,10 +7,10 @@ const GRASS_SEED: int = 20261008
 const TERRAIN_MIN: Vector2 = Vector2(-8.1,-3.85)
 const TERRAIN_MAX: Vector2 = Vector2(9.1,9.65)
 const REGIONS: Array[Dictionary] = [
-	{"name":"LawnGrass3D","amount":1210,"rect":Rect2(0.065,0.638,0.87,0.149),"min_h":0.075,"max_h":0.165},
-	{"name":"LeftGardenGrass3D","amount":570,"rect":Rect2(0.078,0.49,0.39,0.21),"min_h":0.082,"max_h":0.165},
-	{"name":"RightGardenGrass3D","amount":1450,"rect":Rect2(0.66,0.51,0.30,0.20),"min_h":0.070,"max_h":0.148},
-	{"name":"RiverBankGrass3D","amount":590,"rect":Rect2(0.09,0.741,0.81,0.062),"min_h":0.13,"max_h":0.245},
+	{"name":"LawnGrass3D","amount":970,"rect":Rect2(0.075,0.645,0.84,0.132),"min_h":0.055,"max_h":0.118},
+	{"name":"LeftGardenGrass3D","amount":390,"rect":Rect2(0.075,0.49,0.37,0.20),"min_h":0.065,"max_h":0.128},
+	{"name":"RightGardenGrass3D","amount":1030,"rect":Rect2(0.66,0.52,0.29,0.17),"min_h":0.059,"max_h":0.122},
+	{"name":"RiverBankGrass3D","amount":420,"rect":Rect2(0.10,0.746,0.80,0.055),"min_h":0.088,"max_h":0.171},
 ]
 
 func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
@@ -35,11 +35,11 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 		var records: Array[Transform3D] = []
 		var colors: Array[Color] = []
 		for attempt: int in range(int(region["amount"])):
-			var along_path: bool = String(region["name"]) == "LawnGrass3D" and attempt >= 1110
+			var along_path: bool = String(region["name"]) == "LawnGrass3D" and attempt >= int(region["amount"])-100
 			var uv: Vector2
 			if along_path:
 				# Low, broken grass on *either edge*, not the walking surface.
-				var t: float = (float(attempt-1110)+rng.randf())/100.0
+				var t: float = (float(attempt-(int(region["amount"])-100))+rng.randf())/100.0
 				var curve_t: float = 0.06+t*0.84
 				var tangent: Vector2 = (_path_screen(minf(1.0,curve_t+0.006))-_path_screen(maxf(0.0,curve_t-0.006))).normalized()
 				var normal := Vector2(-tangent.y,tangent.x)
@@ -58,18 +58,18 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 				continue
 			var height: float = rng.randf_range(float(region["min_h"]),float(region["max_h"]))
 			if along_path:
-				height = rng.randf_range(0.068,0.103)
+				height = rng.randf_range(0.045,0.079)
 				short_path_edges += 1
 			# Real curved leaflets are wider than the old needle-shaped spikes.
 			# Sideways lean has more variety than just vertical height variation.
-			var width: float = height*rng.randf_range(1.05,1.50)
+			var width: float = height*rng.randf_range(0.88,1.20)
 			var angle: float = rng.randf_range(-PI,PI)
 			var lean: float = rng.randf_range(-0.18,0.18)
 			var basis := Basis.from_euler(Vector3(lean,angle,rng.randf_range(-0.09,0.09)))
 			basis = basis*Basis.from_scale(Vector3(width,height,width))
 			records.append(Transform3D(basis,position))
-			var tint: float = rng.randf_range(0.90,1.04)
-			colors.append(Color(tint*0.91,tint,tint*0.78,1.0))
+			var tint: float = rng.randf_range(0.85,1.01)
+			colors.append(Color(tint*0.86,tint*0.93,tint*0.73,1.0))
 		if records.is_empty():
 			push_warning("[LembahSari] Organic grass is missing region: "+String(region["name"]))
 			continue
@@ -105,34 +105,42 @@ func apply(world: Node3D,view: Camera3D,player: CharacterBody3D) -> void:
 	root.set_meta("path_curve_enabled",true)
 	root.set_meta("riverbank_irregular",true)
 	root.set_meta("foreground_cluster_mask",true)
+	root.set_meta("front_island_distribution",true)
+	root.set_meta("muted_grass_palette",true)
+	root.set_meta("river_edge_thinned",true)
 	print("[LembahSari] ORGANIC_GRASS_ACTIVE tufts=%d batches=%d path_edges=%d far=image" % [count,root.get_child_count(),short_path_edges])
 
 func _organic_coverage(uv: Vector2,rect: Rect2,noise: FastNoiseLite,region: String) -> float:
 	var normalized := (uv-rect.position)/rect.size
 	# Feather all four rectangle edges; no straight wall of spiky vegetation.
 	var edge: float = minf(minf(normalized.x,1.0-normalized.x),minf(normalized.y,1.0-normalized.y))
-	var softness: float = smoothstep(0.0,0.17,edge)
+	var softness: float = smoothstep(0.0,0.16,edge)
 	var patch: float = noise.get_noise_2d(uv.x*310.0,uv.y*310.0)
 	var secondary: float = noise.get_noise_2d(uv.x*540.0+103.0,uv.y*400.0-41.0)
 	var clouds: float = clampf(0.57+patch*0.56+secondary*0.19,0.0,1.0)
 	if region == "RiverBankGrass3D":
-		# Follow a meandering irregular waterline instead of a straight band.
-		var side_fade: float = smoothstep(0.0,0.11,normalized.x)*smoothstep(0.0,0.12,1.0-normalized.x)
-		var shore_y: float = 0.768+sin(uv.x*18.0)*0.009+noise.get_noise_2d(uv.x*720.0,113.0)*0.012
-		var shore_distance: float = absf(uv.y-shore_y)
-		var shore_envelope: float = 1.0-smoothstep(0.014,0.034,shore_distance)
-		return shore_envelope*side_fade*(0.23+clouds*0.61)
+		# Patchy ribbon, not a solid lawn strip along the river.
+		var shore_y: float = 0.772+sin(uv.x*16.0)*0.007+noise.get_noise_2d(uv.x*640.0,91.0)*0.009
+		var distance: float = absf(uv.y-shore_y)
+		var ribbon: float = 1.0-smoothstep(0.008,0.027,distance)
+		var fade: float = smoothstep(0.0,0.10,normalized.x)*smoothstep(0.0,0.10,1.0-normalized.x)
+		return ribbon*fade*(0.18+clouds*0.49)
 	if region == "LeftGardenGrass3D":
-		# Three intersecting irregular ground-cover islands under the banana
-		# and main canopy. No square grass carpet against the camera edge.
-		var a: float = _ellipse_island(uv,Vector2(0.20,0.58),Vector2(0.145,0.087))
-		var b: float = _ellipse_island(uv,Vector2(0.365,0.625),Vector2(0.10,0.062))
-		var c: float = _ellipse_island(uv,Vector2(0.12,0.656),Vector2(0.065,0.055))
-		return maxf(a,maxf(b,c))*(0.24+clouds*0.68)
+		var a: float = _ellipse_island(uv,Vector2(0.18,0.58),Vector2(0.11,0.074))
+		var b: float = _ellipse_island(uv,Vector2(0.32,0.625),Vector2(0.09,0.051))
+		var c: float = _ellipse_island(uv,Vector2(0.105,0.66),Vector2(0.055,0.041))
+		return softness*maxf(a,maxf(b,c))*(0.18+clouds*0.49)
+	if region == "RightGardenGrass3D":
+		var a: float = _ellipse_island(uv,Vector2(0.735,0.615),Vector2(0.104,0.054))
+		var b: float = _ellipse_island(uv,Vector2(0.845,0.58),Vector2(0.078,0.047))
+		return softness*maxf(a,b)*(0.20+clouds*0.52)
 	if region == "LawnGrass3D":
-		var dry_opening: float = smoothstep(0.22,0.70,noise.get_noise_2d(uv.x*135.0+36.0,uv.y*260.0))
-		return softness*(0.22+clouds*0.48)*(1.0-0.33*dry_opening)
-	return softness*(0.20+clouds*0.52)
+		var a: float = _ellipse_island(uv,Vector2(0.23,0.72),Vector2(0.145,0.058))
+		var b: float = _ellipse_island(uv,Vector2(0.50,0.744),Vector2(0.13,0.05))
+		var c: float = _ellipse_island(uv,Vector2(0.77,0.734),Vector2(0.145,0.052))
+		var d: float = _ellipse_island(uv,Vector2(0.13,0.656),Vector2(0.066,0.044))
+		return softness*maxf(maxf(a,b),maxf(c,d))*(0.21+clouds*0.58)
+	return softness*(0.15+clouds*0.37)
 
 func _ellipse_island(uv: Vector2,center: Vector2,radii: Vector2) -> float:
 	var distance: float = ((uv-center)/radii).length()
@@ -191,7 +199,7 @@ func _triangle(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,va: float,vb: fl
 		{"p":c,"t":vc},
 	]:
 		var t: float = float(entry["t"])
-		st.set_color(Color("4d6934").lerp(Color("96ae55"),clampf(t,0.0,1.0)))
+		st.set_color(Color("526d41").lerp(Color("8fa461"),clampf(t,0.0,1.0)))
 		st.set_uv(Vector2(0.5,t))
 		st.add_vertex(entry["p"])
 
@@ -200,7 +208,7 @@ func _grass_material() -> StandardMaterial3D:
 	mat.resource_name = "SoftWarmCurvedMeadowGrass"
 	mat.vertex_color_use_as_albedo = true
 	mat.albedo_color = Color.WHITE
-	mat.roughness = 0.98
+	mat.roughness = 1.0
 	mat.metallic = 0.0
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat
