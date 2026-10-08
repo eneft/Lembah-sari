@@ -106,6 +106,9 @@ func _trim_repeated_foreground() -> int:
    var contact: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
    if contact != null:
     contact.hide()
+   var legacy_trunk: StaticBody3D = layer.get_node_or_null("TrunkCollider_"+label.trim_prefix("Card_")) as StaticBody3D
+   if legacy_trunk != null:
+    legacy_trunk.queue_free()
    removed += 1
  return removed
 
