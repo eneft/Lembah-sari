@@ -9,7 +9,7 @@ const TERRAIN_MAX: Vector2 = Vector2(9.1,9.65)
 const REGIONS: Array[Dictionary] = [
 	{"name":"LawnGrass3D","amount":1210,"rect":Rect2(0.065,0.638,0.87,0.149),"min_h":0.075,"max_h":0.165},
 	{"name":"LeftGardenGrass3D","amount":570,"rect":Rect2(0.078,0.49,0.39,0.21),"min_h":0.082,"max_h":0.165},
-	{"name":"RightGardenGrass3D","amount":510,"rect":Rect2(0.66,0.51,0.30,0.20),"min_h":0.070,"max_h":0.148},
+	{"name":"RightGardenGrass3D","amount":1450,"rect":Rect2(0.66,0.51,0.30,0.20),"min_h":0.070,"max_h":0.148},
 	{"name":"RiverBankGrass3D","amount":590,"rect":Rect2(0.09,0.741,0.81,0.062),"min_h":0.13,"max_h":0.245},
 ]
 
