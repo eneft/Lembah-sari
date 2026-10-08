@@ -20,6 +20,31 @@ func _run() -> void:
 		quit(1)
 		return
 	var skeleton: Skeleton3D = skeletons[0] as Skeleton3D
+	# Diagnose any authored translation that moves the mesh forward and snaps it back.
+	var source_animation: Animation = animator.get_animation(player.get("walk_source_animation"))
+	if source_animation != null:
+		print("SOURCE_WALK_DIAGNOSTIC length=%.4f tracks=%d" % [source_animation.length, source_animation.get_track_count()])
+		for track: int in range(source_animation.get_track_count()):
+			if source_animation.track_get_type(track) != Animation.TYPE_POSITION_3D:
+				continue
+			var key_count: int = source_animation.track_get_key_count(track)
+			if key_count < 1:
+				continue
+			var first_position: Vector3 = source_animation.track_get_key_value(track, 0)
+			var last_position: Vector3 = source_animation.track_get_key_value(track, key_count - 1)
+			var furthest: float = 0.0
+			var min_x: float = first_position.x
+			var max_x: float = first_position.x
+			var min_z: float = first_position.z
+			var max_z: float = first_position.z
+			for key: int in range(key_count):
+				var pos: Vector3 = source_animation.track_get_key_value(track, key)
+				furthest = maxf(furthest, Vector2(pos.x - first_position.x, pos.z - first_position.z).length())
+				min_x = minf(min_x, pos.x)
+				max_x = maxf(max_x, pos.x)
+				min_z = minf(min_z, pos.z)
+				max_z = maxf(max_z, pos.z)
+			print("SOURCE_WALK_POSITION path=%s keys=%d first=%s last=%s planar_drift=%.5f planar_range=(%.4f,%.4f) max_displacement=%.5f" % [source_animation.track_get_path(track), key_count, first_position, last_position, Vector2(last_position.x - first_position.x, last_position.z - first_position.z).length(), max_x-min_x, max_z-min_z, furthest])
 	_check(skeleton.get_bone_count() >= 20, "Stylized boy rig must keep a usable humanoid skeleton.")
 	_check(String(player.get("walk_source_animation")).to_lower().find("walk") >= 0, "Stylized boy walk.001 source must be mapped at runtime.")
 	var textured: bool = false
