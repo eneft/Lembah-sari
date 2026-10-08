@@ -127,6 +127,9 @@ func _hide_overlapping_cards(layer: Node3D, location: Vector3, kind: int, radius
 		var center: Vector3 = sprite.global_position
 		if Vector2(center.x,center.z).distance_to(Vector2(location.x,location.z)) <= radius:
 			sprite.hide()
+			var underlay: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
+			if underlay != null:
+				underlay.hide()
 			removed += 1
 	return removed
 
@@ -143,5 +146,8 @@ func _hide_near_banana_cards(layer: Node3D, location: Vector3, radius: float) ->
 			continue
 		if Vector2(sprite.global_position.x-location.x,sprite.global_position.z-location.z).length() < radius:
 			sprite.hide()
+			var underlay: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
+			if underlay != null:
+				underlay.hide()
 			hidden += 1
 	return hidden
