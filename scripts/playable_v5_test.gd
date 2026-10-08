@@ -1,6 +1,7 @@
 extends Node3D
 
 const HYBRID_ENVIRONMENT = "res://scripts/village_hybrid_environment.gd"
+const FOREGROUND_PLANTS = "res://scripts/village_foreground_plants.gd"
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
@@ -29,6 +30,7 @@ func _ready() -> void:
 	_configure_player_camera()
 	_build_player_readability()
 	_apply_hybrid_environment()
+	_apply_foreground_plants()
 
 
 func _build_environment() -> void:
@@ -351,3 +353,16 @@ func _apply_hybrid_environment() -> void:
 			environment_script.new().apply(hero,camera)
 		else:
 			push_error("[LembahSari] Could not load image environment")
+
+
+func _apply_foreground_plants() -> void:
+	# Foreground polygons are authored after image cards. Distant vegetation and
+	# the backdrop stay sprite/image based; overlapping near cards are culled.
+	var hero: Node3D = get_node_or_null("HeroSceneV5") as Node3D
+	if hero == null:
+		return
+	var plant_script: Script = load(FOREGROUND_PLANTS) as Script
+	if plant_script == null or not plant_script.can_instantiate():
+		push_error("[LembahSari] Foreground plant placement script is missing")
+		return
+	plant_script.new().apply(hero,player)
