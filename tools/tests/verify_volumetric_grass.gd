@@ -47,11 +47,11 @@ func _run() -> void:
 		var max_height: float = float(draw.get_meta("authored_max_height",-1.0))
 		print("GRASS_BATCH_HEIGHT name=%s min=%.4f max=%.4f instances=%d" % [name,min_height,max_height,multimesh.instance_count])
 		_check(min_height > 0.034 and max_height < 0.32 and max_height > min_height,"Grass authored height outside approved limits: "+name)
-		if max_height > 0.20:
+		if name == "RiverBankGrass3D" and max_height > 0.14:
 			tall += multimesh.instance_count
 		count += multimesh.instance_count
-	_check(count > 270 and count < 1150,"Grass must be visibly dense but bounded")
-	_check(tall > 35,"Riverside/yard need raised grass, not a flat lawn")
+	_check(count > 155 and count < 650,"Grass must be a sparse organic groundcover, not a carpet")
+	_check(tall > 20,"Thin riverbank still needs some raised grass, not a flat lawn")
 	_check(int(grass.get_meta("tufts",0)) == count,"Grass instancing metadata must match GPU transforms")
 	_check(int(grass.get_meta("path_edge_tufts",0)) >= 8,"Walking path must gain small dimensional grass at its edges")
 	_check(bool(grass.get_meta("organic_mask",false)),"Grass should scatter as soft-edged islands, never a rectangular lawn")
@@ -64,6 +64,9 @@ func _run() -> void:
 	var straight_midpoint := Vector2(0.755,0.625)
 	_check(bend.distance_to(straight_midpoint) > 0.018,"Footpath must bend enough to soften the path edge")
 	_check(String(grass.get_meta("blade_profile","")) == "curved_broad","Grass mesh must have curved broad tips instead of spikes")
+	_check(bool(grass.get_meta("front_island_distribution",false)),"Foreground coverage needs separate soft islands")
+	_check(bool(grass.get_meta("muted_grass_palette",false)),"Grass colors must blend with olive ground")
+	_check(bool(grass.get_meta("river_edge_thinned",false)),"River bank grass must be thinned")
 	var hero: Node3D = world.get_node("HeroSceneV5") as Node3D
 	var hybrid: Node3D = hero.get_node("HybridEnvironment") as Node3D
 	var cards: int = 0
