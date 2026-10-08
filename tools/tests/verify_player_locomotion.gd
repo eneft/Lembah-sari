@@ -33,6 +33,37 @@ func _run() -> void:
 			transferred_rotation_tracks += 1
 	_check(transferred_rotation_tracks >= 50,"Run must contain actual sampled quaternion animation, not procedural fake movement")
 	print("RUN_EXTRACTED_SOURCE_VALIDATED bones=%d transferred_rotations=%d donor_mesh_used=false duration=%.3f" % [int(player.get("run_source_bones")),transferred_rotation_tracks,actual_run.length])
+	# Regression: the previous retarget passed movement tests but turned
+	# the boy horizontal when Shift/Run was pressed. Evaluate upright torso
+	# throughout the entire real animation, not just whether tracks exist.
+	var hips_bone: int = -1
+	var head_bone: int = -1
+	for b: int in range(skeleton.get_bone_count()):
+		var bone_label: String = String(skeleton.get_bone_name(b)).to_lower()
+		if bone_label.ends_with("hips"):
+			hips_bone = b
+		elif bone_label.ends_with("head"):
+			head_bone = b
+	_check(hips_bone >= 0 and head_bone >= 0,"Run posture needs head and hips landmarks")
+	if hips_bone >= 0 and head_bone >= 0:
+		var baseline: Vector3 = skeleton.get_bone_global_rest(head_bone).origin-skeleton.get_bone_global_rest(hips_bone).origin
+		_check(baseline.length() > 0.15,"Rest skeleton must have a meaningful torso length")
+		var lowest_upright: float = 1.0
+		var lowest_height_fraction: float = 100.0
+		animator.play(&"Run",0.0)
+		for phase_idx: int in range(16):
+			var sample_t: float = actual_run.length*float(phase_idx)/16.0
+			animator.seek(sample_t,true)
+			skeleton.force_update_all_bone_transforms()
+			var torso: Vector3 = skeleton.get_bone_global_pose(head_bone).origin-skeleton.get_bone_global_pose(hips_bone).origin
+			var upright: float = torso.normalized().dot(baseline.normalized())
+			var height_fraction: float = torso.y/maxf(absf(baseline.y),0.001)
+			lowest_upright = minf(lowest_upright,upright)
+			lowest_height_fraction = minf(lowest_height_fraction,height_fraction)
+			_check(upright > 0.72 and height_fraction > 0.58,
+				"Run torso collapses / character lies sideways: phase=%.2f upright=%.3f height_fraction=%.3f" % [sample_t,upright,height_fraction])
+		print("RUN_UPRIGHT_POSE_VALIDATED frames=16 min_dot=%.3f min_height_fraction=%.3f" % [lowest_upright,lowest_height_fraction])
+		animator.play(&"Idle",0.0)
 	# Diagnose any authored translation that moves the mesh forward and snaps it back.
 	var source_animation: Animation = animator.get_animation(player.get("walk_source_animation"))
 	if source_animation != null:
