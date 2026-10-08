@@ -63,6 +63,7 @@ func _run() -> void:
 			_check(upright > 0.72 and height_fraction > 0.58,
 				"Run torso collapses / character lies sideways: phase=%.2f upright=%.3f height_fraction=%.3f" % [sample_t,upright,height_fraction])
 		print("RUN_UPRIGHT_POSE_VALIDATED frames=16 min_dot=%.3f min_height_fraction=%.3f" % [lowest_upright,lowest_height_fraction])
+		_audit_run_limbs(skeleton,animator,actual_run)
 		animator.play(&"Idle",0.0)
 	# Diagnose any authored translation that moves the mesh forward and snaps it back.
 	var source_animation: Animation = animator.get_animation(player.get("walk_source_animation"))
@@ -241,6 +242,58 @@ func _run() -> void:
 	world.queue_free()
 	await process_frame
 	quit(1 if failed else 0)
+
+# The previous "upright" test missed fully splayed/hyperextended legs.
+# Validate that ankles remain anatomically BELOW hips throughout Run, and
+# that alternating foot movement is present rather than a frozen standing pose.
+func _audit_run_limbs(skeleton: Skeleton3D,animator: AnimationPlayer,run_clip: Animation) -> void:
+	var hips_id: int = -1
+	var left_id: int = -1
+	var right_id: int = -1
+	for idx: int in range(skeleton.get_bone_count()):
+		var label: String = String(skeleton.get_bone_name(idx)).to_lower()
+		if label.ends_with("hips"):
+			hips_id = idx
+		elif label.ends_with("leftfoot"):
+			left_id = idx
+		elif label.ends_with("rightfoot"):
+			right_id = idx
+	_check(hips_id >= 0 and left_id >= 0 and right_id >= 0,"Run anatomical audit must resolve hip and both feet")
+	if hips_id < 0 or left_id < 0 or right_id < 0:
+		return
+	var rest_hips: Vector3 = skeleton.get_bone_global_rest(hips_id).origin
+	var rest_left: Vector3 = skeleton.get_bone_global_rest(left_id).origin
+	var rest_right: Vector3 = skeleton.get_bone_global_rest(right_id).origin
+	var left_length: float = rest_hips.distance_to(rest_left)
+	var right_length: float = rest_hips.distance_to(rest_right)
+	_check(left_length > 0.15 and right_length > 0.15,"Foot leg-length references must be nonzero")
+	var left_min: float = INF
+	var left_max: float = -INF
+	var right_min: float = INF
+	var right_max: float = -INF
+	animator.play(&"Run",0.0)
+	for frame: int in range(16):
+		var t: float = run_clip.length*float(frame)/16.0
+		animator.seek(t,true)
+		skeleton.force_update_all_bone_transforms()
+		var hip: Vector3 = skeleton.get_bone_global_pose(hips_id).origin
+		var left: Vector3 = skeleton.get_bone_global_pose(left_id).origin
+		var right: Vector3 = skeleton.get_bone_global_pose(right_id).origin
+		var ls: Vector3 = left-hip
+		var rs: Vector3 = right-hip
+		_check(ls.y < -0.10*left_length and rs.y < -0.10*right_length,
+			"Run leg inverted or horizontal at t=%.3f left_y=%.3f right_y=%.3f" % [t,ls.y,rs.y])
+		_check(ls.length() < left_length*1.18 and rs.length() < right_length*1.18,
+			"Run hyperextends limb beyond original rig dimensions")
+		_check(Vector2(ls.x,ls.z).length() < 1.05*left_length and Vector2(rs.x,rs.z).length() < 1.05*right_length,
+			"Run legs are splayed sideways instead of striding forward")
+		left_min = minf(left_min,ls.z)
+		left_max = maxf(left_max,ls.z)
+		right_min = minf(right_min,rs.z)
+		right_max = maxf(right_max,rs.z)
+	_check(left_max-left_min > 0.035*left_length and right_max-right_min > 0.035*right_length,
+		"Run must visibly alternate the feet; no static fallback allowed")
+	print("RUN_ANATOMY_VALIDATED frames=16 left_swing=%.3f right_swing=%.3f legs=groundward" % [left_max-left_min,right_max-right_min])
 
 func _frames(count: int) -> void:
 	for frame: int in range(count):
