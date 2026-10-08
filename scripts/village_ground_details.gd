@@ -14,7 +14,7 @@ func apply(world: Node3D, view: Camera3D) -> void:
 	root.name = "LandscapedGroundDetails"
 	world.add_child(root)
 	var stones: Array[StandardMaterial3D] = []
-	for tone: String in ["807f6c","969483","777664"]:
+	for tone: String in ["777965","818574","666d5e"]:
 		var material := StandardMaterial3D.new()
 		material.albedo_color = Color(tone)
 		material.roughness = 0.94
@@ -22,8 +22,8 @@ func apply(world: Node3D, view: Camera3D) -> void:
 		stones.append(material)
 	var size: Vector2 = view.get_viewport().get_visible_rect().size
 	var stone_mesh := SphereMesh.new()
-	stone_mesh.radial_segments = 8
-	stone_mesh.rings = 4
+	stone_mesh.radial_segments = 12
+	stone_mesh.rings = 7
 	var planted: int = 0
 	for setting: Dictionary in ROCKS:
 		var fraction: Vector2 = setting["uv"]
@@ -37,7 +37,7 @@ func apply(world: Node3D, view: Camera3D) -> void:
 		stone.mesh = stone_mesh
 		stone.material_override = stones[int(setting["tone"])]
 		var scale_m: float = float(setting["size"])
-		stone.scale = Vector3(scale_m*1.18,scale_m*0.60,scale_m*0.93)
+		stone.scale = Vector3(scale_m*1.31,scale_m*0.46,scale_m*0.99)
 		stone.rotation_degrees.y = float(abs(String(stone.name).hash())%145)
 		root.add_child(stone)
 		# bury the bottom 35% and keep the stone small enough to not hide water
