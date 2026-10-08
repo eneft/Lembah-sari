@@ -135,6 +135,10 @@ func _hide_overlapping_cards(layer: Node3D, location: Vector3, kind: int, radius
 			var underlay: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
 			if underlay != null:
 				underlay.hide()
+			# Don't retain an invisible trunk collider where a 3D tree takes over.
+			var legacy_trunk: StaticBody3D = layer.get_node_or_null("TrunkCollider_"+label.trim_prefix("Card_")) as StaticBody3D
+			if legacy_trunk != null:
+				legacy_trunk.queue_free()
 			removed += 1
 	return removed
 
@@ -154,6 +158,9 @@ func _hide_near_banana_cards(layer: Node3D, location: Vector3, radius: float) ->
 			var underlay: MeshInstance3D = layer.get_node_or_null("ContactShadow_"+label) as MeshInstance3D
 			if underlay != null:
 				underlay.hide()
+			var legacy_trunk: StaticBody3D = layer.get_node_or_null("TrunkCollider_"+label.trim_prefix("Card_")) as StaticBody3D
+			if legacy_trunk != null:
+				legacy_trunk.queue_free()
 			hidden += 1
 	return hidden
 
