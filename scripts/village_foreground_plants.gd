@@ -12,6 +12,7 @@ const SOURCE_HEIGHTS: Array[float] = [4.4, 1.2, 3.6, 0.9]
 # for the approved 124-degree hero rotation and fixed gameplay camera.
 const BANANA_PATH: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
 const BANANA_FALLBACK: String = "res://scripts/village_banana_fallback.gd"
+const BANANA_CARD: String = "res://assets/textures/hybrid/banana_tree_card.svg"
 # Camera-locked, house-relative coordinates. Keep the front stairs/path clear.
 # One big canopy and banana frame the left; two palms frame right/back.
 const LAYOUT: Array[Dictionary] = [
@@ -100,23 +101,33 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 			banana = banana_script.new().build() as Node3D
 	if banana != null:
 		banana.name = "BananaTree_Left_Indonesian"
-		banana.position = house.position + Vector3(-6.55,0.0,0.65)
+		banana.position = house.position + Vector3(-6.10,0.0,1.50)
 		# User GLB is normalized to 1 m high. Target ~3.2 m near the house.
-		banana.scale = Vector3.ONE * 3.2
-		banana.rotation_degrees.y = -18.0
+		banana.scale = Vector3.ONE * 3.25
+		banana.rotation_degrees.y = -14.0
 		root.add_child(banana)
 		_harmonize_3d_plant_materials(banana)
 		_attach_root_grounding(banana,4,grounding_material)
 		banana.set_meta("plant_type",4)
-		banana.set_meta("authored_height",3.2)
+		banana.set_meta("authored_height",3.25)
 		var banana_position: Vector3 = banana.global_position
-		if playerspace.distance_to(Vector2(banana_position.x,banana_position.z)) < 1.20:
+		if playerspace.distance_to(Vector2(banana_position.x,banana_position.z)) < 1.28:
 			banana.queue_free()
 			banana = null
 		else:
 			placed += 1
+			if imported[3] != null:
+				_attach_banana_ground_cover(banana,imported[3])
 			if layer != null:
 				hidden += _hide_near_banana_cards(layer,banana_position,1.6)
+	# One real banana plus two shaded transparent image companions.
+	# These are authored after card decluttering, so they are not accidentally
+	# hidden by the older generic "Tree/Palm" culling logic.
+	var banana_cards: int = 0
+	if banana != null and layer != null:
+		banana_cards = _install_banana_image_companions(hero,house,layer,player,grounding_material)
+	if layer != null:
+		layer.set_meta("banana_cards",banana_cards)
 	root.set_meta("banana_active",banana != null)
 	root.set_meta("banana_source_glb",banana != null and not bool(banana.get_meta("fallback_banana",false)))
 	root.set_meta("installed",placed)
@@ -230,3 +241,68 @@ func _attach_root_grounding(model: Node3D,kind: int,material: StandardMaterial3D
 		shape.position.y = cyl.height*0.5
 		blocker.add_child(shape)
 		model.add_child(blocker)
+
+func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,player: CharacterBody3D,shadow_mat: StandardMaterial3D) -> int:
+	if not ResourceLoader.exists(BANANA_CARD):
+		push_error("[LembahSari] Banana card SVG was not imported: "+BANANA_CARD)
+		return 0
+	var texture: Texture2D = load(BANANA_CARD) as Texture2D
+	var fixed_camera: Camera3D = player.get_node_or_null("CameraRig/Camera3D") as Camera3D
+	if texture == null or fixed_camera == null:
+		push_error("[LembahSari] Banana card texture or fixed camera is missing")
+		return 0
+	var layout: Array[Dictionary] = [
+		{"name":"Card_BananaRearLeft","offset":Vector3(-7.45,0.0,-0.15),"height":2.42,"flip":true,"tint":Color(0.91,0.95,0.83,1.0)},
+		{"name":"Card_BananaMidLeft","offset":Vector3(-3.95,0.0,1.95),"height":2.25,"flip":false,"tint":Color(0.87,0.93,0.83,1.0)},
+	]
+	var count: int = 0
+	var viewport_size: Vector2 = fixed_camera.get_viewport().get_visible_rect().size
+	for placement: Dictionary in layout:
+		var base: Vector3 = hero.to_global(house.position+placement["offset"])
+		var height: float = float(placement["height"])
+		var sprite := Sprite3D.new()
+		sprite.name = String(placement["name"])
+		sprite.texture = texture
+		sprite.pixel_size = height/float(texture.get_height())
+		sprite.flip_h = bool(placement["flip"])
+		sprite.modulate = placement["tint"]
+		sprite.shaded = true
+		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+		sprite.alpha_scissor_threshold = 0.35
+		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		layer.add_child(sprite)
+		sprite.global_basis = fixed_camera.global_basis.orthonormalized()
+		sprite.global_position = base+fixed_camera.global_basis.y.normalized()*height*0.48
+		var contact := MeshInstance3D.new()
+		contact.name = "ContactShadow_"+sprite.name
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(0.90,0.60)
+		contact.mesh = plane
+		contact.material_override = shadow_mat
+		contact.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		layer.add_child(contact)
+		contact.global_position = Vector3(base.x,-0.027,base.z)
+		contact.rotation_degrees.y = -26.0 if count == 0 else 19.0
+		sprite.set_meta("banana_image",true)
+		sprite.set_meta("ground_anchor",base)
+		sprite.set_meta("source_texture",BANANA_CARD)
+		var screen: Vector2 = fixed_camera.unproject_position(sprite.global_position)/viewport_size
+		print("[LembahSari] BANANA_IMAGE_CARD name=%s screen_uv=%s height=%.2f" % [sprite.name,screen,height])
+		count += 1
+	return count
+
+func _attach_banana_ground_cover(banana: Node3D,grass_scene: PackedScene) -> void:
+	# These authored grasses share existing lightweight mesh assets.
+	# Children inherit the banana's normalized 3.25x transform.
+	for i: int in range(2):
+		var clump: Node3D = grass_scene.instantiate() as Node3D
+		if clump == null:
+			continue
+		clump.name = "BananaRootGrass_"+str(i)
+		clump.position = Vector3(-0.12,0.0,0.065) if i == 0 else Vector3(0.11,0.0,-0.09)
+		clump.scale = Vector3.ONE*(0.12 if i == 0 else 0.09)
+		clump.rotation_degrees.y = 22.0 if i == 0 else -46.0
+		banana.add_child(clump)
+		for n: Node in clump.find_children("*","MeshInstance3D",true,false):
+			(n as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
