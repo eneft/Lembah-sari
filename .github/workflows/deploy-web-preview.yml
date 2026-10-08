@@ -106,6 +106,9 @@ jobs:
       - name: Verify fixed camera and image environment
         run: timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_hybrid_environment.gd
 
+      - name: Verify selective 3D foreground vegetation and image backdrop
+        run: timeout 30s godot --headless --path . --fixed-fps 60 --script res://tools/tests/verify_foreground_plants.gd
+
       - name: Export Web build
         shell: bash
         run: |
