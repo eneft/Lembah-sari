@@ -36,12 +36,28 @@ func _run() -> void:
 	_check(ghost_shadows == 0,"Hidden image foliage cannot leave detached contact shadows")
 	_check(visible_cards > 90,"Hybrid backdrop and midground cards must remain visible")
 	_check(int(layer.get_meta("thinned_front_cards",-1)) >= 0,"Deterministic card decluttering must run")
-	_check(plants.get_child_count() <= 10,"Only curated near 3D plants may remain")
+	_check(plants.get_child_count() >= 9 and plants.get_child_count() <= 10,"Only curated near 3D plants may remain")
+	var rooted_models: int = 0
+	for node: Node in plants.get_children():
+		if not node is Node3D:
+			continue
+		var model: Node3D = node as Node3D
+		var kind: int = int(model.get_meta("plant_type",-1))
+		if kind == 3:
+			continue
+		var root_shadow: MeshInstance3D = model.get_node_or_null("RootContactShadow") as MeshInstance3D
+		_check(root_shadow != null,"Polygon trees and bushes must be rooted with contact shadows: "+String(model.name))
+		if root_shadow != null:
+			rooted_models += 1
+			_check(root_shadow.material_override is StandardMaterial3D,"Root shadow must use a feathered transparent material")
+		if kind == 0 or kind == 2 or kind == 4:
+			_check(model.get_node_or_null("RootTrunkCollider") is StaticBody3D,"Rooted tree trunk must block passing straight through its base")
+	_check(rooted_models >= 6,"At least six major polygon plants must be grounded")
 	var banana_active: bool = bool(plants.get_meta("banana_active",false))
 	if banana_active:
 		_check(plants.get_node_or_null("BananaTree_Left_Indonesian") != null,"Source banana asset must load")
 	if not failed:
-		print("GROUNDED_LANDSCAPE_VALIDATED shadows=%d hidden_ghosts=%d rocks=%d banana=%s far=image" % [shadow_count,ghost_shadows,rocks.get_child_count(),banana_active])
+		print("GROUNDED_LANDSCAPE_VALIDATED shadows=%d polygon_roots=%d hidden_ghosts=%d rocks=%d banana=%s far=image" % [shadow_count,rooted_models,ghost_shadows,rocks.get_child_count(),banana_active])
 	world.queue_free()
 	await process_frame
 	quit(1 if failed else 0)
