@@ -17,13 +17,14 @@ const BANANA_FALLBACK: String = "res://scripts/village_banana_fallback.gd"
 const BANANA_CARD_PNG: String = "res://assets/textures/hybrid/banana_tree_card.png"
 const BANANA_CARD_SVG: String = "res://assets/textures/hybrid/banana_tree_card.svg"
 # Camera-locked, house-relative coordinates. Keep the front stairs/path clear.
-# One big canopy and banana frame the left; two palms frame right/back.
+# Three foreground polygon trees frame the left (field + two house trees); banana and two PNG cards remain accents.
 const LAYOUT: Array[Dictionary] = [
-	{"type":0,"name":"Canopy_Left_Hero","offset":Vector2(-4.8,-0.65),"scale":0.92,"yaw":34.0,"radius":1.65},
+	{"type":0,"name":"Canopy_Left_Hero","offset":Vector2(-4.8,-0.65),"scale":0.90,"yaw":34.0,"radius":1.65},
+	{"type":0,"name":"Tree_LeftFieldFill","offset":Vector2(-8.0,0.45),"scale":1.10,"yaw":17.0,"radius":1.95},
 	{"type":2,"name":"Palm_Left_Back","offset":Vector2(-3.50,-3.20),"scale":1.12,"yaw":63.0,"radius":1.10},
 	{"type":2,"name":"Palm_Right_Back","offset":Vector2(6.0,-2.20),"scale":1.10,"yaw":-37.0,"radius":1.05},
-	{"type":1,"name":"Bush_Left_Front_A","offset":Vector2(-5.05,2.72),"scale":0.66,"yaw":39.0,"radius":0.88},
-	{"type":1,"name":"Bush_Left_Front_B","offset":Vector2(-3.72,3.18),"scale":0.53,"yaw":-16.0,"radius":0.80},
+	{"type":0,"name":"Tree_LeftLarge_A","offset":Vector2(-5.05,2.42),"scale":0.76,"yaw":-14.0,"radius":1.45},
+	{"type":0,"name":"Tree_LeftLarge_B","offset":Vector2(-3.45,2.34),"scale":0.68,"yaw":8.0,"radius":1.32},
 	{"type":1,"name":"Bush_Garden_Edge","offset":Vector2(4.55,2.16),"scale":0.52,"yaw":-86.0,"radius":1.38},
 	{"type":3,"name":"Reed_River_Left_A","offset":Vector2(-5.55,5.85),"scale":0.64,"yaw":-13.0,"radius":0.30},
 	{"type":3,"name":"Reed_River_Left_B","offset":Vector2(-3.10,5.85),"scale":0.58,"yaw":57.0,"radius":0.30},
@@ -108,15 +109,15 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 			banana = banana_script.new().build() as Node3D
 	if banana != null:
 		banana.name = "BananaTree_Left_Indonesian"
-		banana.position = house.position + Vector3(-5.85,0.0,1.30)
+		banana.position = house.position + Vector3(-5.55,0.0,1.18)
 		# User GLB is normalized to 1 m high. Target ~3.2 m near the house.
-		banana.scale = Vector3.ONE * 3.10
-		banana.rotation_degrees.y = -10.0
+		banana.scale = Vector3.ONE * 2.92
+		banana.rotation_degrees.y = -8.0
 		root.add_child(banana)
 		_harmonize_3d_plant_materials(banana)
 		_attach_root_grounding(banana,4,grounding_material)
 		banana.set_meta("plant_type",4)
-		banana.set_meta("authored_height",3.10)
+		banana.set_meta("authored_height",2.92)
 		var banana_position: Vector3 = banana.global_position
 		if playerspace.distance_to(Vector2(banana_position.x,banana_position.z)) < 1.28:
 			banana.queue_free()
@@ -140,6 +141,9 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 	root.set_meta("installed",placed)
 	root.set_meta("hidden_cards",hidden)
 	root.set_meta("expected",LAYOUT.size()+(1 if banana != null else 0))
+	root.set_meta("left_side_recomposed",true)
+	root.set_meta("left_large_canopy_count",3)
+	root.set_meta("left_empty_gap_filled",root.has_node("Tree_LeftFieldFill"))
 	print("[LembahSari] FOREGROUND_PLANTS_3D_ACTIVE models=%d banana=%s hidden_near_cards=%d background=image" % [placed,banana != null,hidden])
 func _hide_overlapping_cards(layer: Node3D, location: Vector3, kind: int, radius: float) -> int:
 	var removed := 0
@@ -268,8 +272,8 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 		push_error("[LembahSari] Banana card texture or fixed camera is missing")
 		return 0
 	var layout: Array[Dictionary] = [
-		{"name":"Card_BananaRearLeft","offset":Vector3(-7.05,0.0,-0.40),"height":2.28,"flip":true,"tint":Color(0.90,0.95,0.83,1.0)},
-		{"name":"Card_BananaMidLeft","offset":Vector3(-4.55,0.0,1.25),"height":2.05,"flip":false,"tint":Color(0.87,0.93,0.82,1.0)},
+		{"name":"Card_BananaRearLeft","offset":Vector3(-6.55,0.0,-0.05),"height":1.96,"flip":true,"tint":Color(0.89,0.94,0.85,1.0)},
+		{"name":"Card_BananaMidLeft","offset":Vector3(-4.95,0.0,0.88),"height":1.84,"flip":false,"tint":Color(0.86,0.92,0.84,1.0)},
 	]
 	var count: int = 0
 	var viewport_size: Vector2 = fixed_camera.get_viewport().get_visible_rect().size
