@@ -3,6 +3,7 @@ extends Node3D
 const HYBRID_ENVIRONMENT = "res://scripts/village_hybrid_environment.gd"
 const FOREGROUND_PLANTS = "res://scripts/village_foreground_plants.gd"
 const FOREGROUND_GRASS = "res://scripts/village_foreground_grass.gd"
+const GROUND_DETAILS = "res://scripts/village_ground_details.gd"
 
 const HERO_SCENE: String = "res://assets/models/hero_scene_v5.glb"
 const PLAYER_HOUSE_SCENE: String = "res://assets/models/player_house_traditional_v4.glb"
@@ -33,6 +34,7 @@ func _ready() -> void:
 	_apply_hybrid_environment()
 	_apply_foreground_plants()
 	_apply_foreground_grass()
+	_apply_ground_details()
 
 
 func _build_environment() -> void:
@@ -378,3 +380,11 @@ func _apply_foreground_grass() -> void:
 		return
 	var camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
 	grass_script.new().apply(self,camera,player)
+
+func _apply_ground_details() -> void:
+	var detail_script: Script = load(GROUND_DETAILS) as Script
+	if detail_script == null or not detail_script.can_instantiate():
+		push_error("[LembahSari] Missing organic riverbank stone details")
+		return
+	var fixed_camera: Camera3D = player.get_node("CameraRig/Camera3D") as Camera3D
+	detail_script.new().apply(self,fixed_camera)
