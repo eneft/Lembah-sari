@@ -53,6 +53,7 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 	var placed := 0
 	var hidden := 0
 	var playerspace := Vector2(player.global_position.x, player.global_position.z)
+	var grounding_material: StandardMaterial3D = _build_grounding_shadow_material()
 	for entry: Dictionary in LAYOUT:
 		var kind: int = int(entry["type"])
 		var model: Node3D = imported[kind].instantiate() as Node3D
@@ -76,6 +77,8 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 		if kind == 1 or kind == 3:
 			for mesh: Node in model.find_children("*", "MeshInstance3D", true, false):
 				(mesh as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_harmonize_3d_plant_materials(model)
+		_attach_root_grounding(model,kind,grounding_material)
 		model.set_meta("plant_type",kind)
 		model.set_meta("authored_height",SOURCE_HEIGHTS[kind] * float(entry["scale"]))
 		placed += 1
@@ -95,6 +98,8 @@ func apply(hero: Node3D, player: CharacterBody3D) -> void:
 		banana.scale = Vector3.ONE * 3.2
 		banana.rotation_degrees.y = -18.0
 		root.add_child(banana)
+		_harmonize_3d_plant_materials(banana)
+		_attach_root_grounding(banana,4,grounding_material)
 		banana.set_meta("plant_type",4)
 		banana.set_meta("authored_height",3.2)
 		var banana_position: Vector3 = banana.global_position
@@ -151,3 +156,62 @@ func _hide_near_banana_cards(layer: Node3D, location: Vector3, radius: float) ->
 				underlay.hide()
 			hidden += 1
 	return hidden
+
+func _harmonize_3d_plant_materials(model: Node3D) -> void:
+	# Imported GLB PBR materials stay textured. Duplicate per instance so the
+	# tint doesn't mutate source GLBs or affect unrelated scenes.
+	for node: Node in model.find_children("*","MeshInstance3D",true,false):
+		var mesh_instance: MeshInstance3D = node as MeshInstance3D
+		if mesh_instance.mesh == null:
+			continue
+		for surface: int in range(mesh_instance.mesh.get_surface_count()):
+			var authored: Material = mesh_instance.get_active_material(surface)
+			if not authored is StandardMaterial3D:
+				continue
+			var warmed: StandardMaterial3D = authored.duplicate() as StandardMaterial3D
+			warmed.albedo_color *= Color(0.958,0.988,0.900,1.0)
+			warmed.roughness = maxf(warmed.roughness,0.77)
+			mesh_instance.set_surface_override_material(surface,warmed)
+
+func _build_grounding_shadow_material() -> StandardMaterial3D:
+	# Soft radial green/soil shadow. Shared across all trees and banana.
+	var image := Image.create_empty(48,48,false,Image.FORMAT_RGBA8)
+	for y: int in range(48):
+		for x: int in range(48):
+			var p: Vector2 = (Vector2(float(x)+0.5,float(y)+0.5)/48.0-Vector2(0.5,0.5))*2.0
+			var alpha: float = powf(maxf(0.0,1.0-p.length()),1.7)*0.24
+			image.set_pixel(x,y,Color(0.23,0.23,0.16,alpha))
+	var mat := StandardMaterial3D.new()
+	mat.resource_name = "Grounded3DTreeRootShadow"
+	mat.albedo_texture = ImageTexture.create_from_image(image)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_OPAQUE_ONLY
+	return mat
+
+func _attach_root_grounding(model: Node3D,kind: int,material: StandardMaterial3D) -> void:
+	if kind == 3:
+		return # river reed models already merge with volumetric grass
+	var shadow := MeshInstance3D.new()
+	shadow.name = "RootContactShadow"
+	var plane := PlaneMesh.new()
+	var extent: float = 1.24 if kind == 0 else (0.68 if kind == 4 else (0.57 if kind == 2 else 0.72))
+	plane.size = Vector2(extent,extent*0.77)
+	shadow.mesh = plane
+	shadow.material_override = material
+	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	model.add_child(shadow)
+	shadow.position = Vector3(0.0,0.023,0.0)
+	# Trunk collider only for rooted trees, never ornamental shrub/grass.
+	if kind == 0 or kind == 2 or kind == 4:
+		var blocker := StaticBody3D.new()
+		blocker.name = "RootTrunkCollider"
+		var shape := CollisionShape3D.new()
+		var cyl := CylinderShape3D.new()
+		cyl.radius = 0.07 if kind == 4 else 0.14
+		cyl.height = 0.72 if kind == 4 else 1.15
+		shape.shape = cyl
+		shape.position.y = cyl.height*0.5
+		blocker.add_child(shape)
+		model.add_child(blocker)
