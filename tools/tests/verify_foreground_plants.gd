@@ -31,7 +31,10 @@ func _run() -> void:
   elif installed != PATHS.size():
    _check(false,"Four split GLB files must be installed together")
   else:
-   _check(int(plants.get_meta("installed",0)) == 11,"Eleven selected hero 3D instances must be active")
+   var banana_path: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
+   var banana_available: bool = ResourceLoader.exists(banana_path)
+   var expected_models: int = 9+(1 if banana_available else 0)
+   _check(int(plants.get_meta("installed",0)) == expected_models,"Curated plant count must match available GLBs")
    var models := 0
    for child: Node in plants.get_children():
     if not child is Node3D: continue
@@ -60,7 +63,13 @@ func _run() -> void:
      if match_kind and distance < nearest_same:
       nearest_same = distance
     print("PLANT_POSITION name=%s world=%s screen=%s nearest_card=%s nearest_dist=%.2f same_type_dist=%.2f" % [plant.name,plant.global_position,px,nearest_label,nearest,nearest_same])
-   _check(models == 11,"Exactly eleven curated instances must be active")
+   _check(models == expected_models,"Only nine curated plants plus optional banana may occupy the foreground")
+   _check(bool(plants.get_meta("banana_active",false)) == banana_available,"Banana must appear only with user-provided model")
+   if banana_available:
+    var banana: Node3D = plants.get_node_or_null("BananaTree_Left_Indonesian") as Node3D
+    _check(banana != null,"Banana model must have distinct node")
+    if banana != null:
+     _check(absf(float(banana.get_meta("authored_height",0.0))-3.2) < 0.01,"Banana must keep natural house scale")
    _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
    var house: Node3D = hero.get_node("PlayerHouseTraditionalV4") as Node3D
    var canopy: Node3D = plants.get_node("Canopy_Left_Hero") as Node3D
@@ -71,7 +80,7 @@ func _run() -> void:
    var palm_x: float = fixed_camera.unproject_position(right_palm.global_position).x
    _check(canopy_x < house_x and palm_x > house_x,"3D trees must flank the house correctly in the fixed-camera composition")
    print("FOREGROUND_COMPOSITION_OK house_x=%.1f canopy_left_x=%.1f palm_right_x=%.1f hidden_old_cards=%d" % [house_x,canopy_x,palm_x,int(plants.get_meta("hidden_cards",0))])
-   print("FOREGROUND_PLANTS_VALIDATED instances=%d midground=image backdrop=image" % models)
+   print("FOREGROUND_PLANTS_VALIDATED instances=%d banana=%s midground=image backdrop=image" % [models,banana_available])
  world.queue_free()
  await process_frame
  quit(1 if failed else 0)
