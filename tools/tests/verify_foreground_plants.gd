@@ -61,6 +61,16 @@ func _run() -> void:
       nearest_same = distance
     print("PLANT_POSITION name=%s world=%s screen=%s nearest_card=%s nearest_dist=%.2f same_type_dist=%.2f" % [plant.name,plant.global_position,px,nearest_label,nearest,nearest_same])
    _check(models == 11,"Exactly eleven curated instances must be active")
+   _check(int(plants.get_meta("hidden_cards",0)) >= 3,"Foreground 3D replacement must hide neighboring redundant 2.5D tree/palm cards")
+   var house: Node3D = hero.get_node("PlayerHouseTraditionalV4") as Node3D
+   var canopy: Node3D = plants.get_node("Canopy_Left_Hero") as Node3D
+   var right_palm: Node3D = plants.get_node("Palm_Right_Back") as Node3D
+   var fixed_camera: Camera3D = world.get_node("Player/CameraRig/Camera3D") as Camera3D
+   var house_x: float = fixed_camera.unproject_position(house.global_position).x
+   var canopy_x: float = fixed_camera.unproject_position(canopy.global_position).x
+   var palm_x: float = fixed_camera.unproject_position(right_palm.global_position).x
+   _check(canopy_x < house_x and palm_x > house_x,"3D trees must flank the house correctly in the fixed-camera composition")
+   print("FOREGROUND_COMPOSITION_OK house_x=%.1f canopy_left_x=%.1f palm_right_x=%.1f hidden_old_cards=%d" % [house_x,canopy_x,palm_x,int(plants.get_meta("hidden_cards",0))])
    print("FOREGROUND_PLANTS_VALIDATED instances=%d midground=image backdrop=image" % models)
  world.queue_free()
  await process_frame
