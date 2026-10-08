@@ -132,8 +132,8 @@ jobs:
         run: |
           set -euo pipefail
           PACK_BYTES="$(stat -c%s build/web/index.pck)"
-          echo "Preview game data: ${PACK_BYTES} bytes (budget: 20 MiB)"
-          test "${PACK_BYTES}" -lt 20971520
+          echo "Preview game data: ${PACK_BYTES} bytes (budget: 20.5 MiB, four curated foreground GLBs)"
+          test "${PACK_BYTES}" -lt 21495808
           test -s build/web/index.service.worker.js
           bash tools/tests/verify_exported_pack.sh build/web/index.pck
 
