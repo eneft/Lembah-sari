@@ -12,7 +12,10 @@ const SOURCE_HEIGHTS: Array[float] = [4.4, 1.2, 3.6, 0.9]
 # for the approved 124-degree hero rotation and fixed gameplay camera.
 const BANANA_PATH: String = "res://assets/models/foreground/05_Pohon_Pisang_Optimized.glb"
 const BANANA_FALLBACK: String = "res://scripts/village_banana_fallback.gd"
-const BANANA_CARD: String = "res://assets/textures/hybrid/banana_tree_card.svg"
+# The supplied photorealistic RGBA PNG is the primary map for BOTH distant
+# banana cards. SVG stays as a graceful fallback until binary upload completes.
+const BANANA_CARD_PNG: String = "res://assets/textures/hybrid/banana_tree_card.png"
+const BANANA_CARD_SVG: String = "res://assets/textures/hybrid/banana_tree_card.svg"
 # Camera-locked, house-relative coordinates. Keep the front stairs/path clear.
 # One big canopy and banana frame the left; two palms frame right/back.
 const LAYOUT: Array[Dictionary] = [
@@ -255,10 +258,11 @@ func _attach_root_grounding(model: Node3D,kind: int,material: StandardMaterial3D
 		model.add_child(blocker)
 
 func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,player: CharacterBody3D,shadow_mat: StandardMaterial3D) -> int:
-	if not ResourceLoader.exists(BANANA_CARD):
-		push_error("[LembahSari] Banana card SVG was not imported: "+BANANA_CARD)
+	var texture_path: String = BANANA_CARD_PNG if ResourceLoader.exists(BANANA_CARD_PNG) else BANANA_CARD_SVG
+	if not ResourceLoader.exists(texture_path):
+		push_error("[LembahSari] Banana card image unavailable (PNG/SVG): "+texture_path)
 		return 0
-	var texture: Texture2D = load(BANANA_CARD) as Texture2D
+	var texture: Texture2D = load(texture_path) as Texture2D
 	var fixed_camera: Camera3D = player.get_node_or_null("CameraRig/Camera3D") as Camera3D
 	if texture == null or fixed_camera == null:
 		push_error("[LembahSari] Banana card texture or fixed camera is missing")
@@ -310,9 +314,11 @@ func _install_banana_image_companions(hero: Node3D,house: Node3D,layer: Node3D,p
 		contact.rotation_degrees.y = -26.0 if count == 0 else 19.0
 		sprite.set_meta("banana_image",true)
 		sprite.set_meta("ground_anchor",base)
-		sprite.set_meta("source_texture",BANANA_CARD)
+		sprite.set_meta("source_texture",texture_path)
+		sprite.set_meta("image_is_png",texture_path == BANANA_CARD_PNG)
+		sprite.set_meta("image_resolution",texture.get_size())
 		var screen: Vector2 = fixed_camera.unproject_position(sprite.global_position)/viewport_size
-		print("[LembahSari] BANANA_IMAGE_CARD name=%s screen_uv=%s height=%.2f" % [sprite.name,screen,height])
+		print("[LembahSari] BANANA_IMAGE_CARD name=%s source=%s screen_uv=%s height=%.2f" % [sprite.name,texture_path,screen,height])
 		count += 1
 	return count
 
